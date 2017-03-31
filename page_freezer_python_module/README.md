@@ -15,6 +15,19 @@ pf.full_html_changes()
 pf.diff_pairs()
 ```
 
+## Where to begin?
+To test the PageFreezer API (after you get the API key from Organization Owners/Developers)
+
+One can use the following URLs
+```
+url_old = https://raw.githubusercontent.com/edgi-govdata-archiving/web-monitoring/master/example-data/truepos-dataset-removal-a.html
+url_new = https://raw.githubusercontent.com/edgi-govdata-archiving/web-monitoring/master/example-data/truepos-dataset-removal-b.html
+```
+
+### Sample URLs
+Following link - [Web Monitoring / Example Data](https://github.com/edgi-govdata-archiving/web-monitoring/tree/master/example-data)
+
+
 ## Future stuff 
 
 + Add heuristics to be used as importance metric
