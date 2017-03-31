@@ -15,10 +15,27 @@ pf.full_html_changes()
 pf.diff_pairs()
 ```
 
-## Where to begin?
-To test the PageFreezer API (after you get the API key from Organization Owners/Developers)
+### Storing and Using API KEY
 
-One can use the following URLs
+Once you receive the API key privately,
+
+```export PAGE_FREEZER_API_KEY=<KEY HERE>```
+
+This will store the API KEY in the OS's environment.
+
+Hence, everytime one needs to access the key 
+> In Python
+
+```
+import os
+PageFreezer_API_key = os.environ['PAGE_FREEZER_API_KEY']
+```
+
+## Where to begin?
+To test the PageFreezer API (after you get the API key privately and store it in environment variable) :-
+
+One can use the following URLs :-
+
 ```
 url_old = https://raw.githubusercontent.com/edgi-govdata-archiving/web-monitoring/master/example-data/truepos-dataset-removal-a.html
 url_new = https://raw.githubusercontent.com/edgi-govdata-archiving/web-monitoring/master/example-data/truepos-dataset-removal-b.html
