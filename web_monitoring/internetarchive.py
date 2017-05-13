@@ -91,7 +91,6 @@ def list_versions(url):
             if 'timemap' in rel_chunk:
                 # This line is a link to the next page of mementos.
                 next_page_url, = URL_CHUNK_PATTERN.match(url_chunk).groups()
-                print(next_page_url)
                 res = requests.get(next_page_url)
                 lines = res.iter_lines()
                 break
