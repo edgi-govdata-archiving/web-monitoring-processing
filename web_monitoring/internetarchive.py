@@ -1,3 +1,18 @@
+"""
+This module provides a Python API for accessing versions (timestamped captures)
+of a URL. There are existing open-source Python packages for the Internet
+Archive API (the best-established one seems to be
+https://internetarchive.readthedocs.io/en/latest/) but none that expose the
+list of versions of a URL.
+
+References used in writing this module:
+* https://ws-dl.blogspot.fr/2013/07/2013-07-15-wayback-machine-upgrades.html
+
+Other potentially useful links:
+* https://blog.archive.org/developers/
+* https://archive.readme.io/docs/memento
+"""
+
 from datetime import datetime
 import re
 import requests
