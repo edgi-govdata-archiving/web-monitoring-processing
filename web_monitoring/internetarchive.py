@@ -28,7 +28,9 @@ class UnexpectedResponseFormat(WebMonitoringException):
     ...
 
 
+TIMEMAP_URL_TEMPLATE = 'http://web.archive.org/web/timemap/link/{}'
 DATE_FMT = '%a, %d %b %Y %H:%M:%S %Z'
+DATE_URL_FMT = '%Y%m%d%H%M%S'
 URL_CHUNK_PATTERN = re.compile('\<(.*)\>')
 DATETIME_CHUNK_PATTERN = re.compile(' datetime="(.*)",')
 
@@ -43,9 +45,8 @@ def list_versions(url):
 
     Examples
     --------
-
     Grab the datetime and URL of the version nasa.gov snapshot.
-    >>> pairs = list_versions('nasa.gov'):
+    >>> pairs = list_versions('nasa.gov')
     >>> dt, url = next(pairs)
     >>> dt
     datetime.datetime(1996, 12, 31, 23, 58, 47)
@@ -55,32 +56,53 @@ def list_versions(url):
     Loop through all the snapshots.
     >>> for dt, url in list_versions('nasa.gov'):
     ...     # do something
+
+    References
+    ----------
+    * https://ws-dl.blogspot.fr/2013/07/2013-07-15-wayback-machine-upgrades.html
     """
-    # Get a list of all the 'Versions' (timestamps when the url was captured).
-    res = requests.get('http://web.archive.org/web/timemap/link/{}'.format(url))
-    content = res.iter_lines()
+    # Request a list of the 'mementos' (what we call 'versions') for a url.
+    # It may be paginated. If so, the final line in the repsonse is a link to
+    # the next page.
+    first_page_url = TIMEMAP_URL_TEMPLATE.format(url)
+    res = requests.get(first_page_url)
+    lines = res.iter_lines()
 
-    # The first three lines contain no information we need.
-    for _ in range(3):
-        next(content)
-    for line in content:
-        # Lines are made up semicolon-separated chunks:
-        # b'<http://web.archive.org/web/19961231235847/http://www.nasa.gov:80/>; rel="memento"; datetime="Tue, 31 Dec 1996 23:58:47 GMT",'
-
-        # Split by semicolon. Fail with an informative error if there are not
-        # exactly three chunks.
+    while True:
+        # Continue requesting pages of responses until the last page.
         try:
-            url_chunk, rel_chunk, dt_chunk = line.decode().split(';')
-        except ValueError:
-            raise UnexpectedResponseFormat(line.decode())
+            # The first three lines contain no information we need.
+            for _ in range(3):
+                next(lines)
+        except StopIteration:
+            # There are no more pages left to parse.
+            break
+        for line in lines:
+            # Lines are made up semicolon-separated chunks:
+            # b'<http://web.archive.org/web/19961231235847/http://www.nasa.gov:80/>; rel="memento"; datetime="Tue, 31 Dec 1996 23:58:47 GMT",'
 
-        # Extract the URL and the datetime from the surrounding characters.
-        # Again, fail with an informative error.
-        try:
-            version_uri, = URL_CHUNK_PATTERN.match(url_chunk).groups()
-            version_dt_str, = DATETIME_CHUNK_PATTERN.match(dt_chunk).groups()
-        except AttributeError:
-            raise UnexpectedResponseFormat(line.decode())
+            # Split by semicolon. Fail with an informative error if there are
+            # not exactly three chunks.
+            try:
+                url_chunk, rel_chunk, dt_chunk = line.decode().split(';')
+            except ValueError:
+                raise UnexpectedResponseFormat(line.decode())
 
-        version_dt = datetime.strptime(version_dt_str, DATE_FMT)
-        yield version_dt, version_uri
+            if 'timemap' in rel_chunk:
+                # This line is a link to the next page of mementos.
+                next_page_url, = URL_CHUNK_PATTERN.match(url_chunk).groups()
+                print(next_page_url)
+                res = requests.get(next_page_url)
+                lines = res.iter_lines()
+                break
+
+            # Extract the URL and the datetime from the surrounding characters.
+            # Again, fail with an informative error.
+            try:
+                uri, = URL_CHUNK_PATTERN.match(url_chunk).groups()
+                dt_str, = DATETIME_CHUNK_PATTERN.match(dt_chunk).groups()
+            except AttributeError:
+                raise UnexpectedResponseFormat(line.decode())
+
+            dt = datetime.strptime(dt_str, DATE_FMT)
+            yield dt, uri
