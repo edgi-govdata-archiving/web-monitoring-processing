@@ -16,7 +16,7 @@ Other potentially useful links:
 from datetime import datetime
 import re
 import requests
-import utils
+from web_monitoring import utils
 
 class WebMonitoringException(Exception):
     # All exceptions raised directly by this package inherit from this.
@@ -73,7 +73,7 @@ def list_versions(url):
         # The first three lines contain no information we need.
         for _ in range(3):
             next(lines)
-    except StopIteration:
+    except:
         # Raises error if archived versions of the url don't exist
         raise ValueError('Internet archive does not have archived versions of {}'.format(url))            
 
