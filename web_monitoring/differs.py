@@ -54,9 +54,6 @@ def pagefreezer(a_url, b_url):
     return web_monitoring.pagefreezer.compare(a_url, b_url)
 
 
-d = diff_match_patch.diff_match_patch()
-
-
 def html_text_diff(a_text, b_text):
     """
     Diff the visible textual content of an HTML document.
@@ -70,7 +67,7 @@ def html_text_diff(a_text, b_text):
     t1 = ' '.join(_get_visible_text(a_text))
     t2 = ' '.join(_get_visible_text(b_text))
     DEADLINE = 2  # seconds
-    return d.diff_compute(t1, t2, checklines=False, deadline=DEADLINE)
+    return compute_diff(t1, t2, deadline=DEADLINE)
 
 
 def html_source_diff(a_text, b_text):
@@ -84,4 +81,32 @@ def html_source_diff(a_text, b_text):
     [(0, '<p>'), (-1, 'Delet'), (1, 'Add'), (0, 'ed</p><p>Unchanged</p>')]
     """
     DEADLINE = 2  # seconds
-    return d.diff_compute(a_text, b_text, checklines=False, deadline=DEADLINE)
+    return compute_diff(a_text, b_text, deadline=DEADLINE)
+
+
+def compute_diff(a_text, b_text, deadline=10):
+    changes = diff_match_patch.diff(
+        a_text,
+        b_text,
+        checklines=False,
+        timelimit=deadline)
+
+    result = []
+    a_index = 0
+    b_index = 0
+    for op, length in changes:
+        if op == "-":
+            start = a_index
+            a_index = a_index + length
+            result.append([-1, a_text[start:a_index]])
+        if op == "=":
+            start = a_index
+            a_index = a_index + length
+            b_index = b_index + length
+            result.append([0, a_text[start:a_index]])
+        if op == "+":
+            start = b_index
+            b_index = b_index + length
+            result.append([1, b_text[start:b_index]])
+
+    return result
