@@ -2,7 +2,6 @@
 import json
 import os
 import requests
-from urllib.parse import urlparse
 
 # mutable singleton for stashing web-monitoring-db url, potentially other stuff
 settings = {}
