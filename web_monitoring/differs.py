@@ -98,3 +98,18 @@ def html_source_diff(a_text, b_text):
     """
     TIMELIMIT = 2 #seconds
     return compute_dmp_diff(a_text, b_text, timelimit=TIMELIMIT)
+
+def html_text_changes_only(a_text, b_text):
+    """
+    """
+    diff = html_text_diff(a_text=a_text, b_text=b_text)
+    changes = [change for change in diff if change[0] != 0]
+    return changes
+
+def html_source_changes_only(a_text, b_text):
+    """
+    """
+    diff = html_source_diff(a_text=a_text, b_text=b_text)
+    changes = [change for change in diff if change[0] != 0]
+    return changes
+

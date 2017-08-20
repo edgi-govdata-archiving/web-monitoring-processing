@@ -2,7 +2,7 @@
 import json
 import os
 import requests
-
+from urllib.parse import urlparse
 
 # mutable singleton for stashing web-monitoring-db url, potentially other stuff
 settings = {}
@@ -15,7 +15,8 @@ WEB_MONITORING_CREATE_IMPORT_API = '{db_url}/api/v0/imports'
 WEB_MONITORING_SHOW_IMPORT_API = '{db_url}/api/v0/imports/{import_id}'
 WEB_MONITORING_GET_CHANGES_API = '{db_url}/api/v0/pages/{page_id}/changes/{from_version}..{to_version}'
 WEB_MONITORING_POST_CHANGES_API ='{db_url}/api/v0/pages/{page_id}/changes/{from_version}..{to_version}/annotations'
-WEB_MONITORING_GET_VERSION_API = '{db_url}/api/v0/pages/{page_id}/versions/{version_id}'
+WEB_MONITORING_GET_VERSION_API = '{db_url}/api/v0/versions/{version_id}'
+WEB_MONITORING_GET_VERSION_SOURCE_API = '{db_url}/api/v0/versions?source_type={source_type}&source_metadata[version_id]={version_id}'
 
 def post_versions(versions):
     """
@@ -48,7 +49,7 @@ def query_import_status(import_id):
     return requests.get(url,
                         auth=(settings['db_email'], settings['db_password']))
 
-def get_version_url(page_id, version_id):
+def get_version_uri(version_id, id_type='db', source_type='versionista', get_previous=False):
     """
     Get the uri of a version(snapshot) stored in the db.
 
@@ -56,19 +57,33 @@ def get_version_url(page_id, version_id):
     ----------
     page_id* : string
     version_id* : string
-
+    source_type : string
+    get_previous : boolean
     * -> required fields
     """
-    url = WEB_MONITORING_GET_VERSION_API.format(db_url=settings['db_url'],
-                                                page_id=page_id,
-                                                version_id=version_id)
+    if (id_type == 'db'):
+        url = WEB_MONITORING_GET_VERSION_API.format(db_url=settings['db_url'],
+                                                    version_id=version_id)
+    elif (id_type == 'source'):
+        url = WEB_MONITORING_GET_VERSION_SOURCE_API.format(db_url=settings['db_url'],
+                                                           source_type=source_type,
+                                                           version_id=version_id)
+    else:
+        raise ValueError('Id type should be either "db" or "source"')
+
     response = requests.get(url,
                             auth=(settings['db_email'], settings['db_password']))
     result = response.json()
-    source_url = result['data']['uri']
-    return source_url
+    source_url = result['data'][0]['uri']
 
-def get_changes(page_id, from_version_id='', to_version_id):
+    if (get_previous and source_type == 'versionista'):
+        diff_with_previous_url = result['data'][0]['source_metadata']['diff_with_previous_url']
+        previous_id = diff_with_previous_url.split(':')[-1]
+        return source_url, previous_id
+    else:
+        return source_url
+
+def get_changes(page_id, to_version_id, from_version_id=''):
     """
     Get the changes between two versions.
 
@@ -89,7 +104,7 @@ def get_changes(page_id, from_version_id='', to_version_id):
     return requests.get(url,
                         auth=(settings['db_email'], settings['db_password']))
 
-def post_changes(page_id, from_version_id='', to_version_id, annotations):
+def post_changes(page_id, to_version_id, annotations, from_version_id=''):
     """
     Submit updated annotations for a change between versions.
 
