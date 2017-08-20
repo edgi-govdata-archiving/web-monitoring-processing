@@ -1,5 +1,4 @@
 import re
-from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -71,16 +70,18 @@ def preprocess(vectorizer_func, text, labels, max_features, max_df=1.0, min_df=1
     """
     if (vectorizer_func == 'count'):
         vectorizer = CountVectorizer(analyzer='word',
+                                     stop_words='english',
                                      max_features=max_features,
                                      max_df=max_df,
                                      min_df=min_df)
     elif (vectorizer_func == 'tfidf'):
         vectorizer = TfidfVectorizer(analyzer='word',
+                                     stop_words='english',
                                      max_features=max_features,
                                      max_df=max_df,
                                      min_df=min_df,
                                      sublinear_tf=True)
-    else :
+    else:
         raise ValueError('Please select a valid vectorizer.')
     #Splitting data into training and testing sets
     train_text, test_text, train_labels, test_labels = train_test_split(text, labels, test_size=0.1)

@@ -3,15 +3,16 @@ from dateutil.parser import parse as parse_timestamp
 import json
 import os
 import requests
-import requests.exceptions
-import time
-import toolz
-import tzlocal
-import warnings
-
+from urllib.parse import urlparse
 
 DEFAULT_URL = 'https://api.monitoring.envirodatagov.org'
 
+WEB_MONITORING_CREATE_IMPORT_API = '{db_url}/api/v0/imports'
+WEB_MONITORING_SHOW_IMPORT_API = '{db_url}/api/v0/imports/{import_id}'
+WEB_MONITORING_GET_CHANGES_API = '{db_url}/api/v0/pages/{page_id}/changes/{from_version}..{to_version}'
+WEB_MONITORING_POST_CHANGES_API ='{db_url}/api/v0/pages/{page_id}/changes/{from_version}..{to_version}/annotations'
+WEB_MONITORING_GET_VERSION_API = '{db_url}/api/v0/versions/{version_id}'
+WEB_MONITORING_GET_VERSION_SOURCE_API = '{db_url}/api/v0/versions?source_type={source_type}&source_metadata[version_id]={version_id}'
 
 def _tzaware_isoformat(dt):
     """Express a datetime object in timezone-aware ISO format."""
@@ -45,10 +46,7 @@ def _time_range_string(start_date, end_date):
     start_date : datetime or None
     end_date : datetime or None
 
-    Returns
-    -------
-    capture_time_query : None or string
-        If None, do not query ``capture_time``.
+def get_version_uri(version_id, id_type='db', source_type='versionista', get_previous=False):
     """
     if start_date is None and end_date is None:
         return None
@@ -62,11 +60,37 @@ def _time_range_string(start_date, end_date):
         end_str = ''
     return f'{start_str}..{end_str}'
 
-
-def _build_version(*, page_id, uuid, capture_time, uri, hash, source_type, title,
-                   source_metadata=None):
+    Parameters
+    ----------
+    page_id* : string
+    version_id* : string
+    source_type : string
+    get_previous : boolean
+    * -> required fields
     """
-    Build a Version dict from parameters, performing some validation.
+    if (id_type == 'db'):
+        url = WEB_MONITORING_GET_VERSION_API.format(db_url=settings['db_url'],
+                                                    version_id=version_id)
+    elif (id_type == 'source'):
+        url = WEB_MONITORING_GET_VERSION_SOURCE_API.format(db_url=settings['db_url'],
+                                                           source_type=source_type,
+                                                           version_id=version_id)
+    else:
+        raise ValueError('Id type should be either "db" or "source"')
+
+    response = requests.get(url,
+                            auth=(settings['db_email'], settings['db_password']))
+    result = response.json()
+    source_url = result['data'][0]['uri']
+
+    if (get_previous and source_type == 'versionista'):
+        diff_with_previous_url = result['data'][0]['source_metadata']['diff_with_previous_url']
+        previous_id = diff_with_previous_url.split(':')[-1]
+        return source_url, previous_id
+    else:
+        return source_url
+
+def get_changes(page_id, to_version_id, from_version_id=''):
     """
     if not isinstance(capture_time, str):
         capture_time = _tzaware_isoformat(capture_time)
