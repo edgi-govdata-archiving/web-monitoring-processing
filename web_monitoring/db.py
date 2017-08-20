@@ -3,7 +3,6 @@ from dateutil.parser import parse as parse_timestamp
 import json
 import os
 import requests
-from urllib.parse import urlparse
 
 DEFAULT_URL = 'https://api.monitoring.envirodatagov.org'
 
