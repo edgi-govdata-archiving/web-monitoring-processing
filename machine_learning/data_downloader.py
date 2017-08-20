@@ -105,6 +105,13 @@ def download(filename, dirname, path=''):
                                        + ' to version uri : '
                                        + to_version_uri + '\n')
         else:
+            if (not from_version_response.ok):
+                download_log_handler.write('Change ' + str(index + 1)
+                                           + ' from version issue :'
+                                           + from_version_response.text)
+            if (not to_version_response.ok):
+                download_log_handler.write('Change ' + str(index + 1)
+                                           + ' to version issue :'
             continue
 
     download_log_handler.close()
