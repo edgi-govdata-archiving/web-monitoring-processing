@@ -54,7 +54,6 @@ def get_version_uri(version_id, id_type='db', source_type='versionista', get_pre
 
     Parameters
     ----------
-    page_id* : string
     version_id* : string
     source_type : string
     get_previous : boolean
@@ -73,14 +72,14 @@ def get_version_uri(version_id, id_type='db', source_type='versionista', get_pre
     response = requests.get(url,
                             auth=(settings['db_email'], settings['db_password']))
     result = response.json()
-    source_url = result['data'][0]['uri']
+    source_uri = result['data'][0]['uri']
 
     if (get_previous and source_type == 'versionista'):
         diff_with_previous_url = result['data'][0]['source_metadata']['diff_with_previous_url']
         previous_id = diff_with_previous_url.split(':')[-1]
-        return source_url, previous_id
+        return source_uri, previous_id
     else:
-        return source_url
+        return source_uri
 
 def get_changes(page_id, to_version_id, from_version_id=''):
     """
