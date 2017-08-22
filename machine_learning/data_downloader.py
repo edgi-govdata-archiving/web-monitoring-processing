@@ -21,12 +21,14 @@ def parse_url(url):
         To and from version ids extracted from the url
     """
     result = urlparse(url)
-    assert (result.netloc == 'versionista.com')
-    ids = [element for element in result.path.split('/') if element != '']
-    version_ids = ids[-1].split(':')
-    to_version_id = version_ids[0]
-    from_version_id = version_ids[1]
-    return from_version_id, to_version_id
+    if (result.netloc == 'versionista.com'):
+        ids = [element for element in result.path.split('/') if element != '']
+        version_ids = ids[-1].split(':')
+        to_version_id = version_ids[0]
+        from_version_id = version_ids[1]
+        return from_version_id, to_version_id
+    else:
+        return None, None
 
 def get_storage_uris(url):
     """
@@ -44,22 +46,25 @@ def get_storage_uris(url):
     """
     from_version_id, to_version_id = parse_url(url)
 
-    if from_version_id == '0':
-        to_version_uri, valid_from_version_id = get_version_uri(version_id=to_version_id,
-                                                                id_type='source',
-                                                                source_type='versionista',
-                                                                get_previous=True)
-        from_version_uri = get_version_uri(version_id=valid_from_version_id,
-                                           id_type='source',
-                                           source_type='versionista')
-    else :
-        to_version_uri = get_version_uri(version_id=to_version_id,
-                                         id_type='source',
-                                         source_type='versionista')
-        from_version_uri = get_version_uri(version_id=from_version_id,
-                                           id_type='source',
-                                           source_type='versionista')
-    return from_version_uri, to_version_uri
+    if (from_version_id == None and to_version_id == None):
+        return None, None
+    else:
+        if from_version_id == '0':
+            to_version_uri, valid_from_version_id = get_version_uri(version_id=to_version_id,
+                                                                    id_type='source',
+                                                                    source_type='versionista',
+                                                                    get_previous=True)
+            from_version_uri = get_version_uri(version_id=valid_from_version_id,
+                                               id_type='source',
+                                               source_type='versionista')
+        else :
+            to_version_uri = get_version_uri(version_id=to_version_id,
+                                             id_type='source',
+                                             source_type='versionista')
+            from_version_uri = get_version_uri(version_id=from_version_id,
+                                               id_type='source',
+                                               source_type='versionista')
+        return from_version_uri, to_version_uri
 
 def download(filename, dirname, path=''):
     """
@@ -88,6 +93,11 @@ def download(filename, dirname, path=''):
     for index in range(len(df['Last Two - Side by Side'])):
         from_version_uri, to_version_uri = get_storage_uris(urls[index])
 
+        if (from_version_uri == None and to_version_uri == None):
+            download_log_handler.write('Change ' + str(index + 1)
+                                       + ' Incorrect urls' + '\n')
+            continue
+
         from_version_response = requests.get(from_version_uri)
         to_version_response = requests.get(to_version_uri)
 
@@ -112,6 +122,7 @@ def download(filename, dirname, path=''):
             if (not to_version_response.ok):
                 download_log_handler.write('Change ' + str(index + 1)
                                            + ' to version issue :'
+                                           + to_version_response.text)
             continue
 
     download_log_handler.close()
