@@ -7,7 +7,7 @@ page_id = 'c43413cb-2939-4d34-bb0f-e8ddac22e9e2'
 from_version_id = 'e7d1062b-e5d5-42b8-8a2d-e3b7c015f7f4'
 to_version_id = '8693b164-3814-494c-b3c2-a86164b42ffe'
 data_id = 'f3781581-0bc0-4383-981d-a52a684b8e9f'
-annotations = {'indiv_1' : false}
+#annotations = {'indiv_1' : false}
 
 def test_post_versions():
     pass
