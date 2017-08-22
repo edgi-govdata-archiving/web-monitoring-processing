@@ -16,7 +16,7 @@ def test_query_import_status():
     pass
 
 def test_get_version_uri():
-    result = wdb.get_version_uri(version_id=version_id)
+    result = wdb.get_version_uri(version_id=version_id, id_type='source')
     assert result == url1
 
 def test_get_changes():
