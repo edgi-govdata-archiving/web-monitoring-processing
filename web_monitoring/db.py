@@ -72,6 +72,13 @@ def get_version_uri(version_id, id_type='db', source_type='versionista', get_pre
     response = requests.get(url,
                             auth=(settings['db_email'], settings['db_password']))
     result = response.json()
+
+    if (len(result['data']) == 0):
+        if(get_previous):
+            return None, None
+        else:
+            return None
+
     source_uri = result['data'][0]['uri']
 
     if (get_previous and source_type == 'versionista'):
