@@ -10,8 +10,6 @@ def clean_text(raw_text):
     various operations on it.
     1. Remove all characters except letters (a-z)
     2. Converts all text to lowercase
-    3. Removes stopwords (articles, pronouns etc.)
-    For more info about stopwords - https://en.wikipedia.org/wiki/Stop_words
 
     Parameters
     ----------
@@ -26,23 +24,20 @@ def clean_text(raw_text):
     temp_text = re.sub('[^a-zA-Z]', ' ', raw_text)
 
     #Convert all words to lower case and split into words
-    temp_text = temp_text.lower().split()
-
-    #Get a list of stopwords
-    stops = stopwords.words('english')
-
-    #Remove the stopwords
-    meaningful_text = [word for word in temp_text if not word in stops]
+    cleaned_text = temp_text.lower()
 
     #Join the words together to create a space separated string
-    return ' '.join(meaningful_text)
+    return cleaned_text
 
 
 def preprocess(vectorizer_func, text, labels, max_features, max_df=1.0, min_df=1):
     """
-    This function converts raw text to numerical features.
+    This function first converts raw text to numerical features.
+    While converting, it internall removes stopwords as well.
     Classification models take in numerical features as input.
-    This function also splits data into training & testing sets.
+    Finally, it splits the data into training & testing sets.
+
+    For more info about stopwords - https://en.wikipedia.org/wiki/Stop_words
 
     Parameters
     ----------
