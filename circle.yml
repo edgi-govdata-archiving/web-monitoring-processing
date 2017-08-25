@@ -5,6 +5,7 @@ machine:
 dependencies:
   pre:
     - pip install -r test-requirements.txt
+    - conda install scikit-learn
 
   override:
     - python setup.py install
