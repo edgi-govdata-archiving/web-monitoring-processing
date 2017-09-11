@@ -23,7 +23,7 @@ setup(name='web_monitoring',
       cmdclass=versioneer.get_cmdclass(),
       packages=['web_monitoring'],
       scripts=glob.glob('scripts/*'),
-      setup_requires=['numpy','scipy'],
+      setup_requires=['numpy'],
       install_requires=read('requirements.txt').splitlines(),
       long_description=read('README.md'),
      )
