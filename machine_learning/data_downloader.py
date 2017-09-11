@@ -98,7 +98,7 @@ def download(filename, dirname, path=''):
         os.mkdir(dirname)
 
     download_log_handler = open(str(dirname) + '.txt', 'w')
-    filename = os.path.join(os.getcwd(), filename)
+    filename = os.path.join(path, filename)
     df = pd.read_csv(filename, header=0, error_bad_lines=False)
     new_dir = os.path.join(path, dirname)
     os.chdir(new_dir)
