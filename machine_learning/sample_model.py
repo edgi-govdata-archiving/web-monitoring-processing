@@ -33,6 +33,7 @@ for tup in corpus:
 train_features, test_features, train_labels, test_labels = utils.preprocess(vectorizer_func='count',
                                                                             text=text,
                                                                             labels=labels,
+                                                                            max_features=None)
 
 clf = svm.SVC(kernel='linear')
 clf.fit(train_features, train_labels)
