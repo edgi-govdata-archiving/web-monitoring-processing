@@ -153,7 +153,7 @@ def main():
     doc = """Command Line Interface for the Machine Learning Data Downloader
 
 Usage:
-data-downloader run <filename> <dirname> --path <path>
+data-downloader <filename> <dirname> [--path <path>]
 
 Options:
 -h --help     Show this screen.
