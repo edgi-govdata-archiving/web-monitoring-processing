@@ -21,7 +21,7 @@ def parse_url(url):
     from_version_id, to_version_id : string
         To and from version ids extracted from the url
     """
-    if (url == '' or isinstance(url, float)):
+    if (url == ''):
         return None
 
     result = urlparse(url)
@@ -98,14 +98,14 @@ def download(filename, dirname, path=''):
         os.mkdir(dirname)
 
     download_log_handler = open(str(dirname) + '.txt', 'w')
-    filename = os.path.join(path, filename)
+    filename = os.path.join(os.getcwd(), filename)
     df = pd.read_csv(filename, header=0, error_bad_lines=False)
     new_dir = os.path.join(path, dirname)
     os.chdir(new_dir)
     download_log_handler.write(time.asctime(time.localtime(time.time())) + '\n')
     urls = df['Last Two - Side by Side']
 
-    for index in range(756, len(df['Last Two - Side by Side'])):
+    for index in range(0, len(df['Last Two - Side by Side'])):
         from_version_uri, to_version_uri, ids = get_storage_uris(urls[index])
         if (from_version_uri == None or to_version_uri == None):
             download_log_handler.write('Incorrect urls' + '\n')

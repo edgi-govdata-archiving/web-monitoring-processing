@@ -66,7 +66,7 @@ def create_dataset(dirname):
     return df, True
 
 def main():
-    doc = """Command Line Interface for the creating dataset from downloaded data
+    doc = """Command Line Interface for creating dataset from downloaded data
 
 Usage:
 dataset-creator <dirname> <pkl_filename>
