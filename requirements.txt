@@ -7,5 +7,4 @@ requests
 toolz
 tornado
 tqdm
-numpy
-scipy
+scikit-learn[alldeps]
