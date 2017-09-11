@@ -5,6 +5,7 @@ from web_monitoring.db import get_version_uri
 import pandas as pd
 import os
 import time
+from docopt import docopt
 
 def parse_url(url):
     """
@@ -150,18 +151,17 @@ def download(filename, dirname, path=''):
     return True
 
 def main():
+    doc = """Command Line Interface for the Machine Learning Data Downloader
 
-    parser = argparse.ArgumentParser(description='Run downloader script')
-    parser.add_argument('filename', type=str, help='CSV file which has the urls')
-    parser.add_argument('dirname', type=str, help='Directory name in which you want to download the content')
-    parser.add_argument('--path', type=str, help='Path where you want to create the new directory', default='')
-    arguments = parser.parse_args()
-    result = download(filename=arguments.filename,
-                      dirname=arguments.dirname,
-                      path=arguments.path)
+Usage:
+data-downloader <filename> <dirname> [--path <path>]
 
-    if result:
-        print('Download successful')
-
-if __name__ == '__main__':
-    main()
+Options:
+-h --help     Show this screen.
+--version     Show version.
+"""
+    arguments = docopt(doc, version='0.0.1')
+    if arguments['run']:
+        result = download(filename=arguments['<filename>'],
+                          dirname=arguments['<dirname>'],
+                          path=arguments['<path>'])

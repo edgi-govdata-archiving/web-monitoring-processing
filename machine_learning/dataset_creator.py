@@ -2,6 +2,7 @@ import os
 import argparse
 import web_monitoring.differs as wd
 import pandas as pd
+from docopt import docopt
 
 def text_diff(a_text, b_text):
     """
@@ -65,16 +66,17 @@ def create_dataset(dirname):
     return df, True
 
 def main():
+    doc = """Command Line Interface for creating dataset from downloaded data
 
-    parser = argparse.ArgumentParser(description='Run dataset creation script')
-    parser.add_argument('dirname', type=str, help='Directory name in which the versions are stored')
-    parser.add_argument('pkl_filename', type=str, help='Name of the pickle file in which the dataset will be stored')
-    arguments = parser.parse_args()
-    result, status = create_dataset(dirname=arguments.dirname)
+Usage:
+dataset-creator <dirname> <pkl_filename>
 
+Options:
+-h --help     Show this screen.
+--version     Show version.
+"""
+    arguments = docopt(doc, version='0.0.1')
+    if arguments['run']:
+        result, status = create_dataset(dirname=arguments['<dirname>'])
     if status:
-        result.to_pickle(arguments.pkl_filename)
-        print('Dataset created and stored successfully')
-
-if __name__ == '__main__':
-    main()
+        result.to_pickle(arguments['<pkl_filename>'])
