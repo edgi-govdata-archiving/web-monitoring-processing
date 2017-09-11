@@ -25,10 +25,10 @@ corpus = [['Climate change is an issue', 'important'],
 text = []
 labels = []
 
-for tup in corpus:
-    tup[0] = utils.clean_text(tup[0])
-    text.append(tup[0])
-    labels.append(tup[1])
+for row in corpus:
+    row[0] = utils.clean_text(row[0])
+    text.append(row[0])
+    labels.append(row[1])
 
 train_features, test_features, train_labels, test_labels = utils.preprocess(vectorizer_func='count',
                                                                             text=text,
@@ -42,4 +42,3 @@ predicted_labels = clf.predict(test_features)
 print(predicted_labels)
 print(utils.evaluate(eval_method='report', y_test=test_labels,
                      y_predicted=predicted_labels))
-
