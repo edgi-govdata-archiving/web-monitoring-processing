@@ -7,4 +7,3 @@ requests
 toolz
 tornado
 tqdm
-scikit-learn[alldeps]
