@@ -5,6 +5,7 @@ from web_monitoring.db import get_version_uri
 import pandas as pd
 import os
 import time
+from docopt import docopt
 
 def parse_url(url):
     """

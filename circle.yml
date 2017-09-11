@@ -8,6 +8,7 @@ dependencies:
 
   override:
     - python setup.py install
+    - pip install -U scikit-learn
 
 test:
   override:

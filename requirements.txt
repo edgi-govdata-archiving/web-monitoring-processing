@@ -9,4 +9,3 @@ tornado
 tqdm
 numpy
 scipy
-scikit-learn
