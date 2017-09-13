@@ -9,6 +9,18 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.web
 
+class MockRequest:
+    "An HTTPRequest-like object for local file:/// requests."
+    def __init__(self, url):
+        self.url = url
+
+class MockResponse:
+    "An HTTPResponse-like object for local file:/// requests."
+    def __init__(self, url, body, headers):
+        self.request = MockRequest(url)
+        self.body = body
+        self.headers = headers
+
 
 def load_config(config):
     """
@@ -48,8 +60,23 @@ class DiffHandler(tornado.web.RequestHandler):
         a = query_params.pop('a')
         b = query_params.pop('b')
 
-        # Fetch server response for URLs a and b.
-        res_a, res_b = yield [client.fetch(a), client.fetch(b)]
+        # Special case for local files, for dev/testing.
+        if a.startswith('file://') and b.startswith('file://'):
+            if os.get('WEB_MONITORING_APP_ENV') in ('development', 'testing'):
+                headers = {'Content-Type': 'application/html; charset=UTF-8'}
+                with open(a[7:], 'rb') as f:
+                    body = f.read()
+                    res_a = MockResponse(a, body, headers)
+                with open(b[7:], 'rb') as f:
+                    body = f.read()
+                    res_b = MockResponse(b, body, headers)
+            else:
+                self.send_error(
+                    500, reason=("Local files can only be used in development "
+                                 "or testing environment."))
+        else:
+            # Fetch server response for URLs a and b.
+            res_a, res_b = yield [client.fetch(a), client.fetch(b)]
 
         # Validate response bytes against hash, if provided.
         for query_param, res in zip(('a_hash', 'b_hash'), (res_a, res_b)):
