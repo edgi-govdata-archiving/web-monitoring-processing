@@ -119,8 +119,9 @@ def html_diff_render(a_text, b_text):
     [element.extract() for element in
      soup_new.find_all(string=lambda text:isinstance(text, Comment))]
 
-    old_content = [str(child) for child in soup_old.html.children]
-    new_content = [str(child) for child in soup_new.html.children]
+    valid_tags_list = ['head', 'body']
+    old_content = [str(child) for child in soup_old.html.children if child.name in valid_tags_list]
+    new_content = [str(child) for child in soup_new.html.children if child.name in valid_tags_list]
 
     parent_tags = [content[:content.find('>')+1] for content in new_content]
     parent_tag_names = [tag[1:tag.find(' ')] + '>' if (tag.find(' ') != -1) else tag[1:] for tag in parent_tags]
