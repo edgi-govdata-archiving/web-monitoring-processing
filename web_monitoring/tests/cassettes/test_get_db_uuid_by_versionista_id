@@ -1,0 +1,85 @@
+{
+    "version": 1,
+    "interactions": [
+        {
+            "request": {
+                "method": "GET",
+                "uri": "https://api-staging.monitoring.envirodatagov.org/api/v0/versions?source_type=versionista&source_metadata%5Bversion_id%5D=10329339",
+                "body": null,
+                "headers": {
+                    "User-Agent": [
+                        "python-requests/2.14.2"
+                    ],
+                    "Accept-Encoding": [
+                        "gzip, deflate"
+                    ],
+                    "Accept": [
+                        "*/*"
+                    ],
+                    "Connection": [
+                        "keep-alive"
+                    ],
+                    "Authorization": [
+                        "Basic amFuYWtyYWpjaGFkaGFAZ21haWwuY29tOnd6eTExeUFHNTNJQXR0"
+                    ]
+                }
+            },
+            "response": {
+                "status": {
+                    "code": 200,
+                    "message": "OK"
+                },
+                "headers": {
+                    "Server": [
+                        "Cowboy"
+                    ],
+                    "X-Content-Type-Options": [
+                        "nosniff"
+                    ],
+                    "Date": [
+                        "Fri, 13 Oct 2017 02:39:36 GMT"
+                    ],
+                    "X-Environment": [
+                        "production"
+                    ],
+                    "Content-Type": [
+                        "application/json; charset=utf-8"
+                    ],
+                    "X-Runtime": [
+                        "0.939320"
+                    ],
+                    "Via": [
+                        "1.1 vegur"
+                    ],
+                    "X-Frame-Options": [
+                        "SAMEORIGIN"
+                    ],
+                    "Etag": [
+                        "W/\"a849c4199bf6829803126ce8849a9c85\""
+                    ],
+                    "Vary": [
+                        "Origin"
+                    ],
+                    "X-Request-Id": [
+                        "586202b2-913a-4100-90d9-2fc6cfdc5ed8"
+                    ],
+                    "Strict-Transport-Security": [
+                        "max-age=15552000; includeSubDomains"
+                    ],
+                    "X-Xss-Protection": [
+                        "1; mode=block"
+                    ],
+                    "Connection": [
+                        "keep-alive"
+                    ],
+                    "Cache-Control": [
+                        "max-age=0, private, must-revalidate"
+                    ]
+                },
+                "body": {
+                    "string": "{\"links\":{\"first\":\"https://api-staging.monitoring.envirodatagov.org/api/v0/versions?chunk=1\\u0026source_metadata%5Bversion_id%5D=10329339\\u0026source_type=versionista\",\"last\":\"https://api-staging.monitoring.envirodatagov.org/api/v0/versions?chunk=1\\u0026source_metadata%5Bversion_id%5D=10329339\\u0026source_type=versionista\",\"prev\":null,\"next\":null},\"data\":[{\"uuid\":\"2bf29d7d-a895-48b6-bb67-5ee0ec3f959c\",\"page_uuid\":\"409d28af-408d-4912-89d0-2fadabf1f32c\",\"capture_time\":\"2017-03-12T04:55:43.000Z\",\"uri\":\"https://edgi-versionista-archive.s3.amazonaws.com/versionista1/69957-6026627/version-10329339.html\",\"version_hash\":\"b35a1496d4308b97470066aaf473e89f695cc5bdfcb548e1f4fb171abf7ff8e0\",\"source_type\":\"versionista\",\"source_metadata\":{\"url\":\"https://versionista.com/69957/6026627/10329339/\",\"account\":\"versionista1\",\"page_id\":\"6026627\",\"site_id\":\"69957\",\"diff_hash\":\"bb3ad95912271263361cdf455385ed6fcd3e85617013d3f918ad227b5129b530\",\"version_id\":\"10329339\",\"diff_length\":17404,\"has_content\":true,\"diff_with_first_url\":\"https://versionista.com/69957/6026627/10329339:8946530\",\"diff_with_previous_url\":\"https://versionista.com/69957/6026627/10329339:9956844\"},\"created_at\":\"2017-05-02T21:09:28.561Z\",\"updated_at\":\"2017-05-02T21:09:28.561Z\",\"title\":\"Page being updated | US EPA\"}]}"
+                }
+            }
+        }
+    ]
+}
