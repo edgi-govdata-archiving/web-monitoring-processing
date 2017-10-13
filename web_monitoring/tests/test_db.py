@@ -117,6 +117,11 @@ def test_get_version_by_versionista_id():
     assert res['data']['uuid'] == TO_VERSION_ID
     assert res['data']['page_uuid'] == PAGE_ID
 
+@db_vcr.use_cassette()
+def test_get_db_uuid_by_versionista_id():
+    cli = Client(**AUTH)
+    res = cli.get_db_uuid_by_versionista_id(VERSIONISTA_ID)
+    assert res == TO_VERSION_ID
 
 @db_vcr.use_cassette()
 def test_get_version_by_versionista_id_failure():
