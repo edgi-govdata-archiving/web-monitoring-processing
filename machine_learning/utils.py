@@ -2,6 +2,10 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+<<<<<<< HEAD
+=======
+from sklearn.externals import joblib
+>>>>>>> origin/machine_learning_work
 
 def clean_text(raw_text):
     """
@@ -40,7 +44,11 @@ def preprocess(vectorizer_func, text, labels, max_features, max_df=1.0, min_df=1
 
     Parameters
     ----------
+<<<<<<< HEAD
     vectorizer_func : string; {'count', 'tfidf'}
+=======
+    vectorizer_func : string; either 'count' or 'tfidf'
+>>>>>>> origin/machine_learning_work
     text : input text
         sequence of indexables : lists, numpy arrays, scipy-sparse matrices
                                  or pandas dataframes
@@ -115,3 +123,19 @@ def evaluate(eval_method, y_test, y_predicted):
         return classification_report(y_true=y_test, y_pred=y_predicted)
     else :
         raise ValueError('Please select a valid evalaution method.')
+<<<<<<< HEAD
+=======
+
+def save_model(clf, filename):
+    """
+    Save a trained classifier model for later use
+
+    Parameters
+    ----------
+    clf : object of the classifier class used
+    filename : string
+        Name of the file in which the model will be stored
+    """
+    dump_filenames = joblib.dump(value=clf, filename=filename)
+    return dump_filenames
+>>>>>>> origin/machine_learning_work

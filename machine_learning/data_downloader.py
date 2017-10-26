@@ -1,12 +1,19 @@
 import argparse
 import requests
 from urllib.parse import urlparse
+<<<<<<< HEAD
 from web_monitoring.db import Client
+=======
+from web_monitoring.db import get_version_uri
+>>>>>>> origin/machine_learning_work
 import pandas as pd
 import os
 import time
 from docopt import docopt
+<<<<<<< HEAD
 import warnings
+=======
+>>>>>>> origin/machine_learning_work
 
 def parse_url(url):
     """
@@ -19,6 +26,7 @@ def parse_url(url):
 
     Returns
     -------
+<<<<<<< HEAD
     ids : dictionary
         Site, page, and version ids of the from and two versions extracted from the url
     """
@@ -35,11 +43,38 @@ def parse_url(url):
         return ids
     except:
         warnings.warn('Url "' + url + '" is not in the required format and no data will be downloaded for this row', Warning)
+=======
+    from_version_id, to_version_id : string
+        To and from version ids extracted from the url
+    """
+    if (url == ''):
+        return None
+
+    result = urlparse(url)
+    if (result.netloc == 'versionista.com'):
+        try:
+            ids = [element for element in result.path.split('/') if element != '']
+            site_id = ids[0]
+            page_id = ids[1]
+            version_ids = ids[2].split(':')
+            to_version_id = version_ids[0]
+            from_version_id = version_ids[1]
+            return {'site_id': site_id, 'page_id': page_id,
+                    'from_version_id': from_version_id, 'to_version_id': to_version_id}
+        except:
+            return None
+    else:
+        return None
+>>>>>>> origin/machine_learning_work
 
 def get_storage_uris(url):
     """
     Get uris of the versions stored in our db
+<<<<<<< HEAD
     Uses get_version_by_versionista_id from web_monitoring.db
+=======
+    Uses get_version_uri from web_monitoring.db
+>>>>>>> origin/machine_learning_work
 
     Parameters
     ----------
@@ -49,6 +84,7 @@ def get_storage_uris(url):
     -------
     from_version_uri, to_version_uri : string
         To and from version uris to access content in db
+<<<<<<< HEAD
     ids : dictionary
         Site, page, and version ids of the from and two versions extracted from the url
     """
@@ -76,17 +112,58 @@ def get_storage_uris(url):
     return from_version_uri, to_version_uri, ids
 
 def download(filename, dirname):
+=======
+    """
+    ids = parse_url(url)
+
+    if (ids == None):
+        return [None]*3
+    else:
+        from_version_id = ids['from_version_id']
+        to_version_id = ids['to_version_id']
+        if from_version_id == '0':
+            to_version_uri, valid_from_version_id = get_version_uri(version_id=to_version_id,
+                                                                    id_type='source',
+                                                                    source_type='versionista',
+                                                                    get_previous=True)
+            from_version_uri = get_version_uri(version_id=valid_from_version_id,
+                                               id_type='source',
+                                               source_type='versionista')
+            ids['from_version_id'] = valid_from_version_id
+        else :
+            to_version_uri = get_version_uri(version_id=to_version_id,
+                                             id_type='source',
+                                             source_type='versionista')
+            from_version_uri = get_version_uri(version_id=from_version_id,
+                                               id_type='source',
+                                               source_type='versionista')
+        return from_version_uri, to_version_uri, ids
+
+def download(filename, dirname, path=''):
+>>>>>>> origin/machine_learning_work
     """
     Downloader to read csv and download content for the dataset
 
     Parameters
     ----------
+<<<<<<< HEAD
     filename : string
         The csv file which has the urls in the 'Last Two - Side by Side' column
     dirname : string
         The directory name in which you want to download the content
     """
     path = os.getcwd()
+=======
+    filename* : string
+        The csv file which has the urls in the 'Last Two - Side by Side' column
+    dirname* : string
+        The directory name in which you want to download the content, creates a new directory
+    path : string (default : current working directory)
+        Path to the directory where the csv is stored and directory 'dirname' will be created
+    """
+    if (path == ''):
+        path = os.getcwd()
+>>>>>>> origin/machine_learning_work
     if (not os.path.exists(dirname)):
         os.mkdir(dirname)
 
@@ -99,6 +176,7 @@ def download(filename, dirname):
     urls = df['Last Two - Side by Side']
 
     for index in range(0, len(df['Last Two - Side by Side'])):
+<<<<<<< HEAD
         try:
             from_version_uri, to_version_uri, ids = get_storage_uris(urls[index])
             from_version_response = requests.get(from_version_uri)
@@ -107,6 +185,15 @@ def download(filename, dirname):
             download_log_handler.write('The data for url ' + str(urls[index]) + ' could not be downloaded.'+ '\n')
             continue
 
+=======
+        from_version_uri, to_version_uri, ids = get_storage_uris(urls[index])
+        if (from_version_uri == None or to_version_uri == None):
+            download_log_handler.write('Incorrect urls' + '\n')
+            continue
+
+        from_version_response = requests.get(from_version_uri)
+        to_version_response = requests.get(to_version_uri)
+>>>>>>> origin/machine_learning_work
         from_filename = str(ids['site_id'] + '_' + ids['page_id']
                             + '_' + ids['from_version_id'])
         to_filename = str(ids['site_id'] + '_' + ids['page_id']
@@ -148,7 +235,11 @@ def main():
     doc = """Command Line Interface for the Machine Learning Data Downloader
 
 Usage:
+<<<<<<< HEAD
 wm-data-downloader <filename> <dirname>
+=======
+data-downloader <filename> <dirname> [--path <path>]
+>>>>>>> origin/machine_learning_work
 
 Options:
 -h --help     Show this screen.
@@ -157,4 +248,9 @@ Options:
     arguments = docopt(doc, version='0.0.1')
     if arguments['run']:
         result = download(filename=arguments['<filename>'],
+<<<<<<< HEAD
                           dirname=arguments['<dirname>'])
+=======
+                          dirname=arguments['<dirname>'],
+                          path=arguments['<path>'])
+>>>>>>> origin/machine_learning_work

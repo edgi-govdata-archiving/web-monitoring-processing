@@ -11,7 +11,7 @@ def text_diff(a_text, b_text):
 
     Parameters
     ----------
-    a_text, b_text* : string
+    a_text, b_text : string
 
     Returns
     -------
@@ -32,7 +32,7 @@ def create_dataset(dirname):
 
     Parameters
     ----------
-    dirname* : Name of the directory where all the versions(to be diffed)
+    dirname : Name of the directory where all the versions(to be diffed)
               are stored
 
     Returns
