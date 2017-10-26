@@ -40,7 +40,7 @@ def preprocess(vectorizer_func, text, labels, max_features, max_df=1.0, min_df=1
 
     Parameters
     ----------
-    vectorizer_func : string; either 'count' or 'tfidf'
+    vectorizer_func : string; {'count', 'tfidf'}
     text : input text
         sequence of indexables : lists, numpy arrays, scipy-sparse matrices
                                  or pandas dataframes

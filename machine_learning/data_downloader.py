@@ -1,10 +1,12 @@
 import argparse
 import requests
 from urllib.parse import urlparse
-from web_monitoring.db import get_version_uri
+from web_monitoring.db import Client
 import pandas as pd
 import os
 import time
+from docopt import docopt
+import warnings
 
 def parse_url(url):
     """
@@ -17,23 +19,27 @@ def parse_url(url):
 
     Returns
     -------
-    from_version_id, to_version_id : string
-        To and from version ids extracted from the url
+    ids : dictionary
+        Site, page, and version ids of the from and two versions extracted from the url
     """
-    result = urlparse(url)
-    if (result.netloc == 'versionista.com'):
-        ids = [element for element in result.path.split('/') if element != '']
-        version_ids = ids[-1].split(':')
+    try:
+        result = urlparse(url)
+        ids = [element for element in result.path.split('/') if element]
+        site_id = ids[0]
+        page_id = ids[1]
+        version_ids = ids[2].split(':')
         to_version_id = version_ids[0]
         from_version_id = version_ids[1]
-        return from_version_id, to_version_id
-    else:
-        return None, None
+        ids = {'site_id': site_id, 'page_id': page_id,
+               'from_version_id': from_version_id, 'to_version_id': to_version_id}
+        return ids
+    except:
+        warnings.warn('Url "' + url + '" is not in the required format and no data will be downloaded for this row', Warning)
 
 def get_storage_uris(url):
     """
     Get uris of the versions stored in our db
-    Uses get_version_uri from web_monitoring.db
+    Uses get_version_by_versionista_id from web_monitoring.db
 
     Parameters
     ----------
@@ -43,84 +49,93 @@ def get_storage_uris(url):
     -------
     from_version_uri, to_version_uri : string
         To and from version uris to access content in db
+    ids : dictionary
+        Site, page, and version ids of the from and two versions extracted from the url
     """
-    from_version_id, to_version_id = parse_url(url)
+    ids = parse_url(url)
+    from_version_id = ids['from_version_id']
+    to_version_id = ids['to_version_id']
+    print(ids)
+    client = Client.from_env()
+    """
+    Some versionista uris have the format https://versionista.com/site_id/page_id/to_version_id:0/
+    which automatically directs to the diff with the previous version.
+    However, versions in our db are saved with their true version ids and when the from_version_id is '0',
+    this is handled by taking advantage of the optional parameters of get_version_uri.
+    """
+    if from_version_id == '0':
+        get_to_version = client.get_version_by_versionista_id(versionista_id=to_version_id)
+        to_version_uri = get_to_version['data']['uri']
+        valid_from_version_id = get_to_version['data']['source_metadata']['diff_with_previous_url'].split(':')[-1]
+        from_version_uri = client.get_version_by_versionista_id(versionista_id=valid_from_version_id)['data']['uri']
+        ids['from_version_id'] = valid_from_version_id
+    else :
+        to_version_uri = client.get_version_by_versionista_id(versionista_id=to_version_id)['data']['uri']
+        from_version_uri = client.get_version_uri(versionista_id=from_version_id)['data']['uri']
+    print(from_version_uri, to_version_uri)
+    return from_version_uri, to_version_uri, ids
 
-    if (from_version_id == None and to_version_id == None):
-        return None, None
-    else:
-        if from_version_id == '0':
-            to_version_uri, valid_from_version_id = get_version_uri(version_id=to_version_id,
-                                                                    id_type='source',
-                                                                    source_type='versionista',
-                                                                    get_previous=True)
-            from_version_uri = get_version_uri(version_id=valid_from_version_id,
-                                               id_type='source',
-                                               source_type='versionista')
-        else :
-            to_version_uri = get_version_uri(version_id=to_version_id,
-                                             id_type='source',
-                                             source_type='versionista')
-            from_version_uri = get_version_uri(version_id=from_version_id,
-                                               id_type='source',
-                                               source_type='versionista')
-        return from_version_uri, to_version_uri
-
-def download(filename, dirname, path=''):
+def download(filename, dirname):
     """
     Downloader to read csv and download content for the dataset
 
     Parameters
     ----------
-    filename* : string
+    filename : string
         The csv file which has the urls in the 'Last Two - Side by Side' column
-    dirname* : string
-        The directory name in which you want to download the content, creates a new directory
-    path : string (default : current working directory)
-        Path to the directory where the csv is stored and downloaded content will be stored
+    dirname : string
+        The directory name in which you want to download the content
     """
-    if (path == ''):
-        path = os.getcwd()
-    os.mkdir(dirname)
+    path = os.getcwd()
+    if (not os.path.exists(dirname)):
+        os.mkdir(dirname)
+
+    download_log_handler = open(str(dirname) + '.txt', 'w')
+    filename = os.path.join(path, filename)
+    df = pd.read_csv(filename, header=0, error_bad_lines=False)
     new_dir = os.path.join(path, dirname)
-    download_log_handler = open(str(dirname)+ '.txt', 'w')
-    filename = os.path.join(os.getcwd(), filename)
     os.chdir(new_dir)
     download_log_handler.write(time.asctime(time.localtime(time.time())) + '\n')
-    df = pd.read_csv(filename, header=0, error_bad_lines=False)
     urls = df['Last Two - Side by Side']
 
-    for index in range(len(df['Last Two - Side by Side'])):
-        from_version_uri, to_version_uri = get_storage_uris(urls[index])
-
-        if (from_version_uri == None and to_version_uri == None):
-            download_log_handler.write('Change ' + str(index + 1)
-                                       + ' Incorrect urls' + '\n')
+    for index in range(0, len(df['Last Two - Side by Side'])):
+        try:
+            from_version_uri, to_version_uri, ids = get_storage_uris(urls[index])
+            from_version_response = requests.get(from_version_uri)
+            to_version_response = requests.get(to_version_uri)
+        except:
+            download_log_handler.write('The data for url ' + str(urls[index]) + ' could not be downloaded.'+ '\n')
             continue
 
-        from_version_response = requests.get(from_version_uri)
-        to_version_response = requests.get(to_version_uri)
+        from_filename = str(ids['site_id'] + '_' + ids['page_id']
+                            + '_' + ids['from_version_id'])
+        to_filename = str(ids['site_id'] + '_' + ids['page_id']
+                          + '_' + ids['to_version_id'])
 
         if (from_version_response.ok and to_version_response.ok):
-            with open('change_' + str(index + 1) + '_from_version.html',
-                      'w', encoding = 'utf-8') as f:
+            with open('change_' + str(index + 1) + '_' + from_filename
+                      + '_from_version.html', 'w', encoding = 'utf-8') as f:
                 f.write(from_version_response.text)
-            with open('change_' + str(index + 1) + '_to_version.html',
-                      'w', encoding = 'utf-8') as f:
+            with open('change_' + str(index + 1) + '_' + to_filename
+                      + '_to_version.html', 'w', encoding = 'utf-8') as f:
                 f.write(to_version_response.text)
             download_log_handler.write('Change ' + str(index + 1)
+                                       + ' ' + ' '.join(from_filename.split('_'))
                                        + ' from version uri : '
                                        + from_version_uri + '\n')
             download_log_handler.write('Change ' + str(index + 1)
+                                       + ' ' + ' '.join(to_filename.split('_'))
                                        + ' to version uri : '
                                        + to_version_uri + '\n')
         else:
             if (not from_version_response.ok):
                 download_log_handler.write('Change ' + str(index + 1)
+                                           + ' '.join(from_filename.split('_'))
                                            + ' from version issue :'
                                            + from_version_response.text)
             if (not to_version_response.ok):
                 download_log_handler.write('Change ' + str(index + 1)
+                                           + ' '.join(to_filename.split('_'))
                                            + ' to version issue :'
                                            + to_version_response.text)
             continue
@@ -130,18 +145,16 @@ def download(filename, dirname, path=''):
     return True
 
 def main():
+    doc = """Command Line Interface for the Machine Learning Data Downloader
 
-    parser = argparse.ArgumentParser(description='Run downloader script')
-    parser.add_argument('filename', type=str, help='CSV file which has the urls')
-    parser.add_argument('dirname', type=str, help='Directory name in which you want to download the content')
-    parser.add_argument('--path', type=str, help='Path where you want to create the new directory', default='')
-    arguments = parser.parse_args()
-    result = download(filename=arguments.filename,
-                      dirname=arguments.dirname,
-                      path=arguments.path)
+Usage:
+wm-data-downloader <filename> <dirname>
 
-    if result:
-        print('Download successful')
-
-if __name__ == '__main__':
-    main()
+Options:
+-h --help     Show this screen.
+--version     Show version.
+"""
+    arguments = docopt(doc, version='0.0.1')
+    if arguments['run']:
+        result = download(filename=arguments['<filename>'],
+                          dirname=arguments['<dirname>'])
