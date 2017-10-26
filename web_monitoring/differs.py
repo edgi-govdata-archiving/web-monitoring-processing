@@ -1,16 +1,21 @@
 from bs4 import BeautifulSoup, Comment
+import copy
 from diff_match_patch import diff, diff_bytes
+from htmldiffer.diff import HTMLDiffer
+import htmltreediff
 from lxml.html.diff import htmldiff
 import re
-import web_monitoring.pagefreezer
 import sys
-import os
+import web_monitoring.pagefreezer
+
 
 # BeautifulSoup can sometimes exceed the default Python recursion limit (1000).
 sys.setrecursionlimit(10000)
 
 # Dictionary mapping which maps from diff-match-patch tags to the ones we use
 diff_codes = {'=': 0, '-': -1, '+': 1}
+
+REPEATED_BLANK_LINES = re.compile(r'([^\S\n]*\n\s*){2,}')
 
 def compare_length(a_body, b_body):
     "Compute difference in response body lengths. (Does not compare contents.)"
@@ -42,7 +47,8 @@ def _is_visible(element):
 
 
 def _get_visible_text(html):
-    return list(filter(_is_visible, _get_text(html)))
+    text = ' '.join(filter(_is_visible, _get_text(html)))
+    return REPEATED_BLANK_LINES.sub('\n\n', text).strip()
 
 
 def side_by_side_text(a_text, b_text):
@@ -71,6 +77,7 @@ def compute_dmp_diff(a_text, b_text, timelimit=4):
     result = [(diff_codes[change[0]], change[1]) for change in changes]
     return result
 
+
 def html_text_diff(a_text, b_text):
     """
     Diff the visible textual content of an HTML document.
@@ -82,11 +89,12 @@ def html_text_diff(a_text, b_text):
     [[-1, 'Delet'], [1, 'Add'], [0, 'ed Unchanged']]
     """
 
-    t1 = ' '.join(_get_visible_text(a_text))
-    t2 = ' '.join(_get_visible_text(b_text))
+    t1 = _get_visible_text(a_text)
+    t2 = _get_visible_text(b_text)
 
     TIMELIMIT = 2 #seconds
     return compute_dmp_diff(t1, t2, timelimit=TIMELIMIT)
+
 
 def html_source_diff(a_text, b_text):
     """
@@ -101,23 +109,15 @@ def html_source_diff(a_text, b_text):
     TIMELIMIT = 2 #seconds
     return compute_dmp_diff(a_text, b_text, timelimit=TIMELIMIT)
 
-def html_text_changes_only(a_text, b_text):
-    """
-    """
-    diff = html_text_diff(a_text=a_text, b_text=b_text)
-    changes = [change for change in diff if change[0] != 0]
-    return changes
-
-def html_source_changes_only(a_text, b_text):
-    """
-    """
-    diff = html_source_diff(a_text=a_text, b_text=b_text)
-    changes = [change for change in diff if change[0] != 0]
-    return changes
 
 def html_diff_render(a_text, b_text):
     """
-    HTML Diff for rendering
+    HTML Diff for rendering.
+
+    Please note that the result of this should not be displayed as-is in a
+    browser -- because this contains added and removed sections of the
+    document’s <head>, it may cause a browser to load two different CSS or JS
+    files that are in conflict with each other.
 
     Example
     -------
@@ -128,35 +128,149 @@ def html_diff_render(a_text, b_text):
     soup_old = BeautifulSoup(a_text, 'lxml')
     soup_new = BeautifulSoup(b_text, 'lxml')
 
+    # Remove comment nodes since they generally don't affect display.
+    # NOTE: This could affect display if the removed are conditional comments,
+    # but it's unclear how we'd meaningfully visualize those anyway.
     [element.extract() for element in
      soup_old.find_all(string=lambda text:isinstance(text, Comment))]
     [element.extract() for element in
      soup_new.find_all(string=lambda text:isinstance(text, Comment))]
 
-    old_content = [str(child) for child in soup_old.html.children]
-    new_content = [str(child) for child in soup_new.html.children]
-
-    parent_tags = [content[:content.find('>')+1] for content in new_content]
-    parent_tag_names = [tag[1:tag.find(' ')] + '>' if (tag.find(' ') != -1) else tag[1:] for tag in parent_tags]
-
-    diff_list = []
-    for index in range(len(new_content)):
-        diff_list.append(htmldiff(old_content[index], new_content[index]))
-
-    diff_list = [os.linesep.join([s for s in text.splitlines() if s]) for text in diff_list]
-
-    append_list = [parent_tags[index]+diff_list[index]+'</'+parent_tag_names[index] for index in range(len(new_content))]
+    # htmldiff will normally extract the <body> and return only a diff of its
+    # contents (without any of the surround code like a doctype, <html>, or
+    # <head>). Because we want something a little more like a structured diff
+    # of the whole page, we work around the standard behavior by finding each
+    # part of the <html> element and diffing it individually.
+    old_content = _find_meaningful_nodes(soup_old)
+    new_content = _find_meaningful_nodes(soup_new)
+    diffs = [
+        htmldiff(old_content['pre_head'], new_content['pre_head']),
+        _diff_elements(old_content['head'], new_content['head']),
+        htmldiff(old_content['pre_body'], new_content['pre_body']),
+        _diff_elements(old_content['body'], new_content['body']),
+        htmldiff(old_content['post_body'], new_content['post_body'])
+    ]
 
     soup_new.html.clear()
+    for index in range(len(diffs)):
+        soup_new.html.append(diffs[index])
 
-    new_tag = soup_new.new_tag("style", type="text/css")
-    new_tag.string = """ins {text-decoration : none; background-color: #d4fcbc;}
+    if not soup_new.head:
+        head = soup_new.new_tag('head')
+        soup_new.html.insert(0, head)
+
+    change_styles = soup_new.new_tag("style", type="text/css")
+    change_styles.string = """ins {text-decoration : none; background-color: #d4fcbc;}
                         del {text-decoration : none; background-color: #fbb6c2;}"""
-    soup_new.html.append(new_tag)
-
-    for index in range(len(append_list)):
-        soup_new.html.append(append_list[index])
+    soup_new.head.append(change_styles)
 
     render = soup_new.prettify(formatter=None)
 
     return render
+
+
+def _find_meaningful_nodes(soup):
+    """
+    Find meaningful content chunks from a Beautiful Soup document. Namely, this
+    is a dict of:
+    {
+        pre_head: string,
+        head: node,
+        pre_body: string,
+        body: node,
+        post_body: string
+    }
+    """
+    pre_head = []
+    head = None
+    pre_body = []
+    body = None
+    post_body = []
+    for node in soup.html.children:
+        if not head and not body:
+            if hasattr(node, 'name') and node.name == 'head':
+                head = node
+            elif hasattr(node, 'name') and node.name == 'body':
+                body = node
+            else:
+                pre_head.append(str(node))
+        elif not body:
+            if hasattr(node, 'name') and node.name == 'body':
+                body = node
+            else:
+                pre_body.append(str(node))
+        else:
+            post_body.append(str(node))
+
+    return {
+        'pre_head': '\n'.join(pre_head),
+        'head': head,
+        'pre_body': '\n'.join(pre_body),
+        'body': body,
+        'post_body': '\n'.join(post_body)
+    }
+
+
+def _diff_elements(old, new):
+    """
+    Diff the contents of two Beatiful Soup elements. Note that this returns
+    the "new" element with its content replaced by the diff.
+    """
+    if not old or not new:
+        return ''
+    result_element = copy.copy(new)
+    result_element.clear()
+    result_element.append(htmldiff(str(old), str(new)))
+    return result_element
+
+
+def insert_style(html, css):
+    """
+    Insert a new <style> tag with CSS.
+
+    Parameters
+    ----------
+    html : string
+    css : string
+
+    Returns
+    -------
+    render : string
+    """
+    soup = BeautifulSoup(html, 'lxml')
+
+    # Ensure html includes a <head></head>.
+    if not soup.head:
+        head = soup.new_tag('head')
+        soup.html.insert(0, head)
+
+    style_tag = soup.new_tag("style", type="text/css")
+    style_tag.string = css
+    soup.head.append(style_tag)
+    render = soup.prettify(formatter=None)
+    return render
+
+
+def html_tree_diff(a_text, b_text):
+    css = """
+diffins {text-decoration : none; background-color: #d4fcbc;}
+diffdel {text-decoration : none; background-color: #fbb6c2;}
+diffins * {text-decoration : none; background-color: #d4fcbc;}
+diffdel * {text-decoration : none; background-color: #fbb6c2;}
+    """
+    d = htmltreediff.diff(a_text, b_text,
+                          ins_tag='diffins',del_tag='diffdel',
+                          pretty=True)
+    return insert_style(d, css)
+
+
+def html_differ(a_text, b_text):
+    css = """
+.htmldiffer_insert {text-decoration : none; background-color: #d4fcbc;}
+.htmldiffer_delete {text-decoration : none; background-color: #fbb6c2;}
+.htmldiffer_insert * {text-decoration : none; background-color: #d4fcbc;}
+.htmldiffer_delete * {text-decoration : none; background-color: #fbb6c2;}
+    """
+    d = HTMLDiffer(a_text, b_text).combined_diff
+    return insert_style(d, css)
+  

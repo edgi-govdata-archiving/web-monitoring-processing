@@ -1,0 +1,10 @@
+coverage
+pyflakes
+pytest
+vcrpy
+doctr
+ipython
+matplotlib
+numpydoc
+sphinx
+sphinx_rtd_theme

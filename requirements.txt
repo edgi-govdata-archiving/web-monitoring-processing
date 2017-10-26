@@ -1,9 +1,13 @@
-bs4
+beautifulsoup4
+python-dateutil
 diff_match_patch_python
 docopt
+git+https://github.com/anastasia/htmldiffer@develop
+git+https://github.com/danielballan/htmltreediff@customize
 lxml
 pandas
 requests
 toolz
 tornado
 tqdm
+tzlocal
