@@ -1,0 +1,596 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> web-monitoring-processing
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0+untagged.277.g6ab0454
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db_api.html">Python API to web-monitoring-db</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cdx_api.html">Python API to Internet Archive Wayback Machine CDX API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_sources.html">Overview of Sources of Archived Web Pages</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">web-monitoring-processing</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>web_monitoring.internetarchive</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for web_monitoring.internetarchive</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides a Python API for accessing versions (timestamped captures)</span>
+<span class="sd">of a URL. There are existing open-source Python packages for the Internet</span>
+<span class="sd">Archive API (the best-established one seems to be</span>
+<span class="sd">https://internetarchive.readthedocs.io/en/latest/) but none that expose the</span>
+<span class="sd">list of versions of a URL.</span>
+
+<span class="sd">References used in writing this module:</span>
+<span class="sd">* https://ws-dl.blogspot.fr/2013/07/2013-07-15-wayback-machine-upgrades.html</span>
+
+<span class="sd">Other potentially useful links:</span>
+<span class="sd">* https://blog.archive.org/developers/</span>
+<span class="sd">* https://archive.readme.io/docs/memento</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">base64</span> <span class="k">import</span> <span class="n">b32encode</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">urllib.parse</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">web_monitoring</span> <span class="k">import</span> <span class="n">utils</span>
+
+
+<span class="k">class</span> <span class="nc">WebMonitoringException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="c1"># All exceptions raised directly by this package inherit from this.</span>
+    <span class="o">...</span>
+
+
+<span class="k">class</span> <span class="nc">UnexpectedResponseFormat</span><span class="p">(</span><span class="n">WebMonitoringException</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="n">CDX_SEARCH_URL</span> <span class="o">=</span> <span class="s1">&#39;http://web.archive.org/cdx/search/cdx&#39;</span>
+<span class="n">ARCHIVE_RAW_URL_TEMPLATE</span> <span class="o">=</span> <span class="s1">&#39;http://web.archive.org/web/</span><span class="si">{timestamp}</span><span class="s1">id_/</span><span class="si">{url}</span><span class="s1">&#39;</span>
+<span class="n">ARCHIVE_VIEW_URL_TEMPLATE</span> <span class="o">=</span> <span class="s1">&#39;http://web.archive.org/web/</span><span class="si">{timestamp}</span><span class="s1">/</span><span class="si">{url}</span><span class="s1">&#39;</span>
+<span class="n">URL_DATE_FORMAT</span> <span class="o">=</span> <span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">%H%M%S&#39;</span>
+<span class="n">MEMENTO_URL_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s1">&#39;^http(?:s)?://web.archive.org/web/\d+(?:id_)?/(.*)$&#39;</span><span class="p">)</span>
+<span class="n">REDUNDANT_HTTP_PORT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^(http://[^:/]+):80(.*)$&#39;</span><span class="p">)</span>
+<span class="n">REDUNDANT_HTTPS_PORT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^(https://[^:/]+):443(.*)$&#39;</span><span class="p">)</span>
+
+<span class="n">CdxRecord</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;CdxRecord&#39;</span><span class="p">,</span> <span class="p">(</span>
+    <span class="c1"># Raw CDX values</span>
+    <span class="s1">&#39;key&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;timestamp&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;url&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;mime_type&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;status_code&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;digest&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;length&#39;</span><span class="p">,</span>
+    <span class="c1"># Synthesized values</span>
+    <span class="s1">&#39;date&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;raw_url&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;view_url&#39;</span>
+<span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">original_url_for_memento</span><span class="p">(</span><span class="n">memento_url</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the original URL that a memento URL represents a capture of.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Extract original URL.</span>
+<span class="sd">    &gt;&gt;&gt; original_url_for_memento(&#39;http://web.archive.org/web/20170813195036/https://arpa-e.energy.gov/?q=engage/events-workshops&#39;)</span>
+<span class="sd">    &#39;https://arpa-e.energy.gov/?q=engage/events-workshops&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">MEMENTO_URL_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">memento_url</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;&quot;</span><span class="si">{memento_url}</span><span class="s1">&quot; is not a memento URL&#39;</span><span class="p">)</span>
+
+    <span class="c1"># A URL *may* be percent encoded, decode ONLY if so (we don’t want to</span>
+    <span class="c1"># accidentally decode the querystring if there is one)</span>
+    <span class="n">lower_url</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">lower_url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http%3a&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">lower_url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;https%3a&#39;</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">parse</span><span class="o">.</span><span class="n">unquote</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">url</span>
+
+
+<span class="k">def</span> <span class="nf">cdx_hash</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">b32encode</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="search_cdx"><a class="viewcode-back" href="../../generated/web_monitoring.internetarchive.search_cdx.html#web_monitoring.internetarchive.search_cdx">[docs]</a><span class="k">def</span> <span class="nf">search_cdx</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Search archive.org&#39;s CDX API for all captures of a given URL.</span>
+
+<span class="sd">    This will automatically page through all results for a given search.</span>
+
+<span class="sd">    Returns an iterator of CdxRecord objects. The StopIteration value is the</span>
+<span class="sd">    total count of found captures.</span>
+
+<span class="sd">    Note that even URLs without wildcards may return results with different</span>
+<span class="sd">    URLs. Search results are matched by url_key, which is a SURT-formatted,</span>
+<span class="sd">    canonicalized URL:</span>
+
+<span class="sd">      * Does not differentiate between HTTP and HTTPS</span>
+<span class="sd">      * Is not case-sensitive</span>
+<span class="sd">      * Treats `www.` and `www*.` subdomains the same as no subdomain at all</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    params : dict</span>
+<span class="sd">           Any options that the CDX API takes. Must at least include `url`.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    UnexpectedResponseFormat</span>
+<span class="sd">        If the CDX response was not parseable.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># NOTE: resolveRevisits works on a CDX server version that isn&#39;t released.</span>
+    <span class="c1"># It attempts to automatically resolve `warc/revisit` records.</span>
+    <span class="n">params</span><span class="p">[</span><span class="s1">&#39;resolveRevisits&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;true&#39;</span>
+    <span class="n">params</span><span class="p">[</span><span class="s1">&#39;showResumeKey&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;true&#39;</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">CDX_SEARCH_URL</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">()</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+        <span class="c1"># The resume key is delineated by a blank line.</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;resumeKey&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="k">yield from</span> <span class="n">search_cdx</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+            <span class="k">break</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">CdxRecord</span><span class="p">(</span><span class="o">*</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">),</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="n">capture_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">URL_DATE_FORMAT</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">UnexpectedResponseFormat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="n">clean_url</span> <span class="o">=</span> <span class="n">REDUNDANT_HTTPS_PORT</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s1">&#39;\1\2&#39;</span><span class="p">,</span> <span class="n">REDUNDANT_HTTP_PORT</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s1">&#39;\1\2&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">url</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">clean_url</span> <span class="o">!=</span> <span class="n">data</span><span class="o">.</span><span class="n">url</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">clean_url</span><span class="p">)</span>
+
+        <span class="c1"># TODO: repeat captures have a status code of `-` and a mime type of</span>
+        <span class="c1"># `warc/revisit`. These can only be resolved by requesting the content</span>
+        <span class="c1"># and following redirects. Maybe nice to do so automatically here.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span>
+            <span class="n">date</span><span class="o">=</span><span class="n">capture_time</span><span class="p">,</span>
+            <span class="n">raw_url</span><span class="o">=</span><span class="n">ARCHIVE_RAW_URL_TEMPLATE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">url</span><span class="p">),</span>
+            <span class="n">view_url</span><span class="o">=</span><span class="n">ARCHIVE_VIEW_URL_TEMPLATE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">yield</span> <span class="n">data</span>
+
+    <span class="k">return</span> <span class="n">count</span></div>
+
+
+<div class="viewcode-block" id="list_versions"><a class="viewcode-back" href="../../generated/web_monitoring.internetarchive.list_versions.html#web_monitoring.internetarchive.list_versions">[docs]</a><span class="k">def</span> <span class="nf">list_versions</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">from_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">skip_repeats</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Search archive.org for captures of a URL (optionally, within a time span).</span>
+
+<span class="sd">    This function provides a convenient, use-case-specific interface to</span>
+<span class="sd">    archive.org&#39;s CDX API. For a more direct, low-level API, use</span>
+<span class="sd">    :func:`search_cdx`.</span>
+
+<span class="sd">    Note that even URLs without wildcards may return results with multiple</span>
+<span class="sd">    URLs. Search results are matched by url_key, which is a SURT-formatted,</span>
+<span class="sd">    canonicalized URL:</span>
+
+<span class="sd">      * Does not differentiate between HTTP and HTTPS</span>
+<span class="sd">      * Is not case-sensitive</span>
+<span class="sd">      * Treats `www.` and `www*.` subdomains the same as no subdomain at all</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    url : string</span>
+<span class="sd">        The URL to list versions for. Can contain wildcards.</span>
+<span class="sd">    from_date : datetime, optional</span>
+<span class="sd">        Get versions captured after this date.</span>
+<span class="sd">    to_date : datetime, optional</span>
+<span class="sd">        Get versions captured before this date.</span>
+<span class="sd">    skip_repeats : boolean, optional</span>
+<span class="sd">        Don’t include consecutive captures of the same content (default: True).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    UnexpectedResponseFormat</span>
+<span class="sd">        If the CDX response was not parseable.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If there were no versions of the given URL.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Grab the datetime and URL of the version nasa.gov snapshot.</span>
+<span class="sd">    &gt;&gt;&gt; versions = list_versions(&#39;nasa.gov&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; version = next(versions)</span>
+<span class="sd">    &gt;&gt;&gt; version.date</span>
+<span class="sd">    datetime.datetime(1996, 12, 31, 23, 58, 47)</span>
+<span class="sd">    &gt;&gt;&gt; version.raw_url</span>
+<span class="sd">    &quot;http://web.archive.org/web/19961231235847id\_/http://www.nasa.gov:80/&quot;</span>
+
+<span class="sd">    Loop through all the snapshots.</span>
+<span class="sd">    &gt;&gt;&gt; for version in list_versions(&#39;nasa.gov&#39;):</span>
+<span class="sd">    ...     # do something</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="s1">&#39;collapse&#39;</span><span class="p">:</span> <span class="s1">&#39;digest&#39;</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">from_date</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;from&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">from_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">URL_DATE_FORMAT</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">to_date</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;to&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">URL_DATE_FORMAT</span><span class="p">)</span>
+
+    <span class="n">last_hashes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">search_cdx</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="c1"># TODO: may want to follow redirects and resolve them in the future</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_repeats</span> <span class="ow">or</span> <span class="n">last_hashes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">version</span><span class="o">.</span><span class="n">url</span><span class="p">)</span> <span class="o">!=</span> <span class="n">version</span><span class="o">.</span><span class="n">digest</span><span class="p">:</span>
+            <span class="n">last_hashes</span><span class="p">[</span><span class="n">version</span><span class="o">.</span><span class="n">url</span><span class="p">]</span> <span class="o">=</span> <span class="n">version</span><span class="o">.</span><span class="n">digest</span>
+            <span class="c1"># TODO: yield the whole version</span>
+            <span class="k">yield</span> <span class="n">version</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">last_hashes</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Internet archive does not have archived &quot;</span>
+                         <span class="s2">&quot;versions of </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">format_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="n">version_hash</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">agency</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span>
+                   <span class="n">mime_type</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">view_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">redirected_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">redirects</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format version info in preparation for submitting it to web-monitoring-db.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    url : string</span>
+<span class="sd">        page URL</span>
+<span class="sd">    dt : datetime.datetime</span>
+<span class="sd">        capture time</span>
+<span class="sd">    uri : string</span>
+<span class="sd">        URI of version</span>
+<span class="sd">    version_hash : string</span>
+<span class="sd">        sha256 hash of version content</span>
+<span class="sd">    title : string</span>
+<span class="sd">        primer metadata (likely to change in the future)</span>
+<span class="sd">    agency : string</span>
+<span class="sd">        primer metadata (likely to change in the future)</span>
+<span class="sd">    site : string</span>
+<span class="sd">        primer metadata (likely to change in the future)</span>
+<span class="sd">    status : int</span>
+<span class="sd">        HTTP status code</span>
+<span class="sd">    mime_type : string</span>
+<span class="sd">        Mime type of HTTP response</span>
+<span class="sd">    encoding : string</span>
+<span class="sd">        Character encoding of HTTP response</span>
+<span class="sd">    headers : dict</span>
+<span class="sd">        Any relevant HTTP headers from response</span>
+<span class="sd">    view_url : string</span>
+<span class="sd">        The archive.org URL for viewing the page (with rewritten links, etc.)</span>
+<span class="sd">    redirected_url : string</span>
+<span class="sd">        If getting `url` resulted in a redirect, this should be the URL</span>
+<span class="sd">        that was ultimately redirected to.</span>
+<span class="sd">    redirects : string</span>
+<span class="sd">        If getting `url` resulted in any redirects this should be a sequence</span>
+<span class="sd">        of all the URLs that were retrieved, starting with the originally</span>
+<span class="sd">        requested URL and ending with the value of the `redirected_url` arg.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    version : dict</span>
+<span class="sd">        properly formatted for as JSON blob for web-monitoring-db</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The reason that this is a function, not just dict(**kwargs), is that we</span>
+    <span class="c1"># have to scope information that is not part of web-monitoring-db&#39;s Version</span>
+    <span class="c1"># format into source_metadata, a free-form object for extra info that not</span>
+    <span class="c1"># all sources are required to provide.</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;status_code&#39;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+        <span class="s1">&#39;mime_type&#39;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+        <span class="s1">&#39;encoding&#39;</span><span class="p">:</span> <span class="n">encoding</span><span class="p">,</span>
+        <span class="s1">&#39;headers&#39;</span><span class="p">:</span> <span class="n">headers</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="s1">&#39;view_url&#39;</span><span class="p">:</span> <span class="n">view_url</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;error_code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+
+    <span class="k">if</span> <span class="n">redirected_url</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;redirected_url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirected_url</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;redirects&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">redirects</span>
+
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+         <span class="n">page_url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+         <span class="n">page_title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+         <span class="n">site_agency</span><span class="o">=</span><span class="n">agency</span><span class="p">,</span>
+         <span class="n">site_name</span><span class="o">=</span><span class="n">site</span><span class="p">,</span>
+         <span class="n">capture_time</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+         <span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span>
+         <span class="n">version_hash</span><span class="o">=</span><span class="n">version_hash</span><span class="p">,</span>
+         <span class="n">source_type</span><span class="o">=</span><span class="s1">&#39;internet_archive&#39;</span><span class="p">,</span>
+         <span class="n">source_metadata</span><span class="o">=</span><span class="n">metadata</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="timestamped_uri_to_version"><a class="viewcode-back" href="../../generated/web_monitoring.internetarchive.timestamped_uri_to_version.html#web_monitoring.internetarchive.timestamped_uri_to_version">[docs]</a><span class="k">def</span> <span class="nf">timestamped_uri_to_version</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">agency</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">view_url</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch version content and combine it with metadata to build a Version.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dt : datetime.datetime</span>
+<span class="sd">        capture time</span>
+<span class="sd">    uri : string</span>
+<span class="sd">        URI of version</span>
+<span class="sd">    url : string</span>
+<span class="sd">        page URL</span>
+<span class="sd">    agency : string</span>
+<span class="sd">        primer metadata (likely to change in the future)</span>
+<span class="sd">    site : string</span>
+<span class="sd">        primer metadata (likely to change in the future)</span>
+<span class="sd">    view_url : string, optional</span>
+<span class="sd">        The archive.org URL for viewing the page (with rewritten links, etc.)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict : Version</span>
+<span class="sd">        suitable for passing to :class:`Client.add_versions`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
+
+    <span class="c1"># IA&#39;s memento server responds with the status of the original request, so</span>
+    <span class="c1"># use the presence of the &#39;Memento-Datetime&#39; header to determine if we</span>
+    <span class="c1"># should use the response or there was an actual error.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">res</span><span class="o">.</span><span class="n">ok</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">res</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;memento-datetime&#39;</span><span class="p">):</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+    <span class="n">version_hash</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">hash_content</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">extract_title</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+    <span class="n">content_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;content-type&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Get all headers from original response</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;X-Archive-Orig-&#39;</span>
+    <span class="n">original_headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">):]:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="n">redirected_url</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">redirects</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">url</span> <span class="o">!=</span> <span class="n">uri</span><span class="p">:</span>
+        <span class="n">redirected_url</span> <span class="o">=</span> <span class="n">original_url_for_memento</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">redirects</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">response</span><span class="p">:</span> <span class="n">original_url_for_memento</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">url</span><span class="p">),</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">history</span><span class="p">))</span>
+        <span class="n">redirects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">redirected_url</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">format_version</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span>
+                          <span class="n">version_hash</span><span class="o">=</span><span class="n">version_hash</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+                          <span class="n">agency</span><span class="o">=</span><span class="n">agency</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="n">site</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+                          <span class="n">mime_type</span><span class="o">=</span><span class="n">content_type</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">encoding</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
+                          <span class="n">headers</span><span class="o">=</span><span class="n">original_headers</span><span class="p">,</span> <span class="n">view_url</span><span class="o">=</span><span class="n">view_url</span><span class="p">,</span>
+                          <span class="n">redirected_url</span><span class="o">=</span><span class="n">redirected_url</span><span class="p">,</span> <span class="n">redirects</span><span class="o">=</span><span class="n">redirects</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, EDGI.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0+untagged.277.g6ab0454',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

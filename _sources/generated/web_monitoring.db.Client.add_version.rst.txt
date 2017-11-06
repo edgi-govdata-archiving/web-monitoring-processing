@@ -1,0 +1,6 @@
+web\_monitoring\.db\.Client\.add\_version
+=========================================
+
+.. currentmodule:: web_monitoring.db
+
+.. automethod:: Client.add_version

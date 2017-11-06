@@ -1,0 +1,6 @@
+web\_monitoring\.db\.Client\.from\_env
+======================================
+
+.. currentmodule:: web_monitoring.db
+
+.. automethod:: Client.from_env

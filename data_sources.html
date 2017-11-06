@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Overview of Sources of Archived Web Pages &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="index.html"/>
+        <link rel="prev" title="web_monitoring.internetarchive.timestamped_uri_to_version" href="generated/web_monitoring.internetarchive.timestamped_uri_to_version.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> web-monitoring-processing
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0+untagged.277.g6ab0454
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db_api.html">Python API to web-monitoring-db</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cdx_api.html">Python API to Internet Archive Wayback Machine CDX API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview of Sources of Archived Web Pages</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#internet-archive">Internet Archive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pagefreezer">PageFreezer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#versionista">Versionista</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">web-monitoring-processing</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Overview of Sources of Archived Web Pages</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/data_sources.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="overview-of-sources-of-archived-web-pages">
+<h1>Overview of Sources of Archived Web Pages<a class="headerlink" href="#overview-of-sources-of-archived-web-pages" title="Permalink to this headline">¶</a></h1>
+<p>The EDGI Website Monitoring project currently ingests data from three sources:</p>
+<ul class="simple">
+<li>Internet Archive Wayback Machine</li>
+<li>Versionista (legacy)</li>
+<li>PageFreezer (deprecated, only partially documented)</li>
+</ul>
+<div class="section" id="internet-archive">
+<h2>Internet Archive<a class="headerlink" href="#internet-archive" title="Permalink to this headline">¶</a></h2>
+<p>The Internet Archive Wayback Machine stores snapshots of HTML pages. The
+Internet Archive at large stores a broader range of archived content, but we
+are focused on the Wayback Machine.</p>
+<p>The original response from the Internet Archive is a list of ‘mementos’ (or
+‘versions’, as we call them). Each line contains information about a version. At
+times, a line may be a ‘TimeMap’, which is essentially a link to the next list
+of mementos.</p>
+<p><cite>source_metadata</cite> : Byte sequences containing information separated by semi-colons of each version stored in Internet Archive.
+We extract the useful information i.e. the date and uri from each memento.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="sa">b</span><span class="s1">&#39;&lt;http://web.archive.org/web/19970711094601/http://www.nasa.gov:80/&gt;; rel=&quot;memento&quot;; datetime=&quot;Fri, 11 Jul 1997 09:46:01 GMT&quot;,&#39;</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="http://mementoweb.org/guide/quick-intro/">Reference on Mementos &amp; TimeMaps</a></p>
+</div>
+<div class="section" id="pagefreezer">
+<h2>PageFreezer<a class="headerlink" href="#pagefreezer" title="Permalink to this headline">¶</a></h2>
+<p>Unlike Internet Archive, where the URL directly leads to ‘mementos’(‘versions’) of it, PageFreezer requires the Id of the cabinet the URL belongs to and then leads to the archives and ‘files’(‘versions’) to be retrieved.</p>
+<p><cite>source_metadata</cite> : PageFreezer gives the option of retrieving either the metadata(header/internal info) or the file itself.</p>
+<p>The file metadata is returned as a JSON blob which has the following fields:</p>
+<ul class="simple">
+<li><cite>archive</cite> : The Id of the archive where the version is stored. PageFreezer uses the timestamp as the archive Id.</li>
+<li><cite>cabinet</cite> : The Id of the cabinet in which this version is stored.</li>
+<li><cite>elapsed</cite> : Time elapsed during retrieval of the file details.</li>
+<li><cite>file</cite> : Another JSON blob with info about the file.<ul>
+<li><cite>ContentType</cite> : The type of the content in the file.</li>
+<li><cite>Data</cite>:</li>
+<li><cite>Depth</cite>:</li>
+<li><cite>ElapsedSec</cite>: Time elapsed during retrieval of the metadata contents.</li>
+<li><cite>Header</cite>: Details about the server it is hosted on, the file Id and hash on the server, timestamp, content length, and web security policies and mechanisms. This represents the meta tags in the HTML file.</li>
+<li><cite>Links</cite>: A list of the different components (theme, widget etc.) of a webpage in the form of dictionaries. Each dictionary contains details of the URL to a component of the webpage.</li>
+<li><cite>OnlyRedirect</cite> : Tells us whether the page only contains redirect information. <cite>True</cite> or <cite>False</cite></li>
+<li><cite>PageId</cite> : Id associated with the page.</li>
+<li><cite>StartedAt</cite> : The time at which the metadata retrieval was started.</li>
+<li><cite>Status</cite> : Retrieval request response status. Typicall <cite>200 OK</cite>.</li>
+<li><cite>StatusCode</cite> : Just the status code. Typically <cite>200</cite></li>
+<li><cite>TaskId</cite> :</li>
+<li><cite>Timestamp</cite> : The time at which the archive was loaded.</li>
+<li><cite>Url0</cite> : The URL of the page itself.</li>
+<li><cite>Url1</cite>:</li>
+<li><cite>UrlType</cite>:</li>
+<li><cite>Writeflag</cite>:</li>
+</ul>
+</li>
+<li><cite>key</cite>: Each file is associated with a key.</li>
+<li><cite>status</cite> : API call response status.</li>
+</ul>
+</div>
+<div class="section" id="versionista">
+<h2>Versionista<a class="headerlink" href="#versionista" title="Permalink to this headline">¶</a></h2>
+<p>Versionista returns a JSON blob which contains the following fields:</p>
+<ul class="simple">
+<li><cite>account</cite> : The Versionista account we’re logging into to get the versions. We have two accounts - <cite>versionista1</cite> &amp; <cite>versionista2</cite></li>
+<li><cite>siteName</cite> : The website of the file.</li>
+<li><cite>agency</cite> : The name of the Government agency which owns the website.</li>
+<li><cite>versionistaSiteUrl</cite> : A link to a website as it is stored on Versionista.</li>
+<li><cite>versionistaPageUrl</cite> : A link to a webpage as it is stored on Versionista.</li>
+<li><cite>pageUrl</cite> : The page’s true URL.</li>
+<li><cite>pageTitle</cite> : The title of the page as defined in the <cite>title</cite> tag.</li>
+<li><cite>siteId</cite> : Id of the website in Versionista.</li>
+<li><cite>pageId</cite> : Id of a webpage in Versionista.</li>
+<li><cite>versionId</cite> : Id of a version in Versionista.</li>
+<li><cite>url</cite> : The full URL to view this version in Versionista. You’ll need to be logged into the appropriate Versionista account to make use of it.</li>
+<li><cite>date</cite> : The date and time when the version was captured.</li>
+<li><cite>hasContent</cite> : Indicates if Versionista has stored any content of the page or not. There is a limit on the size of the versions Versionista can store. <cite>True</cite> or <cite>False</cite></li>
+<li><cite>diffWithPreviousUrl</cite> : URL to diff view in Versionista (comparing with previous version).</li>
+<li><cite>diffWithPreviousDate</cite> : The capture date of the first ever captured version of the page.</li>
+<li><cite>diffWithFirstUrl</cite> : URL to diff view in Versionista (comparing with first version).</li>
+<li><cite>diffWithFirstDate</cite> : The capture date of the current version of the page.</li>
+<li><cite>textDiff</cite> : A dictionary with the URL to the text diff view in Versionista and its SHA 256 hash and length.</li>
+<li><cite>diff</cite>: A dictionary with the URL to the entire diff view in Verisionista and its SHA 256 hash and length.</li>
+<li><cite>filePath</cite> : Path to the diff file which is stored in our archive.</li>
+<li><cite>hash</cite> : The diff file’s SHA 256 hash.</li>
+</ul>
+<p><a class="reference external" href="https://s3-us-west-2.amazonaws.com/edgi-versionista-archive/versionista1/metadata-2017-06-20T00%3A00Z.json">Recent Versionista output file</a></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="51%" />
+<col width="21%" />
+<col width="14%" />
+<col width="14%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Aspect</th>
+<th class="head">Internet Archive</th>
+<th class="head">PageFreezer</th>
+<th class="head">Versionista</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Type</td>
+<td>Byte Sequence</td>
+<td>JSON</td>
+<td>JSON</td>
+</tr>
+<tr class="row-odd"><td>Version/file can be directly accessed</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="row-even"><td>Elapsed time details</td>
+<td>Not present</td>
+<td>Present</td>
+<td>Not Present</td>
+</tr>
+<tr class="row-odd"><td>Page meta tag data/ header</td>
+<td>Not present</td>
+<td>Present</td>
+<td>Not Present</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="generated/web_monitoring.internetarchive.timestamped_uri_to_version.html" class="btn btn-neutral" title="web_monitoring.internetarchive.timestamped_uri_to_version" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, EDGI.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0+untagged.277.g6ab0454',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

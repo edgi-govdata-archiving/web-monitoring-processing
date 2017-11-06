@@ -1,0 +1,38 @@
+web\_monitoring\.db\.Client
+===========================
+
+.. currentmodule:: web_monitoring.db
+
+.. autoclass:: Client
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Client.__init__
+      ~Client.add_annotation
+      ~Client.add_version
+      ~Client.add_versions
+      ~Client.from_env
+      ~Client.get_annotation
+      ~Client.get_change
+      ~Client.get_import_status
+      ~Client.get_page
+      ~Client.get_version
+      ~Client.get_version_by_versionista_id
+      ~Client.get_version_content
+      ~Client.list_annotations
+      ~Client.list_changes
+      ~Client.list_pages
+      ~Client.list_versions
+      ~Client.monitor_import_statuses
+   
+   
+
+   
+   
+   

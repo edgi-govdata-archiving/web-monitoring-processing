@@ -1,0 +1,889 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> web-monitoring-processing
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0+untagged.277.g6ab0454
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db_api.html">Python API to web-monitoring-db</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cdx_api.html">Python API to Internet Archive Wayback Machine CDX API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_sources.html">Overview of Sources of Archived Web Pages</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">web-monitoring-processing</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>web_monitoring.db</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for web_monitoring.db</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Functions for interacting with web-monitoring-db</span>
+<span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="k">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">parse_timestamp</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">requests.exceptions</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">toolz</span>
+<span class="kn">import</span> <span class="nn">tzlocal</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+
+<span class="n">DEFAULT_URL</span> <span class="o">=</span> <span class="s1">&#39;https://api.monitoring.envirodatagov.org&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_tzaware_isoformat</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Express a datetime object in timezone-aware ISO format.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># This is naive. Assume they mean this time in the local timezone.</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="o">.</span><span class="n">get_localzone</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">WebMonitoringDbError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="k">def</span> <span class="nf">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">):</span>
+    <span class="c1"># If the app gives us errors, raise a custom exception with those.</span>
+    <span class="c1"># If not, fall back on requests, which will raise an HTTPError.</span>
+    <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">WebMonitoringDbError</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">errors</span><span class="p">)))</span>
+
+
+<span class="k">def</span> <span class="nf">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    start_date : datetime or None</span>
+<span class="sd">    end_date : datetime or None</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    capture_time_query : None or string</span>
+<span class="sd">        If None, do not query ``capture_time``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">start_date</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">end_date</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">start_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">start_str</span> <span class="o">=</span> <span class="n">_tzaware_isoformat</span><span class="p">(</span><span class="n">start_date</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">start_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">end_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">end_str</span> <span class="o">=</span> <span class="n">_tzaware_isoformat</span><span class="p">(</span><span class="n">end_date</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">end_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{start_str}</span><span class="s1">..</span><span class="si">{end_str}</span><span class="s1">&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_build_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">source_type</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span>
+                   <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a Version dict from parameters, performing some validation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">capture_time</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">capture_time</span> <span class="o">=</span> <span class="n">_tzaware_isoformat</span><span class="p">(</span><span class="n">capture_time</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source_metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">source_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;page_id&#39;</span><span class="p">:</span> <span class="n">page_id</span><span class="p">,</span>
+               <span class="s1">&#39;uuid&#39;</span><span class="p">:</span> <span class="n">uuid</span><span class="p">,</span>
+               <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">capture_time</span><span class="p">,</span>
+               <span class="s1">&#39;uri&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uri</span><span class="p">),</span>
+               <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">),</span>
+               <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_type</span><span class="p">),</span>
+               <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">title</span><span class="p">),</span>
+               <span class="s1">&#39;source_metadata&#39;</span><span class="p">:</span> <span class="n">source_metadata</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">version</span>
+
+
+<span class="k">def</span> <span class="nf">_build_importable_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_url</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="n">version_hash</span><span class="p">,</span>
+                             <span class="n">source_type</span><span class="p">,</span> <span class="n">page_title</span><span class="p">,</span> <span class="n">site_agency</span><span class="p">,</span> <span class="n">site_name</span><span class="p">,</span> <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a Version dict from parameters, performing some validation.</span>
+
+<span class="sd">    This is different than _build_version because it needs ``page_url`` instead</span>
+<span class="sd">    of ``page_id`` of an existing Page.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">capture_time</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">capture_time</span> <span class="o">=</span> <span class="n">_tzaware_isoformat</span><span class="p">(</span><span class="n">capture_time</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source_metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">source_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;page_url&#39;</span><span class="p">:</span> <span class="n">page_url</span><span class="p">,</span>
+               <span class="s1">&#39;uuid&#39;</span><span class="p">:</span> <span class="n">uuid</span><span class="p">,</span>
+               <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">capture_time</span><span class="p">,</span>
+               <span class="s1">&#39;uri&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uri</span><span class="p">),</span>
+               <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">version_hash</span><span class="p">),</span>
+               <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_type</span><span class="p">),</span>
+               <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">page_title</span><span class="p">),</span>
+               <span class="s1">&#39;source_metadata&#39;</span><span class="p">:</span> <span class="n">source_metadata</span><span class="p">,</span>
+               <span class="s1">&#39;site_agency&#39;</span><span class="p">:</span> <span class="n">site_agency</span><span class="p">,</span>
+               <span class="s1">&#39;site_name&#39;</span><span class="p">:</span> <span class="n">site_name</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">version</span>
+
+
+<span class="k">class</span> <span class="nc">MissingCredentials</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<div class="viewcode-block" id="Client"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client">[docs]</a><span class="k">class</span> <span class="nc">Client</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Communicate with web-monitoring-db via its REST API.</span>
+
+<span class="sd">    This object encapsulates authentication information and provides</span>
+<span class="sd">    methods corresponding to the REST API.</span>
+
+<span class="sd">    The Client can also be configured via environment variables using the</span>
+<span class="sd">    class method :meth:`Client.from_env`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    email : string</span>
+<span class="sd">    password : string</span>
+<span class="sd">    url : string, optional</span>
+<span class="sd">        Default is ``https://api.monitoring.envirodatagov.org``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Client.__init__"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">DEFAULT_URL</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{url}</span><span class="s1">/api/v0&#39;</span></div>
+
+<div class="viewcode-block" id="Client.from_env"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.from_env.html#web_monitoring.db.Client.from_env">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_env</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiate a :class:`Client` by obtaining its authentication info from</span>
+<span class="sd">        these environment variables:</span>
+
+<span class="sd">            * ``WEB_MONITORING_DB_URL``</span>
+<span class="sd">            * ``WEB_MONITORING_DB_EMAIL``</span>
+<span class="sd">            * ``WEB_MONITORING_DB_PASSWORD`` (optional -- defaults to</span>
+<span class="sd">              ``https://api.monitoring.envirodatagov.org``)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;WEB_MONITORING_DB_URL&#39;</span><span class="p">,</span> <span class="n">DEFAULT_URL</span><span class="p">)</span>
+            <span class="n">email</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;WEB_MONITORING_DB_EMAIL&#39;</span><span class="p">]</span>
+            <span class="n">password</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;WEB_MONITORING_DB_PASSWORD&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingCredentials</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">Before using this method, database credentials must be set via environmental</span>
+<span class="s2">variables:</span>
+
+<span class="s2">   WEB_MONITORING_DB_URL (optional)</span>
+<span class="s2">   WEB_MONITORING_DB_EMAIL</span>
+<span class="s2">   WEB_MONITORING_DB_PASSWORD</span>
+
+<span class="s2">Alternatively, you can instaniate Client(user, password) directly.&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span></div>
+
+    <span class="c1">### PAGES ###</span>
+
+<div class="viewcode-block" id="Client.list_pages"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_pages.html#web_monitoring.db.Client.list_pages">[docs]</a>    <span class="k">def</span> <span class="nf">list_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List all Pages, optionally filtered by search criteria.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        chunk : integer, optional</span>
+<span class="sd">            pagination parameter</span>
+<span class="sd">        chunk_size : integer, optional</span>
+<span class="sd">            number of items per chunk</span>
+<span class="sd">        site : string, optional</span>
+<span class="sd">        agency : string, optional</span>
+<span class="sd">        url : string, optional</span>
+<span class="sd">        title : string, optional</span>
+<span class="sd">        include_versions : boolean, optional</span>
+<span class="sd">        include_latest : boolean, optional</span>
+<span class="sd">        source_type : string, optional</span>
+<span class="sd">            such as &#39;versionista&#39; or &#39;internet_archive&#39;</span>
+<span class="sd">        hash : string, optional</span>
+<span class="sd">            SHA256 hash of Version content</span>
+<span class="sd">        start_date : datetime, optional</span>
+<span class="sd">        end_date : datetime, optional</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
+                  <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
+                  <span class="s1">&#39;site&#39;</span><span class="p">:</span> <span class="n">site</span><span class="p">,</span>
+                  <span class="s1">&#39;agency&#39;</span><span class="p">:</span> <span class="n">agency</span><span class="p">,</span>
+                  <span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                  <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+                  <span class="s1">&#39;include_versions&#39;</span><span class="p">:</span> <span class="n">include_versions</span><span class="p">,</span>
+                  <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
+                  <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
+                  <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)}</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">page</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">page</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+            <span class="n">page</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">page</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s1">&#39;latest&#39;</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
+                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s1">&#39;versions&#39;</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">page</span><span class="p">[</span><span class="s1">&#39;versions&#39;</span><span class="p">]:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+                    <span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+                    <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="Client.get_page"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_page.html#web_monitoring.db.Client.get_page">[docs]</a>    <span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Lookup a specific Page by ID.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;versions&#39;</span><span class="p">]:</span>
+            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+    <span class="c1">### VERSIONS ###</span>
+
+<div class="viewcode-block" id="Client.list_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_versions.html#web_monitoring.db.Client.list_versions">[docs]</a>    <span class="k">def</span> <span class="nf">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List Versions, optionally filtered by serach criteria, including Page.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string, optional</span>
+<span class="sd">            restricts serach to Versions of a specific Page</span>
+<span class="sd">        chunk : integer, optional</span>
+<span class="sd">            pagination parameter</span>
+<span class="sd">        chunk_size : integer, optional</span>
+<span class="sd">            number of items per chunk</span>
+<span class="sd">        start_date : datetime, optional</span>
+<span class="sd">        end_date : datetime, optional</span>
+<span class="sd">        source_type : string, optional</span>
+<span class="sd">            such as &#39;versionista&#39; or &#39;internetarchive&#39;</span>
+<span class="sd">        hash : string, optional</span>
+<span class="sd">            SHA256 hash of Version content</span>
+<span class="sd">        source_metadata : dict, optional</span>
+<span class="sd">            Examples:</span>
+
+<span class="sd">            * ``{&#39;version_id&#39;: 12345678}``</span>
+<span class="sd">            * ``{&#39;account&#39;: &#39;versionista1&#39;, &#39;has_content&#39;: True}``</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
+                  <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
+                  <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
+                  <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
+                  <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">source_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">source_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;source_metadata[</span><span class="si">{k}</span><span class="s1">]&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">if</span> <span class="n">page_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/versions&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/versions&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="Client.get_version"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_version.html#web_monitoring.db.Client.get_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Lookup a specific Version by ID.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        version_id : string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/versions/</span><span class="si">{version_id}</span><span class="s1">&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="Client.add_version"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_version.html#web_monitoring.db.Client.add_version">[docs]</a>    <span class="k">def</span> <span class="nf">add_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span>
+                    <span class="n">source_type</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Submit one new Version.</span>
+
+<span class="sd">        See :func:`add_versions` for a more efficient bulk importer.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">            Page to which the Version is associated</span>
+<span class="sd">        uri : string</span>
+<span class="sd">            URI of content (such as an S3 bucket or InternetArchive URL)</span>
+<span class="sd">        hash : string</span>
+<span class="sd">            SHA256 hash of Version content</span>
+<span class="sd">        source_type : string</span>
+<span class="sd">            such as &#39;versionista&#39; or &#39;internetarchive&#39;</span>
+<span class="sd">        title : string</span>
+<span class="sd">            content of ``&lt;title&gt;`` tag</span>
+<span class="sd">        uuid : string, optional</span>
+<span class="sd">            A new, unique Version ID (UUID4). If not specified, the server</span>
+<span class="sd">            will generate one.</span>
+<span class="sd">        source_metadata : dict, optional</span>
+<span class="sd">            free-form metadata blob provided by source</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Do some type casting here as gentle error-checking.</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">_build_version</span><span class="p">(</span>
+            <span class="n">page_id</span><span class="o">=</span><span class="n">page_id</span><span class="p">,</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">capture_time</span><span class="o">=</span><span class="n">capture_time</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="nb">hash</span><span class="p">,</span>
+            <span class="n">source_type</span><span class="o">=</span><span class="n">source_type</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">source_metadata</span><span class="o">=</span><span class="n">source_metadata</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/versions&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
+                            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">},</span>
+                            <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">version</span><span class="p">))</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Client.add_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_versions.html#web_monitoring.db.Client.add_versions">[docs]</a>    <span class="k">def</span> <span class="nf">add_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">versions</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Submit versions in bulk for importing into web-monitoring-db.</span>
+
+<span class="sd">        Chunk the versions into batches of at most the given size.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        versions : iterable</span>
+<span class="sd">            Iterable of dicts from :func:`format_version`</span>
+<span class="sd">        update : {&#39;skip&#39;, &#39;replace&#39;, &#39;merge&#39;}, optional</span>
+<span class="sd">            Specifies how versions that are already in the database (i.e.</span>
+<span class="sd">            versions with the same ``capture_time`` and ``source_type``) should</span>
+<span class="sd">            be handled:</span>
+
+<span class="sd">                * ``&#39;skip&#39;`` (default) -- Don’t import the version or modify</span>
+<span class="sd">                  the existing database entry.</span>
+<span class="sd">                * ``&#39;replace&#39;`` -- Replace the existing database entry with the</span>
+<span class="sd">                  imported one</span>
+<span class="sd">                * ``&#39;merge&#39;`` -- Similar to `replace`, but merges the values in</span>
+<span class="sd">                  ``source_metadata``</span>
+
+<span class="sd">        batch_size : integer, optional</span>
+<span class="sd">            Default batch size is 50000 Versions.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        import_ids : tuple</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/imports&#39;</span>
+        <span class="c1"># POST to the server in chunks. Stash the import id from each response.</span>
+        <span class="n">import_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">toolz</span><span class="o">.</span><span class="n">partition_all</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">versions</span><span class="p">):</span>
+            <span class="c1"># versions might be a generator. This comprehension will pull on it</span>
+            <span class="n">validated_versions</span> <span class="o">=</span> <span class="p">[</span><span class="n">_build_importable_version</span><span class="p">(</span><span class="o">**</span><span class="n">v</span><span class="p">)</span>
+                                  <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/x-json-stream&#39;</span><span class="p">},</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;update&#39;</span><span class="p">:</span> <span class="n">update</span><span class="p">},</span>
+                <span class="n">data</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">,</span> <span class="n">validated_versions</span><span class="p">)))</span>
+            <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+            <span class="n">import_id</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+            <span class="n">import_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">import_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">import_ids</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">monitor_import_statuses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">import_ids</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Poll status of Version import jobs until all complete.</span>
+
+<span class="sd">        Use Ctrl+C to exit early. A list of the errors (so far) will be</span>
+<span class="sd">        returned.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        import_ids: collection</span>
+
+<span class="sd">        Return</span>
+<span class="sd">        ------</span>
+<span class="sd">        errors : tuple</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">import_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">import_ids</span><span class="p">)</span>  <span class="c1"># to ensure mutable collection</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">import_ids</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">import_id</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">import_ids</span><span class="p">):</span>
+                    <span class="c1"># We are mainly interrested in processing errors. We don&#39;t</span>
+                    <span class="c1"># expect HTTPErrors, so we&#39;ll just warn and hope that</span>
+                    <span class="c1"># everything works in the second pass.</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_import_status</span><span class="p">(</span><span class="n">import_id</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Ignoring Exception: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+                        <span class="k">continue</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;complete&#39;</span><span class="p">:</span>
+                        <span class="n">errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;processing_errors&#39;</span><span class="p">])</span>
+                        <span class="n">import_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">import_id</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="o">...</span>
+        <span class="k">return</span> <span class="n">errors</span>
+
+    <span class="k">def</span> <span class="nf">get_import_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">import_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check on the status of a batch Version import job.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        import_id : integer</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/imports/</span><span class="si">{import_id}</span><span class="s1">&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="c1">### CHANGES AND ANNOTATIONS ###</span>
+
+<div class="viewcode-block" id="Client.list_changes"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_changes.html#web_monitoring.db.Client.list_changes">[docs]</a>    <span class="k">def</span> <span class="nf">list_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List Changes between two Versions on a Page.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+            <span class="n">change</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">change</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+            <span class="n">change</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">change</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="Client.get_change"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_change.html#web_monitoring.db.Client.get_change">[docs]</a>    <span class="k">def</span> <span class="nf">get_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a Changes between two Versions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">        to_version_id : string</span>
+<span class="sd">        from_version_id : string, optional</span>
+<span class="sd">            If from_version_id is not given, it will be treated as version</span>
+<span class="sd">            immediately prior to ``to_version``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="Client.list_annotations"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_annotations.html#web_monitoring.db.Client.list_annotations">[docs]</a>    <span class="k">def</span> <span class="nf">list_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List Annotations for a Change between two Versions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">        to_version_id : string</span>
+<span class="sd">        from_version_id : string, optional</span>
+<span class="sd">            If from_version_id is not given, it will be treated as version</span>
+<span class="sd">            immediately prior to ``to_version``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+            <span class="n">a</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+            <span class="n">a</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="Client.add_annotation"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_annotation.html#web_monitoring.db.Client.add_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">add_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">annotation</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span>
+                       <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Submit updated annotations for a change between versions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        annotation : dict</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">        to_version_id : string</span>
+<span class="sd">        from_version_id : string, optional</span>
+<span class="sd">            If from_version_id is not given, it will be treated as version</span>
+<span class="sd">            immediately prior to ``to_version``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
+                            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">},</span>
+                            <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">annotation</span><span class="p">))</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Client.get_annotation"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_annotation.html#web_monitoring.db.Client.get_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">get_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">annotation_id</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span>
+                       <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a specific Annontation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        annotation_id : string</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">        to_version_id : string</span>
+<span class="sd">        from_version_id : string, optional</span>
+<span class="sd">            If from_version_id is not given, it will be treated as version</span>
+<span class="sd">            immediately prior to ``to_version``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations/&#39;</span>
+               <span class="n">f</span><span class="s1">&#39;</span><span class="si">{annotation_id}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="c1">### CONVENIENCE METHODS ###</span>
+
+    <span class="k">def</span> <span class="nf">get_version_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Download the saved content from a given Version.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        version_id : string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        content : bytes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">db_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_version</span><span class="p">(</span><span class="n">version_id</span><span class="p">)</span>
+        <span class="n">content_uri</span> <span class="o">=</span> <span class="n">db_result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;uri&#39;</span><span class="p">]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">content_uri</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;text/&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">content</span>
+
+    <span class="k">def</span> <span class="nf">get_version_by_versionista_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">versionista_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Look up a Version by its Verisonista-issued ID.</span>
+
+<span class="sd">        This is a convenience method for dealing with Versions ingested from</span>
+<span class="sd">        Versionista.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        versionista_id : string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_versions</span><span class="p">(</span>
+            <span class="n">source_type</span><span class="o">=</span><span class="s1">&#39;versionista&#39;</span><span class="p">,</span>
+            <span class="n">source_metadata</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;version_id&#39;</span><span class="p">:</span> <span class="n">versionista_id</span><span class="p">})</span>
+        <span class="c1"># There should not be more than one match.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No match found for versionista_id </span><span class="si">{}</span><span class="s2">&quot;</span>
+                             <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">versionista_id</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Multiple Versions match the versionista_id </span><span class="si">{}</span><span class="s2">.&quot;</span>
+                            <span class="s2">&quot;Their web-monitoring-db version_ids are: </span><span class="si">{}</span><span class="s2">&quot;</span>
+                            <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">versionista_id</span><span class="p">,</span>
+                                      <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]))</span>
+        <span class="c1"># Make result look like the result of `get_version` rather than the</span>
+        <span class="c1"># result of `list_versions`.</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]}</span></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, EDGI.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0+untagged.277.g6ab0454',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
