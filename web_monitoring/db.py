@@ -129,7 +129,7 @@ class Client:
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     """
-    def __init__(self, email, password, url=DEFAULT_URL):
+    def __init__(self, email='', password='', url=DEFAULT_URL):
         self._auth = (email, password)
         self._api_url = f'{url}/api/v0'
 
@@ -660,3 +660,29 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         # Make result look like the result of `get_version` rather than the
         # result of `list_versions`.
         return {'data': result['data'][0]}
+
+    def get_db_uuid_by_versionista_id(self, versionista_id):
+        """
+        Get the uuid (our db) linked with a versionista version.
+        Parameters
+        ----------
+        versionista_id : string
+
+        Returns
+        -------
+        uuid : string
+        """
+        result = self.list_versions(
+                source_type='versionista',
+                source_metadata={'version_id': versionista_id})
+        # There should not be more than one match.
+        data = result['data']
+        if len(data) == 0:
+            raise ValueError("No match found for versionista_id {}"
+                             "".format(versionista_id))
+        elif len(data) > 1:
+            raise Exception("Multiple Versions match the versionista_id {}."
+                            "Their web-monitoring-db version_ids are: {}"
+                            "".format(versionista_id,
+                                      [v['uuid'] for v in data]))
+        return result['data'][0]['uuid']
