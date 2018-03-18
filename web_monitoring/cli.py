@@ -2,10 +2,17 @@
 # See scripts/ directory for associated executable(s). All of the interesting
 # functionality is implemented in this module to make it easier to test.
 from docopt import docopt
+import logging
 import pandas
+import re
 from tqdm import tqdm
 from web_monitoring import db
 from web_monitoring import internetarchive as ia
+
+
+logger = logging.getLogger(__name__)
+
+HOST_EXPRESSION = re.compile(r'^[^:]+://([^/]+)')
 
 
 # These functions lump together library code into monolithic operations for the
@@ -60,6 +67,69 @@ def _filter_unchanged_versions(versions):
             yield version
 
 
+def import_ia_db_urls(*, from_date=None, to_date=None):
+    client = db.Client.from_env()
+    domains, url_keys = _get_db_page_url_info(client)
+    print('Importing {} URLs from {} Domains:\n  {}'.format(
+        len(url_keys),
+        len(domains),
+        '\n  '.join(domains)))
+
+    _add_and_monitor(_list_ia_versions_for_domains(domains,
+                                                   from_date,
+                                                   to_date,
+                                                   url_keys))
+
+
+def _list_ia_versions_for_domains(domains, from_date, to_date,
+                                  filter_keys=None):
+    skipped = 0
+
+    for domain in domains:
+        ia_versions = ia.list_versions(f'http://{domain}/*',
+                                       from_date=from_date,
+                                       to_date=to_date)
+        for version in ia_versions:
+            # TODO: this is an imperfect shortcut -- if the key algorithm ever
+            # changes on our side or IA's side (which seems like a given that
+            # it will *sometime*), it won't work right. Maybe the DB needs
+            # `add_behavior=existing_pages` or something?
+            if version.key in filter_keys:
+                yield ia.timestamped_uri_to_version(version.date,
+                                                    version.raw_url,
+                                                    url=version.url,
+                                                    view_url=version.view_url)
+            else:
+                skipped += 1
+                logger.debug('Skipping URL "%s"', version.url)
+
+    if skipped > 0:
+        logger.info('Skipped %s URLs that were unknown', skipped)
+
+
+def _get_db_page_url_info(client):
+    url_keys = set()
+    domains = set()
+    for page in _list_all_db_pages(client):
+        url_keys.add(page['url_key'])
+        domains.add(HOST_EXPRESSION.match(page['url']).group(1))
+
+    return frozenset(list(domains)[:2]), url_keys
+    return domains, url_keys
+
+
+# TODO: this should probably be a method on db.Client, but db.Client could also
+# do well to transform the `links` into callables, e.g:
+#     more_pages = pages['links']['next']()
+def _list_all_db_pages(client):
+    chunk = 1
+    while chunk > 0:
+        pages = client.list_pages(sort=['created_at:asc'], chunk_size=1000,
+                                  chunk=chunk)
+        yield from pages['data']
+        chunk = pages['links']['next'] and (chunk + 1) or -1
+
+
 def _parse_date_argument(date_string):
     """Parse a CLI argument that should represent a date into a datetime"""
     if not date_string:
@@ -80,6 +150,7 @@ def main():
 
 Usage:
 wm import ia <url> [--from <from_date>] [--to <to_date>] [options]
+wm import ia-known-pages [--from <from_date>] [--to <to_date>]
 
 Options:
 -h --help                     Show this screen.
@@ -110,6 +181,9 @@ Options:
                       from_date=_parse_date_argument(arguments['<from_date>']),
                       to_date=_parse_date_argument(arguments['<to_date>']),
                       skip_unchanged=skip_unchanged)
+        elif arguments['ia-known-pages']:
+            import_ia_db_urls(from_date=_parse_date_argument(arguments['<from_date>']),
+                              to_date=_parse_date_argument(arguments['<to_date>']))
 
 
 if __name__ == '__main__':
