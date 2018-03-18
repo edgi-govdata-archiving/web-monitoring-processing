@@ -164,7 +164,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     ### PAGES ###
 
-    def list_pages(self, *, chunk=None, chunk_size=None,
+    def list_pages(self, *, chunk=None, chunk_size=None, sort=None,
                    tags=None, maintainers=None, url=None, title=None,
                    include_versions=None, include_latest=None,
                    source_type=None, hash=None,
@@ -178,6 +178,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             pagination parameter
         chunk_size : integer, optional
             number of items per chunk
+        sort : list of string, optional
+            fields to sort by in `{field}:{order}` format, e.g. `title:asc`
         tags : list of string, optional
         maintainers : list of string, optional
         url : string, optional
@@ -197,6 +199,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
+                  'sort': sort and ','.join(sort) or None,
                   'tags[]': tags,
                   'maintainers[]': maintainers,
                   'url': url,
