@@ -118,7 +118,6 @@ def _get_db_page_url_info(client):
         url_keys.add(page['url_key'])
         domains.add(HOST_EXPRESSION.match(page['url']).group(1))
 
-    return frozenset(list(domains)[:2]), url_keys
     return domains, url_keys
 
 
