@@ -67,7 +67,8 @@ def _filter_unchanged_versions(versions):
             yield version
 
 
-def import_ia_db_urls(*, from_date=None, to_date=None):
+def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
+                      tags=None):
     client = db.Client.from_env()
     domains, url_keys = _get_db_page_url_info(client)
     print('Importing {} URLs from {} Domains:\n  {}'.format(
@@ -75,10 +76,16 @@ def import_ia_db_urls(*, from_date=None, to_date=None):
         len(domains),
         '\n  '.join(domains)))
 
-    _add_and_monitor(_list_ia_versions_for_domains(domains,
-                                                   from_date,
-                                                   to_date,
-                                                   url_keys))
+    versions = (ia.timestamped_uri_to_version(version.date, version.raw_url,
+                                              url=version.url,
+                                              maintainers=maintainers,
+                                              tags=tags,
+                                              view_url=version.view_url)
+                for version in _list_ia_versions_for_domains(domains,
+                                                             from_date,
+                                                             to_date,
+                                                             url_keys))
+    _add_and_monitor(versions)
 
 
 def _list_ia_versions_for_domains(domains, from_date, to_date,
@@ -93,12 +100,9 @@ def _list_ia_versions_for_domains(domains, from_date, to_date,
             # TODO: this is an imperfect shortcut -- if the key algorithm ever
             # changes on our side or IA's side (which seems like a given that
             # it will *sometime*), it won't work right. Maybe the DB needs
-            # `add_behavior=existing_pages` or something?
+            # `add=existing_pages` or something?
             if version.key in filter_keys:
-                yield ia.timestamped_uri_to_version(version.date,
-                                                    version.raw_url,
-                                                    url=version.url,
-                                                    view_url=version.view_url)
+                yield version
             else:
                 skipped += 1
                 logger.debug('Skipping URL "%s"', version.url)
@@ -150,7 +154,7 @@ def main():
 
 Usage:
 wm import ia <url> [--from <from_date>] [--to <to_date>] [options]
-wm import ia-known-pages [--from <from_date>] [--to <to_date>]
+wm import ia-known-pages [--from <from_date>] [--to <to_date>] [options]
 
 Options:
 -h --help                     Show this screen.
@@ -182,8 +186,11 @@ Options:
                       to_date=_parse_date_argument(arguments['<to_date>']),
                       skip_unchanged=skip_unchanged)
         elif arguments['ia-known-pages']:
-            import_ia_db_urls(from_date=_parse_date_argument(arguments['<from_date>']),
-                              to_date=_parse_date_argument(arguments['<to_date>']))
+            import_ia_db_urls(
+                from_date=_parse_date_argument(arguments['<from_date>']),
+                to_date=_parse_date_argument(arguments['<to_date>']),
+                maintainers=arguments.get('--maintainers'),
+                tags=arguments.get('--tags'))
 
 
 if __name__ == '__main__':
