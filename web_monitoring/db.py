@@ -481,7 +481,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             import_ids.append(import_id)
         return tuple(import_ids)
 
-    def monitor_import_statuses(self, import_ids):
+    # TODO: we probably need to change the return value here to support info
+    # about imports that didn't finish if we stopped early. May also want an
+    # optional timeout given that we get stuck sometimes if the DB drops an
+    # import off its queue (which is a problem that also needs solving in DB).
+    def monitor_import_statuses(self, import_ids, stop=None):
         """
         Poll status of Version import jobs until all complete.
 
@@ -490,7 +494,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        import_ids: collection
+        import_ids : collection
+        stop : threading.Event, optional
+            A threading.Event to monitor in order to determine whether to stop
+            monitoring before all imports are complete.
 
         Returns
         -------
@@ -499,7 +506,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         errors = []
         import_ids = list(import_ids)  # to ensure mutable collection
         try:
-            while import_ids:
+            while import_ids and (stop is None or not stop.is_set()):
                 for import_id in tuple(import_ids):
                     # We are mainly interrested in processing errors. We don't
                     # expect HTTPErrors, so we'll just warn and hope that

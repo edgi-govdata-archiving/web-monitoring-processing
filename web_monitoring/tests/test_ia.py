@@ -2,10 +2,10 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 import vcr
+from web_monitoring.utils import SessionClosedError
 from web_monitoring.internetarchive import (WaybackClient,
                                             original_url_for_memento,
-                                            MementoPlaybackError,
-                                            SessionClosedError)
+                                            MementoPlaybackError)
 
 
 # This stashes HTTP responses in JSON files (one per test) so that an actual
