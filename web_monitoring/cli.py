@@ -68,7 +68,7 @@ def _filter_unchanged_versions(versions):
 
 
 def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
-                      tags=None):
+                      tags=None, skip_unchanged='resolved-response'):
     client = db.Client.from_env()
     domains, url_keys = _get_db_page_url_info(client)
     print('Importing {} URLs from {} Domains:\n  {}'.format(
@@ -76,6 +76,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         len(domains),
         '\n  '.join(domains)))
 
+    skip_responses = skip_unchanged == 'response'
     versions = (ia.timestamped_uri_to_version(version.date, version.raw_url,
                                               url=version.url,
                                               maintainers=maintainers,
@@ -84,18 +85,24 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                 for version in _list_ia_versions_for_domains(domains,
                                                              from_date,
                                                              to_date,
-                                                             url_keys))
+                                                             url_keys,
+                                                             skip_responses))
+
+    if skip_unchanged == 'resolved-response':
+        versions = _filter_unchanged_versions(versions)
+
     _add_and_monitor(versions)
 
 
 def _list_ia_versions_for_domains(domains, from_date, to_date,
-                                  filter_keys=None):
+                                  filter_keys=None, skip_repeats=True):
     skipped = 0
 
     for domain in domains:
         ia_versions = ia.list_versions(f'http://{domain}/*',
                                        from_date=from_date,
-                                       to_date=to_date)
+                                       to_date=to_date,
+                                       skip_repeats=skip_repeats)
         for version in ia_versions:
             # TODO: this is an imperfect shortcut -- if the key algorithm ever
             # changes on our side or IA's side (which seems like a given that
@@ -118,6 +125,7 @@ def _get_db_page_url_info(client):
         url_keys.add(page['url_key'])
         domains.add(HOST_EXPRESSION.match(page['url']).group(1))
 
+    return list(domains)[0:2], url_keys
     return domains, url_keys
 
 
@@ -178,18 +186,20 @@ Options:
             return
 
         if arguments['ia']:
-            import_ia(url=arguments['<url>'],
-                      maintainers=arguments.get('--maintainers'),
-                      tags=arguments.get('--tags'),
-                      from_date=_parse_date_argument(arguments['<from_date>']),
-                      to_date=_parse_date_argument(arguments['<to_date>']),
-                      skip_unchanged=skip_unchanged)
+            import_ia(
+                url=arguments['<url>'],
+                maintainers=arguments.get('--maintainers'),
+                tags=arguments.get('--tags'),
+                from_date=_parse_date_argument(arguments['<from_date>']),
+                to_date=_parse_date_argument(arguments['<to_date>']),
+                skip_unchanged=skip_unchanged)
         elif arguments['ia-known-pages']:
             import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 maintainers=arguments.get('--maintainers'),
-                tags=arguments.get('--tags'))
+                tags=arguments.get('--tags'),
+                skip_unchanged=skip_unchanged)
 
 
 if __name__ == '__main__':
