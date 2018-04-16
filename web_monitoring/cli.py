@@ -3,9 +3,11 @@
 # functionality is implemented in this module to make it easier to test.
 from docopt import docopt
 import logging
+from os.path import splitext
 import pandas
 import re
 from tqdm import tqdm
+from urllib.parse import urlparse
 from web_monitoring import db
 from web_monitoring import internetarchive as ia
 
@@ -13,6 +15,34 @@ from web_monitoring import internetarchive as ia
 logger = logging.getLogger(__name__)
 
 HOST_EXPRESSION = re.compile(r'^[^:]+://([^/]+)')
+INDEX_PAGE_EXPRESSION = re.compile(r'index(\.\w+)?$')
+SUBRESOURCE_MIME_TYPES = (
+    'text/css',
+    'text/javascript',
+    'application/javascript',
+    'image/jpeg',
+    'image/webp',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/tiff',
+    'image/x-icon',
+)
+SUBRESOURCE_EXTENSIONS = (
+    '.css',
+    '.js',
+    '.es',
+    '.es6',
+    '.jsm',
+    '.jpg',
+    '.jpeg',
+    '.webp',
+    '.png',
+    '.gif',
+    '.bmp',
+    '.tif',
+    '.ico',
+)
 
 
 # These functions lump together library code into monolithic operations for the
@@ -33,21 +63,41 @@ def _add_and_monitor(versions):
         print("Errors: {}".format(errors))
 
 
-def import_ia(url, *, from_date=None, to_date=None, maintainers=None,
-              tags=None, skip_unchanged='resolved-response'):
+def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
+                      tags=None, skip_unchanged='resolved-response'):
+    client = db.Client.from_env()
+    domains, version_filter = _get_db_page_url_info(client)
+    print('Importing {} Domains:\n  {}'.format(
+        len(domains),
+        '\n  '.join(domains)))
+
+    return import_ia_urls(
+        urls=[f'http://{domain}/*' for domain in domains],
+        from_date=from_date,
+        to_date=to_date,
+        maintainers=maintainers,
+        tags=tags,
+        skip_unchanged=skip_unchanged,
+        version_filter=version_filter)
+
+
+def import_ia_urls(urls, *, from_date=None, to_date=None, maintainers=None,
+                   tags=None, skip_unchanged='resolved-response',
+                   version_filter=None):
     skip_responses = skip_unchanged == 'response'
     with ia.WaybackClient() as wayback:
-        # Pulling on this generator does the work.
         versions = (wayback.timestamped_uri_to_version(version.date,
                                                        version.raw_url,
                                                        url=version.url,
                                                        maintainers=maintainers,
                                                        tags=tags,
                                                        view_url=version.view_url)
-                    for version in wayback.list_versions(url,
-                                                         from_date=from_date,
-                                                         to_date=to_date,
-                                                         skip_repeats=skip_responses))
+                    for version in _list_ia_versions_for_urls(urls,
+                                                              from_date,
+                                                              to_date,
+                                                              skip_responses,
+                                                              version_filter,
+                                                              client))
 
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
@@ -67,48 +117,20 @@ def _filter_unchanged_versions(versions):
             yield version
 
 
-def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
-                      tags=None, skip_unchanged='resolved-response'):
-    client = db.Client.from_env()
-    domains, url_keys = _get_db_page_url_info(client)
-    print('Importing {} URLs from {} Domains:\n  {}'.format(
-        len(url_keys),
-        len(domains),
-        '\n  '.join(domains)))
-
-    skip_responses = skip_unchanged == 'response'
-    versions = (ia.timestamped_uri_to_version(version.date, version.raw_url,
-                                              url=version.url,
-                                              maintainers=maintainers,
-                                              tags=tags,
-                                              view_url=version.view_url)
-                for version in _list_ia_versions_for_domains(domains,
-                                                             from_date,
-                                                             to_date,
-                                                             url_keys,
-                                                             skip_responses))
-
-    if skip_unchanged == 'resolved-response':
-        versions = _filter_unchanged_versions(versions)
-
-    _add_and_monitor(versions)
-
-
-def _list_ia_versions_for_domains(domains, from_date, to_date,
-                                  filter_keys=None, skip_repeats=True):
+def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
+                               skip_repeats=True, version_filter=None,
+                               client=None):
+    version_filter = version_filter or _is_page
+    client = client or ia.WaybackClient()
     skipped = 0
 
-    for domain in domains:
-        ia_versions = ia.list_versions(f'http://{domain}/*',
-                                       from_date=from_date,
-                                       to_date=to_date,
-                                       skip_repeats=skip_repeats)
+    for url in url_patterns:
+        ia_versions = client.list_versions(url,
+                                           from_date=from_date,
+                                           to_date=to_date,
+                                           skip_repeats=skip_repeats)
         for version in ia_versions:
-            # TODO: this is an imperfect shortcut -- if the key algorithm ever
-            # changes on our side or IA's side (which seems like a given that
-            # it will *sometime*), it won't work right. Maybe the DB needs
-            # `add=existing_pages` or something?
-            if version.key in filter_keys:
+            if version_filter(version):
                 yield version
             else:
                 skipped += 1
@@ -121,12 +143,49 @@ def _list_ia_versions_for_domains(domains, from_date, to_date,
 def _get_db_page_url_info(client):
     url_keys = set()
     domains = set()
+    use_url_keys = True
     for page in _list_all_db_pages(client):
-        url_keys.add(page['url_key'])
         domains.add(HOST_EXPRESSION.match(page['url']).group(1))
+        if use_url_keys is False:
+            continue
 
-    return list(domains)[0:2], url_keys
-    return domains, url_keys
+        url_key = page['url_key']
+        if url_key:
+            url_keys.add(_rough_url_key(url_key))
+        else:
+            use_url_keys = False
+            url_keys.clear()
+            logger.warn('Found DB page with no url_key; *all* pages in '
+                        'matching domains will be imported')
+
+    filterer = None
+    if use_url_keys:
+        filterer = lambda version: _rough_url_key(version.key) in url_keys
+    return domains, filterer
+
+
+def _rough_url_key(url_key):
+    """
+    Create an ultra-loose version of a SURT key that should match regardless of
+    most SURT settings. (This allows lots of false positives.)
+    """
+    rough_key = url_key.lower()
+    rough_key = rough_key.split('?', 1)[0]
+    rough_key = rough_key.split('#', 1)[0]
+    rough_key = INDEX_PAGE_EXPRESSION.sub('', rough_key)
+    if rough_key.endswith('/'):
+        rough_key = rough_key[:-1]
+    return rough_key
+
+
+def _is_page(version):
+    """
+    Determine if a version might be a page we want to track. This is used to do
+    some really simplistic filtering on noisy Internet Archive results if we
+    aren't filtering down to a explicit list of URLs.
+    """
+    return (version.mime_type not in SUBRESOURCE_MIME_TYPES and
+            splitext(urlparse(version.url))[1] not in SUBRESOURCE_EXTENSIONS)
 
 
 # TODO: this should probably be a method on db.Client, but db.Client could also
@@ -186,8 +245,8 @@ Options:
             return
 
         if arguments['ia']:
-            import_ia(
-                url=arguments['<url>'],
+            import_ia_urls(
+                url=[arguments['<url>']],
                 maintainers=arguments.get('--maintainers'),
                 tags=arguments.get('--tags'),
                 from_date=_parse_date_argument(arguments['<from_date>']),
