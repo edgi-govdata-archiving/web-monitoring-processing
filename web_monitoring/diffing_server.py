@@ -202,12 +202,15 @@ def _extract_encoding(headers, content):
 def _decode_body(response, name, ignore_errors=False):
     encoding = _extract_encoding(response.headers, response.body) or 'UTF-8'
     try:
-        errors = ignore_errors and 'ignore' or 'strict'
-        return response.body.decode(encoding, errors=errors)
+        return response.body.decode(encoding, errors='strict'), None
     except UnicodeError as error:
-        raise UndecodableContentError(
+        nice_error = UndecodableContentError(
             'The response body of `{}` could not be decoded as {}.'.format(
                 name, error.encoding))
+        if ignore_errors:
+            return response.body.decode(encoding, errors='replace'), nice_error
+        else:
+            raise nice_error
 
 
 def caller(func, a, b, **query_params):
@@ -252,14 +255,18 @@ def caller(func, a, b, **query_params):
         'ignore_decoding_errors', 'false'
     ).lower() != 'false'
 
+    non_fatal_errors = []
+
     if 'a_text' in sig.parameters:
-        query_params.setdefault(
-            'a_text',
-            _decode_body(a, 'a', ignore_decoding_errors))
+        a_text, a_error = _decode_body(a, 'a', ignore_decoding_errors)
+        query_params.setdefault('a_text', a_text)
+        if a_error:
+            non_fatal_errors.append(a_error)
     if 'b_text' in sig.parameters:
-        query_params.setdefault(
-            'b_text',
-            _decode_body(b, 'b', ignore_decoding_errors))
+        b_text, b_error = _decode_body(b, 'b', ignore_decoding_errors)
+        query_params.setdefault('b_text', b_text)
+        if b_error:
+            non_fatal_errors.append(b_error)
 
     kwargs = dict()
     for name, param in sig.parameters.items():
@@ -271,7 +278,15 @@ def caller(func, a, b, **query_params):
                 raise KeyError("{} requires a parameter {} which was not "
                                "provided in the query"
                                "".format(func.__name__, name))
-    return func(**kwargs)
+    diff = func(**kwargs)
+
+    if 'errors' not in diff:
+        diff['errors'] = []
+
+    if len(non_fatal_errors) > 0:
+        diff['errors'].extend(non_fatal_errors)
+
+    return diff
 
 
 class IndexHandler(BaseHandler):
