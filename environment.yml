@@ -1,6 +1,7 @@
 name: "web-monitoring-processing"
 dependencies:
 - beautifulsoup4
+- cython
 - python-dateutil
 - docopt
 - lxml
