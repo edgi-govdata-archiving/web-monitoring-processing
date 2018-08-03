@@ -2,6 +2,8 @@ import concurrent.futures
 from docopt import docopt
 import hashlib
 import inspect
+import os
+import re
 import tornado.gen
 import tornado.httpclient
 import tornado.ioloop
@@ -22,7 +24,8 @@ DIFF_ROUTES = {
     "identical_bytes": web_monitoring.differs.identical_bytes,
     "pagefreezer": web_monitoring.differs.pagefreezer,
     "side_by_side_text": web_monitoring.differs.side_by_side_text,
-    "links": web_monitoring.links_diff.links_diff,
+    "links": web_monitoring.links_diff.links_diff_html,
+    "links_json": web_monitoring.links_diff.links_diff_json,
     # applying diff-match-patch (dmp) to strings (no tokenization)
     "html_text_dmp": web_monitoring.differs.html_text_diff,
     "html_source_dmp": web_monitoring.differs.html_source_diff,
@@ -40,11 +43,43 @@ DIFF_ROUTES = {
     "html_differ": web_monitoring.differs.html_differ,
 }
 
+# Matches a <meta> tag in HTML used to specify the character encoding:
+# <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+# <meta charset="utf-8" />
+META_TAG_PATTERN = re.compile(
+    b'<meta[^>]+charset\\s*=\\s*[\'"]?([^>]*?)[ /;\'">]',
+    re.IGNORECASE)
+
+# Matches an XML prolog that specifies character encoding:
+# <?xml version="1.0" encoding="ISO-8859-1"?>
+XML_PROLOG_PATTERN = re.compile(
+    b'<?xml\\s[^>]*encoding=[\'"]([^\'"]+)[\'"].*\?>',
+    re.IGNORECASE)
 
 client = tornado.httpclient.AsyncHTTPClient()
 
+DEBUG_MODE = os.environ.get('DIFFING_SERVER_DEBUG', 'False').strip().lower() == 'true'
 
-class DiffHandler(tornado.web.RequestHandler):
+access_control_allow_origin_header = \
+    os.environ.get('ACCESS_CONTROL_ALLOW_ORIGIN_HEADER')
+
+
+class BaseHandler(tornado.web.RequestHandler):
+
+    def set_default_headers(self):
+        if access_control_allow_origin_header is not None:
+            self.set_header("Access-Control-Allow-Origin",
+                            access_control_allow_origin_header)
+            self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+            self.set_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+
+    def options(self):
+        # no body
+        self.set_status(204)
+        self.finish()
+
+
+class DiffHandler(BaseHandler):
     # subclass must define `differs` attribute
 
     @tornado.gen.coroutine
@@ -53,17 +88,35 @@ class DiffHandler(tornado.web.RequestHandler):
         try:
             func = self.differs[differ]
         except KeyError:
-            self.send_error(404)
+            self.send_error(404,
+                            reason=f'Unknown diffing method: `{differ}`. '
+                                   f'You can get a list of '
+                                   f'supported differs from '
+                                   f'the `/` endpoint.')
             return
 
         # If params repeat, take last one. Decode bytes into unicode strings.
         query_params = {k: v[-1].decode() for k, v in
                         self.request.arguments.items()}
-        a = query_params.pop('a')
-        b = query_params.pop('b')
-
+        try:
+            a = query_params.pop('a')
+            b = query_params.pop('b')
+        except KeyError:
+            self.send_error(
+                400,
+                reason='Malformed request. '
+                       'You must provide a URL as the value '
+                       'for both `a` and `b` query parameters.')
+            return
         # Fetch server response for URLs a and b.
-        res_a, res_b = yield [client.fetch(a), client.fetch(b)]
+        res_a, res_b = yield [client.fetch(a, raise_error=False),
+                              client.fetch(b, raise_error=False)]
+
+        try:
+            self.check_response_for_error(res_a)
+            self.check_response_for_error(res_b)
+        except tornado.httpclient.HTTPError:
+            return
 
         # Validate response bytes against hash, if provided.
         for query_param, res in zip(('a_hash', 'b_hash'), (res_a, res_b)):
@@ -76,7 +129,7 @@ class DiffHandler(tornado.web.RequestHandler):
                 actual_hash = hashlib.sha256(res.body).hexdigest()
                 if actual_hash != expected_hash:
                     self.send_error(
-                        500, reason="Fetched content does not match hash.")
+                        500, reason='Fetched content does not match hash.')
                     return
 
         # TODO Add caching of fetched URIs.
@@ -110,17 +163,44 @@ class DiffHandler(tornado.web.RequestHandler):
             self.set_status(response['code'])
         self.finish(response)
 
+    def check_response_for_error(self, response):
+        # Check if the HTTP requests were successful and handle exceptions
+        if response.error is not None:
+            try:
+                response.rethrow()
+            except (ValueError, OSError, tornado.httpclient.HTTPError):
+                # Response code == 599 means that
+                # no HTTP response was received.
+                # In this case the error code should
+                # become 400 indicating that the error was
+                # raised because of a bad request parameter.
+                if response.code == 599:
+                    self.send_error(
+                        400, reason=str(response.error))
+                else:
+                    self.send_error(
+                        response.code, reason=str(response.error))
+                raise tornado.httpclient.HTTPError(0)
 
-def _extract_encoding(headers):
+
+def _extract_encoding(headers, content):
+    encoding = None
     content_type = headers["Content-Type"]
     if 'charset=' in content_type:
-        return content_type.split('charset=')[-1]
-    else:
-        return None
+        encoding = content_type.split('charset=')[-1]
+    if not encoding:
+        meta_tag_match = META_TAG_PATTERN.search(content, endpos=2048)
+        if meta_tag_match:
+            encoding = meta_tag_match.group(1).decode('ascii', errors='ignore')
+    if not encoding:
+        prolog_match = XML_PROLOG_PATTERN.search(content, endpos=2048)
+        if prolog_match:
+            encoding = prolog_match.group(1).decode('ascii', errors='ignore')
+    return encoding
 
 
 def _decode_body(response, name, ignore_errors=False):
-    encoding = _extract_encoding(response.headers) or 'UTF-8'
+    encoding = _extract_encoding(response.headers, response.body) or 'UTF-8'
     try:
         errors = ignore_errors and 'ignore' or 'strict'
         return response.body.decode(encoding, errors=errors)
@@ -194,7 +274,7 @@ def caller(func, a, b, **query_params):
     return func(**kwargs)
 
 
-class IndexHandler(tornado.web.RequestHandler):
+class IndexHandler(BaseHandler):
 
     @tornado.gen.coroutine
     def get(self):
@@ -204,15 +284,13 @@ class IndexHandler(tornado.web.RequestHandler):
 
 
 def make_app():
-
     class BoundDiffHandler(DiffHandler):
         differs = DIFF_ROUTES
 
     return tornado.web.Application([
         (r"/([A-Za-z0-9_]+)", BoundDiffHandler),
         (r"/", IndexHandler),
-    ])
-
+    ], debug=DEBUG_MODE)
 
 def start_app(port):
     app = make_app()
