@@ -7,6 +7,12 @@ import os
 import requests
 import time
 
+from urllib3.exceptions import (
+    ConnectTimeoutError,
+    MaxRetryError,
+    ReadTimeoutError
+)
+
 
 def extract_title(content_bytes, encoding='utf-8'):
     "Return content of <title> tag as string. On failure return empty string."
@@ -65,8 +71,14 @@ def retryable_request(method, url, retries=3, backoff=20,
         The HTTP response object from `requests`
     """
     internal_session = session or requests.Session()
-    response = internal_session.request(method, url, **kwargs)
-    if should_retry(response) and retries > 0:
+    retry = False
+    try:
+        response = internal_session.request(method, url, **kwargs)
+        retry = should_retry(response)
+    except (ConnectTimeoutError, MaxRetryError, ReadTimeoutError):
+        retry = True
+
+    if retry and retries > 0:
         time.sleep(backoff / retries)
         response = retryable_request(method, url, retries - 1, backoff,
                                      session=internal_session, **kwargs)
