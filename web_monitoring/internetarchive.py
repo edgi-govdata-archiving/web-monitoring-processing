@@ -411,7 +411,7 @@ class WaybackClient:
         dict : Version
             suitable for passing to :class:`Client.add_versions`
         """
-        with utils.rate_limited(group='timestamped_uri_to_version'):
+        with utils.rate_limited(calls_per_second=20, group='timestamped_uri_to_version'):
             # Check to make sure we are actually getting a memento playback.
             res = utils.retryable_request(
                 'GET', uri, allow_redirects=False, session=self.session)

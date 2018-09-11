@@ -6,6 +6,7 @@ import logging
 from os.path import splitext
 import pandas
 import re
+import requests
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
@@ -54,7 +55,6 @@ def _add_and_monitor(versions):
     cli = db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
     versions = tqdm(versions, desc='importing', unit=' versions')
-    print('Submitting Versions to web-monitoring-db...')
     import_ids = cli.add_versions(versions)
     print('Import jobs IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
@@ -66,6 +66,7 @@ def _add_and_monitor(versions):
 def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                       tags=None, skip_unchanged='resolved-response'):
     client = db.Client.from_env()
+    logger.info('Loading known pages from web-monitoring-db instance...')
     domains, version_filter = _get_db_page_url_info(client)
     print('Importing {} Domains:\n  {}'.format(
         len(domains),
@@ -86,18 +87,43 @@ def import_ia_urls(urls, *, from_date=None, to_date=None, maintainers=None,
                    version_filter=None):
     skip_responses = skip_unchanged == 'response'
     with ia.WaybackClient() as wayback:
-        versions = (wayback.timestamped_uri_to_version(version.date,
-                                                       version.raw_url,
-                                                       url=version.url,
-                                                       maintainers=maintainers,
-                                                       tags=tags,
-                                                       view_url=version.view_url)
-                    for version in _list_ia_versions_for_urls(urls,
-                                                              from_date,
-                                                              to_date,
-                                                              skip_responses,
-                                                              version_filter,
-                                                              client))
+        def timestamped_uri_to_versions(ia_versions):
+            wayback_errors = {'playback': [], 'missing': [], 'unknown': []}
+            for version in ia_versions:
+                try:
+                    yield wayback.timestamped_uri_to_version(version.date,
+                                                             version.raw_url,
+                                                             url=version.url,
+                                                             maintainers=maintainers,
+                                                             tags=tags,
+                                                             view_url=version.view_url)
+                except ia.MementoPlaybackError as error:
+                    wayback_errors['playback'].append(error)
+                    logger.info(f'  {error}')
+                except requests.exceptions.HTTPError as error:
+                    logger.info(f'  {error}')
+                    if error.response.status_code == 404:
+                        wayback_errors['missing'].append(error)
+                    else:
+                        wayback_errors['unknown'].append(error)
+                except Exception as error:
+                    wayback_errors['unknown'].append(error)
+                    logger.info(f'  {error}')
+
+            playback_errors = len(wayback_errors['playback'])
+            missing_errors = len(wayback_errors['missing'])
+            unknown_errors = len(wayback_errors['unknown'])
+            if playback_errors + missing_errors + unknown_errors > 0:
+                logger.warn(f'\nErrors: {playback_errors} could not be played back, '
+                            f'{missing_errors} indexed snapshots were missing, '
+                            f'{unknown_errors} unknown errors.')
+
+        versions = timestamped_uri_to_versions(_list_ia_versions_for_urls(urls,
+                                                                          from_date,
+                                                                          to_date,
+                                                                          skip_responses,
+                                                                          version_filter,
+                                                                          client=wayback))
 
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
@@ -129,15 +155,18 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                                            from_date=from_date,
                                            to_date=to_date,
                                            skip_repeats=skip_repeats)
-        for version in ia_versions:
-            if version_filter(version):
-                yield version
-            else:
-                skipped += 1
-                logger.debug('Skipping URL "%s"', version.url)
+        try:
+            for version in ia_versions:
+                if version_filter(version):
+                    yield version
+                else:
+                    skipped += 1
+                    logger.debug('Skipping URL "%s"', version.url)
+        except ValueError as error:
+            logger.warn(error)
 
     if skipped > 0:
-        logger.info('Skipped %s URLs that were unknown', skipped)
+        logger.info('Skipped %s URLs that did not match filters', skipped)
 
 
 def _get_db_page_url_info(client):
@@ -185,7 +214,7 @@ def _is_page(version):
     aren't filtering down to a explicit list of URLs.
     """
     return (version.mime_type not in SUBRESOURCE_MIME_TYPES and
-            splitext(urlparse(version.url))[1] not in SUBRESOURCE_EXTENSIONS)
+            splitext(urlparse(version.url).path)[1] not in SUBRESOURCE_EXTENSIONS)
 
 
 # TODO: this should probably be a method on db.Client, but db.Client could also
