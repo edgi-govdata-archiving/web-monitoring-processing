@@ -48,6 +48,7 @@ MEMENTO_URL_PATTERN = re.compile(
     r'^http(?:s)?://web.archive.org/web/\d+(?:id_)?/(.+)$')
 REDUNDANT_HTTP_PORT = re.compile(r'^(http://[^:/]+):80(.*)$')
 REDUNDANT_HTTPS_PORT = re.compile(r'^(https://[^:/]+):443(.*)$')
+DATA_URL_START = re.compile(r'data:[\w]+/[\w]+;base64')
 
 CdxRecord = namedtuple('CdxRecord', (
     # Raw CDX values
@@ -371,6 +372,10 @@ class WaybackClient:
 
         last_hashes = {}
         for version in self.search(**params):
+            # Skip entries that appear malformed
+            if DATA_URL_START.search(version.url):
+                continue
+
             # TODO: may want to follow redirects and resolve them in the future
             if not skip_repeats or last_hashes.get(version.url) != version.digest:
                 last_hashes[version.url] = version.digest
