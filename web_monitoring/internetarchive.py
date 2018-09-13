@@ -92,6 +92,65 @@ def cdx_hash(content):
     return b32encode(hashlib.sha1(content).digest()).decode()
 
 
+class LockableSession:
+    """
+    Wraps a session object with logic that allows one object to acquire a lock
+    on it and, if another object tries to close it while that lock is held,
+    the close command is delayed until the lock is released.
+
+    It's not a lock in the traditional sense, where only one or N objects can
+    own it. Instead, it's more like a reference-counted object.
+
+    Parameters
+    ----------
+    session : :class:`requests.Session`
+    """
+    def __init__(self, session):
+        self.session = session
+        self._closing = False
+        self._owners = 0
+
+    def __enter__(self):
+        return self.acquire()
+
+    def __exit__(self, type, value, traceback):
+        self.release()
+
+    def close(self):
+        self._closing = True
+        if self._owners <= 0:
+            self.session.close()
+
+    def acquire(self):
+        self._owners += 1
+        return self.session
+
+    def release(self):
+        self._owners -= 1
+        if self._closing:
+            self.close()
+
+
+class WrappedIterator:
+    def __init__(self, iterator, before=None, after=None):
+        self.iterator = iterator
+        self.before = before
+        self.after = after
+        if self.before:
+            self.before()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self.iterator)
+        except StopIteration as error:
+            if self.after:
+                self.after()
+            raise error
+
+
 class CDXClient:
     """
     A client for querying Wayback Machine's CDX API. It lets you search for
@@ -106,7 +165,7 @@ class CDXClient:
     session : :class:`requests.Session`, optional
     """
     def __init__(self, session=None):
-        self.session = session or requests.Session()
+        self.session_lock = LockableSession(session or requests.Session())
 
     def __enter__(self):
         return self
@@ -116,7 +175,7 @@ class CDXClient:
 
     def close(self):
         "Close the client's session."
-        self.session.close()
+        self.session_lock.close()
 
     def search(self, params):
         """
@@ -150,7 +209,11 @@ class CDXClient:
         ----------
         * https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
         """
+        return WrappedIterator(self._search(params),
+                               lambda: self.session_lock.acquire(),
+                               lambda: self.session_lock.release())
 
+    def _search(self, params):
         # NOTE: resolveRevisits works on a CDX server version that isn't released.
         # It attempts to automatically resolve `warc/revisit` records.
         params['resolveRevisits'] = 'true'
@@ -158,7 +221,7 @@ class CDXClient:
 
         response = utils.retryable_request('GET', CDX_SEARCH_URL,
                                            params=params,
-                                           session=self.session)
+                                           session=self.session_lock.session)
         lines = response.iter_lines()
         count = 0
 
@@ -184,10 +247,10 @@ class CDXClient:
             if clean_url != data.url:
                 data = data._replace(url=clean_url)
 
-            # TODO: repeat captures have a status code of `-` and a mime type
-            # of `warc/revisit`. These can only be resolved by requesting the
-            # content and following redirects. Maybe nice to do so
-            # automatically here.
+            # TODO: repeat captures have a status code of `-` and a mime
+            # type of `warc/revisit`. These can only be resolved by
+            # requesting the content and following redirects. Maybe nice to
+            # do so automatically here.
             data = data._replace(
                 date=capture_time,
                 raw_url=ARCHIVE_RAW_URL_TEMPLATE.format(
@@ -253,6 +316,12 @@ class CDXClient:
         >>> for version in cdx.list_versions('nasa.gov'):
         ...     # do something
         """
+        return WrappedIterator(self._list_versions(url, from_date, to_date,
+                                                   skip_repeats, cdx_params),
+                               lambda: self.session_lock.acquire(),
+                               lambda: self.session_lock.release())
+
+    def _list_versions(self, url, from_date, to_date, skip_repeats, cdx_params):
         params = {'collapse': 'digest'}
         if cdx_params:
             params.update(cdx_params)

@@ -1,6 +1,9 @@
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 import pytest
+import requests
+from unittest.mock import patch
 import vcr
 from web_monitoring.internetarchive import (MementoClient, CDXClient,
                                             original_url_for_memento,
@@ -18,12 +21,40 @@ ia_vcr = vcr.VCR(
 )
 
 
+@contextmanager
+def log_method_calls(*targets):
+    """
+    Log a chronological list of all the calls to a list of methods.
+    """
+    def make_tracker(parent, method, log):
+        original = getattr(parent, method)
+
+        def tracker(self, *args, **kwargs):
+            log.append(method)
+            return original(self, *args, **kwargs)
+
+        return patch.object(parent, method, autospec=True, side_effect=tracker)
+
+    log = []
+    patchers = []
+    for target in targets:
+        patcher = make_tracker(*target, log)
+        patcher.start()
+        patchers.append(patcher)
+
+    try:
+        yield log
+    finally:
+        for patcher in patchers:
+            patcher.stop()
+
+
 @ia_vcr.use_cassette()
 def test_list_versions():
     with CDXClient() as cdx:
         versions = cdx.list_versions('nasa.gov',
-                                    from_date=datetime(1996, 10, 1),
-                                    to_date=datetime(1997, 2, 1))
+                                     from_date=datetime(1996, 10, 1),
+                                     to_date=datetime(1997, 2, 1))
         version = next(versions)
         assert version.date == datetime(1996, 12, 31, 23, 58, 47)
 
@@ -36,12 +67,26 @@ def test_list_versions_multipage():
     # Set page size limits low enough to guarantee multiple pages
     with CDXClient() as cdx:
         versions = cdx.list_versions('cnn.com',
-                                    from_date=datetime(2001, 4, 10),
-                                    to_date=datetime(2001, 5, 10),
-                                    cdx_params={'limit': 25})
+                                     from_date=datetime(2001, 4, 10),
+                                     to_date=datetime(2001, 5, 10),
+                                     cdx_params={'limit': 25})
 
         # Exhaust the generator and make sure no entries trigger errors.
         list(versions)
+
+
+@ia_vcr.use_cassette()
+def test_list_versions_iterator_works_after_context_closed():
+    with log_method_calls((requests.Session, 'close'), (requests.Session, 'send')) as calls:
+        with CDXClient() as cdx:
+            versions = cdx.list_versions('cnn.com',
+                                         from_date=datetime(2001, 4, 10),
+                                         to_date=datetime(2001, 5, 10),
+                                         cdx_params={'limit': 25})
+
+        # Exhaust the generator and make sure no entries trigger errors.
+        list(versions)
+        assert calls == ['send', 'send', 'send', 'send', 'close']
 
 
 class TestOriginalUrlForMemento:
