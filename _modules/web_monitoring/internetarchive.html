@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.216.g93337c8 documentation</title>
+  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.216.ga03b6fd documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                0+untagged.216.g93337c8
+                0+untagged.216.ga03b6fd
               </div>
             
           
@@ -223,6 +223,7 @@
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    Extract original URL.</span>
+
 <span class="sd">    &gt;&gt;&gt; original_url_for_memento(&#39;http://web.archive.org/web/20170813195036/https://arpa-e.energy.gov/?q=engage/events-workshops&#39;)</span>
 <span class="sd">    &#39;https://arpa-e.energy.gov/?q=engage/events-workshops&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -498,6 +499,7 @@
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        Grab the datetime and URL of the first nasa.gov snapshot.</span>
+
 <span class="sd">        &gt;&gt;&gt; with WaybackClient() as client:</span>
 <span class="sd">        &gt;&gt;&gt;     versions = client.list_versions(&#39;nasa.gov&#39;)</span>
 <span class="sd">        &gt;&gt;&gt;     version = next(versions)</span>
@@ -507,6 +509,7 @@
 <span class="sd">        &quot;http://web.archive.org/web/19961231235847id\_/http://www.nasa.gov:80/&quot;</span>
 
 <span class="sd">        Loop through all the snapshots.</span>
+
 <span class="sd">        &gt;&gt;&gt; for version in client.list_versions(&#39;nasa.gov&#39;):</span>
 <span class="sd">        ...     # do something</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -714,7 +717,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0+untagged.216.g93337c8',
+            VERSION:'0+untagged.216.ga03b6fd',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
