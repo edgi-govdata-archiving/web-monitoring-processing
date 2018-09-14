@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.list_pages &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  <title>web_monitoring.db.Client.list_pages &mdash; web-monitoring-processing 0+untagged.216.g93337c8 documentation</title>
   
 
   
@@ -24,28 +24,19 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../genindex.html"/>
-        <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="../index.html"/>
-        <link rel="up" title="Python API to web-monitoring-db" href="../db_api.html"/>
-        <link rel="next" title="web_monitoring.db.Client.get_page" href="web_monitoring.db.Client.get_page.html"/>
-        <link rel="prev" title="web_monitoring.db.Client.from_env" href="web_monitoring.db.Client.from_env.html"/> 
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="web_monitoring.db.Client.get_page" href="web_monitoring.db.Client.get_page.html" />
+    <link rel="prev" title="web_monitoring.db.Client.from_env" href="web_monitoring.db.Client.from_env.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -67,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.277.g6ab0454
+                0+untagged.216.g93337c8
               </div>
             
           
@@ -114,7 +105,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../cdx_api.html">Python API to Internet Archive Wayback Machine CDX API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cdx_api.html">Python API to Internet Archive Wayback Machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data_sources.html">Overview of Sources of Archived Web Pages</a></li>
 </ul>
 
@@ -127,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">web-monitoring-processing</a>
@@ -135,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -185,39 +177,48 @@
 <h1>web_monitoring.db.Client.list_pages<a class="headerlink" href="#web-monitoring-db-client-list-pages" title="Permalink to this headline">¶</a></h1>
 <dl class="method">
 <dt id="web_monitoring.db.Client.list_pages">
-<code class="descclassname">Client.</code><code class="descname">list_pages</code><span class="sig-paren">(</span><em>*</em>, <em>chunk=None</em>, <em>chunk_size=None</em>, <em>site=None</em>, <em>agency=None</em>, <em>url=None</em>, <em>title=None</em>, <em>include_versions=None</em>, <em>include_latest=None</em>, <em>source_type=None</em>, <em>hash=None</em>, <em>start_date=None</em>, <em>end_date=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_pages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_pages" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">Client.</code><code class="descname">list_pages</code><span class="sig-paren">(</span><em>*</em>, <em>chunk=None</em>, <em>chunk_size=None</em>, <em>tags=None</em>, <em>maintainers=None</em>, <em>url=None</em>, <em>title=None</em>, <em>include_versions=None</em>, <em>include_latest=None</em>, <em>source_type=None</em>, <em>hash=None</em>, <em>start_date=None</em>, <em>end_date=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_pages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_pages" title="Permalink to this definition">¶</a></dt>
 <dd><p>List all Pages, optionally filtered by search criteria.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>chunk</strong> : integer, optional</p>
-<blockquote>
-<div><p>pagination parameter</p>
-</div></blockquote>
-<p><strong>chunk_size</strong> : integer, optional</p>
-<blockquote>
-<div><p>number of items per chunk</p>
-</div></blockquote>
-<p><strong>site</strong> : string, optional</p>
-<p><strong>agency</strong> : string, optional</p>
-<p><strong>url</strong> : string, optional</p>
-<p><strong>title</strong> : string, optional</p>
-<p><strong>include_versions</strong> : boolean, optional</p>
-<p><strong>include_latest</strong> : boolean, optional</p>
-<p><strong>source_type</strong> : string, optional</p>
-<blockquote>
-<div><p>such as ‘versionista’ or ‘internet_archive’</p>
-</div></blockquote>
-<p><strong>hash</strong> : string, optional</p>
-<blockquote>
-<div><p>SHA256 hash of Version content</p>
-</div></blockquote>
-<p><strong>start_date</strong> : datetime, optional</p>
-<p><strong>end_date</strong> : datetime, optional</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>chunk</strong> <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional</span></dt>
+<dd><p class="first last">pagination parameter</p>
+</dd>
+<dt><strong>chunk_size</strong> <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional</span></dt>
+<dd><p class="first last">number of items per chunk</p>
+</dd>
+<dt><strong>tags</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of string, optional</span></dt>
+<dd></dd>
+<dt><strong>maintainers</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of string, optional</span></dt>
+<dd></dd>
+<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string, optional</span></dt>
+<dd></dd>
+<dt><strong>title</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string, optional</span></dt>
+<dd></dd>
+<dt><strong>include_versions</strong> <span class="classifier-delimiter">:</span> <span class="classifier">boolean, optional</span></dt>
+<dd></dd>
+<dt><strong>include_latest</strong> <span class="classifier-delimiter">:</span> <span class="classifier">boolean, optional</span></dt>
+<dd></dd>
+<dt><strong>source_type</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string, optional</span></dt>
+<dd><p class="first last">such as ‘versionista’ or ‘internet_archive’</p>
+</dd>
+<dt><strong>hash</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string, optional</span></dt>
+<dd><p class="first last">SHA256 hash of Version content</p>
+</dd>
+<dt><strong>start_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
+<dd></dd>
+<dt><strong>end_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
+<dd></dd>
+</dl>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>response</strong> : dict</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>response</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd></dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -228,9 +229,7 @@
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -252,7 +251,7 @@
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -270,7 +269,8 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0+untagged.277.g6ab0454',
+            VERSION:'0+untagged.216.g93337c8',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -284,19 +284,13 @@
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

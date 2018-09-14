@@ -1,5 +1,5 @@
-web\_monitoring\.db\.Client\.get\_version
-=========================================
+web\_monitoring.db.Client.get\_version
+======================================
 
 .. currentmodule:: web_monitoring.db
 

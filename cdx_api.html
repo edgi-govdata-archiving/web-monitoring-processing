@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine CDX API &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.216.g93337c8 documentation</title>
   
 
   
@@ -24,27 +24,19 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="index.html"/>
-        <link rel="next" title="web_monitoring.internetarchive.list_versions" href="generated/web_monitoring.internetarchive.list_versions.html"/>
-        <link rel="prev" title="web_monitoring.db.Client.add_annotation" href="generated/web_monitoring.db.Client.add_annotation.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview of Sources of Archived Web Pages" href="data_sources.html" />
+    <link rel="prev" title="web_monitoring.db.Client.add_annotation" href="generated/web_monitoring.db.Client.add_annotation.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -66,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.277.g6ab0454
+                0+untagged.216.g93337c8
               </div>
             
           
@@ -94,14 +86,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="db_api.html">Python API to web-monitoring-db</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API to Internet Archive Wayback Machine CDX API</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API to Internet Archive Wayback Machine</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#tutorial">Tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#api-documentation">API Documentation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="generated/web_monitoring.internetarchive.list_versions.html">web_monitoring.internetarchive.list_versions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/web_monitoring.internetarchive.search_cdx.html">web_monitoring.internetarchive.search_cdx</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/web_monitoring.internetarchive.timestamped_uri_to_version.html">web_monitoring.internetarchive.timestamped_uri_to_version</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#api-documentation">API Documentation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="data_sources.html">Overview of Sources of Archived Web Pages</a></li>
@@ -116,7 +103,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">web-monitoring-processing</a>
@@ -124,9 +111,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -149,7 +137,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Python API to Internet Archive Wayback Machine CDX API</li>
+      <li>Python API to Internet Archive Wayback Machine</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -168,47 +156,263 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="python-api-to-internet-archive-wayback-machine-cdx-api">
-<h1>Python API to Internet Archive Wayback Machine CDX API<a class="headerlink" href="#python-api-to-internet-archive-wayback-machine-cdx-api" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="python-api-to-internet-archive-wayback-machine">
+<h1>Python API to Internet Archive Wayback Machine<a class="headerlink" href="#python-api-to-internet-archive-wayback-machine" title="Permalink to this headline">¶</a></h1>
 <p>Search for historical snapshots of a URL. Download metadata about the snapshots
 and/or the snapshot content itself.</p>
+<p>We implement Python clients for the CDX and Memento APIs provided by Wayback
+Machine.</p>
 <div class="section" id="tutorial">
 <h2>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h2>
 <p>TO DO</p>
 </div>
 <div class="section" id="api-documentation">
 <h2>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="longtable docutils">
-<colgroup>
-<col width="10%" />
-<col width="90%" />
-</colgroup>
+<dl class="class">
+<dt id="web_monitoring.internetarchive.WaybackClient">
+<em class="property">class </em><code class="descclassname">web_monitoring.internetarchive.</code><code class="descname">WaybackClient</code><span class="sig-paren">(</span><em>session=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>A client for retrieving data from the Internet Archive’s Wayback Machine.</p>
+<p>You can use a WaybackClient as a context manager. When exiting, it will
+close the session it’s using (if you’ve passed in a custom session, make
+sure not to use the context manager functionality unless you want to live
+dangerously).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
 <tbody valign="top">
-<tr class="row-odd"><td><a class="reference internal" href="generated/web_monitoring.internetarchive.list_versions.html#web_monitoring.internetarchive.list_versions" title="web_monitoring.internetarchive.list_versions"><code class="xref py py-obj docutils literal"><span class="pre">list_versions</span></code></a>(url,&nbsp;*[,&nbsp;from_date,&nbsp;to_date,&nbsp;…])</td>
-<td>Search archive.org for captures of a URL (optionally, within a time span).</td>
-</tr>
-<tr class="row-even"><td><a class="reference internal" href="generated/web_monitoring.internetarchive.search_cdx.html#web_monitoring.internetarchive.search_cdx" title="web_monitoring.internetarchive.search_cdx"><code class="xref py py-obj docutils literal"><span class="pre">search_cdx</span></code></a>(params)</td>
-<td>Search archive.org’s CDX API for all captures of a given URL.</td>
-</tr>
-<tr class="row-odd"><td><a class="reference internal" href="generated/web_monitoring.internetarchive.timestamped_uri_to_version.html#web_monitoring.internetarchive.timestamped_uri_to_version" title="web_monitoring.internetarchive.timestamped_uri_to_version"><code class="xref py py-obj docutils literal"><span class="pre">timestamped_uri_to_version</span></code></a>(dt,&nbsp;uri,&nbsp;*,&nbsp;url,&nbsp;…)</td>
-<td>Fetch version content and combine it with metadata to build a Version.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>session</strong> <span class="classifier-delimiter">:</span> <span class="classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests.Session</span></code>, optional</span></dt>
+<dd></dd>
+</dl>
+</td>
 </tr>
 </tbody>
 </table>
+<dl class="method">
+<dt id="web_monitoring.internetarchive.WaybackClient.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>url</em>, <em>*</em>, <em>matchType=None</em>, <em>limit=None</em>, <em>offset=None</em>, <em>fastLatest=None</em>, <em>gzip=None</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>filter_field=None</em>, <em>collapse=None</em>, <em>showResumeKey=True</em>, <em>resumeKey=None</em>, <em>page=None</em>, <em>pageSize=None</em>, <em>resolveRevisits=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search archive.org’s CDX API for all captures of a given URL.</p>
+<p>This will automatically page through all results for a given search.</p>
+<p>Returns an iterator of CdxRecord objects. The StopIteration value is
+the total count of found captures.</p>
+<p>Note that even URLs without wildcards may return results with different
+URLs. Search results are matched by url_key, which is a SURT-formatted,
+canonicalized URL:</p>
+<ul class="simple">
+<li>Does not differentiate between HTTP and HTTPS</li>
+<li>Is not case-sensitive</li>
+<li>Treats <code class="docutils literal notranslate"><span class="pre">www.</span></code> and <code class="docutils literal notranslate"><span class="pre">www*.</span></code> subdomains the same as no subdomain at
+all</li>
+</ul>
+<p>Note not all CDX API parameters are supported. In particular, this does
+not support: <cite>output</cite>, <cite>fl</cite>, <cite>showDupeCount</cite>, <cite>showSkipCount</cite>,
+<cite>lastSkipTimestamp</cite>, <cite>showNumPages</cite>, <cite>showPagedIndex</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd><p class="first last">The URL to query for captures of.</p>
+</dd>
+<dt><strong>matchType</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">Must be one of ‘exact’, ‘prefix’, ‘host’, or ‘domain’. The default
+value is calculated based on the format of <cite>url</cite>.</p>
+</dd>
+<dt><strong>limit</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd><p class="first last">Maximum number of results per page (this iterator will continue to
+move through all pages unless <cite>showResumeKey=False</cite>, though).</p>
+</dd>
+<dt><strong>offset</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd><p class="first last">Skip the first N results.</p>
+</dd>
+<dt><strong>fastLatest</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd><p class="first last">Get faster results when using a negative value for <cite>limit</cite>. It may
+return a variable number of results.</p>
+</dd>
+<dt><strong>gzip</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd><p class="first last">Whether output should be gzipped.</p>
+</dd>
+<dt><strong>from_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
+<dd><p class="first last">Only include captures after this date. Equivalent to the
+<cite>from</cite> argument in the CDX API.</p>
+</dd>
+<dt><strong>to_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">Only include captures before this date. Equivalent to the <cite>to</cite>
+argument in the CDX API.</p>
+</dd>
+<dt><strong>filter_field</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">A filter for any field in the results. Equivalent to the <cite>filter</cite>
+argument in the CDX API. (format: <cite>[!]field:regex</cite>)</p>
+</dd>
+<dt><strong>collapse</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">Collapse consecutive results that match on a given field. (format:
+<cite>fieldname</cite> or <cite>fieldname:N</cite> – N is the number of chars to match.)</p>
+</dd>
+<dt><strong>showResumeKey</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd><p class="first last">If False, don’t continue to iterate through all pages of results.
+The default value is True</p>
+</dd>
+<dt><strong>resumeKey</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd><p class="first last">Start returning results from a specified resumption point/offset.
+The value for this is supplied by the previous page of results when
+<cite>showResumeKey</cite> is True.</p>
+</dd>
+<dt><strong>page</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd><p class="first last">If using paging start from this page number (note: paging, as
+opposed to the using <cite>resumeKey</cite> is somewhat complicated because
+of the interplay with indexes and index sizes).</p>
+</dd>
+<dt><strong>pageSize</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd><p class="first last">The number of index blocks to examine for each page of results.
+Index blocks generally cover about 3,000 items, so setting
+<cite>pageSize=1</cite> might return anywhere from 0 to 3,000 results per page.</p>
+</dd>
+<dt><strong>resolveRevists</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd><p class="first last">Attempt to resolve <cite>warc/revisit</cite> records to their actual content
+type and response code. Not supported on all CDX servers. Defaults
+to True.</p>
+</dd>
+<dt><strong>**kwargs</strong></dt>
+<dd><p class="first last">Any additional CDX API options.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>UnexpectedResponseFormat</strong></dt>
+<dd><p class="first last">If the CDX response was not parseable.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server">https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server</a></li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="web_monitoring.internetarchive.WaybackClient.list_versions">
+<code class="descname">list_versions</code><span class="sig-paren">(</span><em>url</em>, <em>*</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>skip_repeats=True</em>, <em>cdx_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.list_versions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search archive.org for captures of a URL (optionally, within a time span).</p>
+<p>This function provides a convenient, use-case-specific interface to
+archive.org’s CDX API. For a more direct, low-level API, use
+<code class="xref py py-func docutils literal notranslate"><span class="pre">search_cdx()</span></code>.</p>
+<p>Note that even URLs without wildcards may return results with multiple
+URLs. Search results are matched by url_key, which is a SURT-formatted,
+canonicalized URL:</p>
+<ul class="simple">
+<li>Does not differentiate between HTTP and HTTPS</li>
+<li>Is not case-sensitive</li>
+<li>Treats <cite>www.</cite> and <cite>www*.</cite> subdomains the same as no subdomain at all</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
+<dd><p class="first last">The URL to list versions for. Can contain wildcards.</p>
+</dd>
+<dt><strong>from_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
+<dd><p class="first last">Get versions captured after this date.</p>
+</dd>
+<dt><strong>to_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
+<dd><p class="first last">Get versions captured before this date.</p>
+</dd>
+<dt><strong>skip_repeats</strong> <span class="classifier-delimiter">:</span> <span class="classifier">boolean, optional</span></dt>
+<dd><p class="first last">Don’t include consecutive captures of the same content (default: True).</p>
+</dd>
+<dt><strong>cdx_params</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict, optional</span></dt>
+<dd><p class="first last">Additional options to pass directly to the CDX API when querying.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>UnexpectedResponseFormat</strong></dt>
+<dd><p class="first last">If the CDX response was not parseable.</p>
+</dd>
+<dt><strong>ValueError</strong></dt>
+<dd><p class="first last">If there were no versions of the given URL.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Grab the datetime and URL of the first nasa.gov snapshot.
+&gt;&gt;&gt; with WaybackClient() as client:
+&gt;&gt;&gt;     versions = client.list_versions(‘nasa.gov’)
+&gt;&gt;&gt;     version = next(versions)
+&gt;&gt;&gt;     version.date
+datetime.datetime(1996, 12, 31, 23, 58, 47)
+&gt;&gt;&gt;     version.raw_url
+“<a class="reference external" href="http://web.archive.org/web/19961231235847id_/http://www.nasa.gov:80/">http://web.archive.org/web/19961231235847id_/http://www.nasa.gov:80/</a>”</p>
+<p>Loop through all the snapshots.
+&gt;&gt;&gt; for version in client.list_versions(‘nasa.gov’):
+…     # do something</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version">
+<code class="descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em>dt</em>, <em>uri</em>, <em>*</em>, <em>url</em>, <em>maintainers=None</em>, <em>tags=None</em>, <em>view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch version content and combine it with metadata to build a Version.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>dt</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
+<dd><p class="first last">capture time</p>
+</dd>
+<dt><strong>uri</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
+<dd><p class="first last">URI of version</p>
+</dd>
+<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
+<dd><p class="first last">page URL</p>
+</dd>
+<dt><strong>maintainers</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of string, optional</span></dt>
+<dd><p class="first last">Entities responsible for maintaining the page, as a list of strings</p>
+</dd>
+<dt><strong>tags</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of string, optional</span></dt>
+<dd><p class="first last">Any arbitrary “tags” to apply to the page for categorization</p>
+</dd>
+<dt><strong>view_url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string, optional</span></dt>
+<dd><p class="first last">The archive.org URL for viewing the page (with rewritten links, etc.)</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>dict</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Version</span></dt>
+<dd><p class="first last">suitable for passing to <code class="xref py py-class docutils literal notranslate"><span class="pre">Client.add_versions</span></code></p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="generated/web_monitoring.internetarchive.list_versions.html" class="btn btn-neutral float-right" title="web_monitoring.internetarchive.list_versions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="data_sources.html" class="btn btn-neutral float-right" title="Overview of Sources of Archived Web Pages" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="generated/web_monitoring.db.Client.add_annotation.html" class="btn btn-neutral" title="web_monitoring.db.Client.add_annotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -224,7 +428,7 @@ and/or the snapshot content itself.</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -242,7 +446,8 @@ and/or the snapshot content itself.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0+untagged.277.g6ab0454',
+            VERSION:'0+untagged.216.g93337c8',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -256,19 +461,13 @@ and/or the snapshot content itself.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

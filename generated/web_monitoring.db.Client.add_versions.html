@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.add_versions &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  <title>web_monitoring.db.Client.add_versions &mdash; web-monitoring-processing 0+untagged.216.g93337c8 documentation</title>
   
 
   
@@ -24,28 +24,19 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../genindex.html"/>
-        <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="../index.html"/>
-        <link rel="up" title="Python API to web-monitoring-db" href="../db_api.html"/>
-        <link rel="next" title="web_monitoring.db.Client.list_changes" href="web_monitoring.db.Client.list_changes.html"/>
-        <link rel="prev" title="web_monitoring.db.Client.add_version" href="web_monitoring.db.Client.add_version.html"/> 
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="web_monitoring.db.Client.list_changes" href="web_monitoring.db.Client.list_changes.html" />
+    <link rel="prev" title="web_monitoring.db.Client.add_version" href="web_monitoring.db.Client.add_version.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -67,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.277.g6ab0454
+                0+untagged.216.g93337c8
               </div>
             
           
@@ -114,7 +105,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../cdx_api.html">Python API to Internet Archive Wayback Machine CDX API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cdx_api.html">Python API to Internet Archive Wayback Machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data_sources.html">Overview of Sources of Archived Web Pages</a></li>
 </ul>
 
@@ -127,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">web-monitoring-processing</a>
@@ -135,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -192,33 +184,35 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>versions</strong> : iterable</p>
-<blockquote>
-<div><p>Iterable of dicts from <code class="xref py py-func docutils literal"><span class="pre">format_version()</span></code></p>
-</div></blockquote>
-<p><strong>update</strong> : {‘skip’, ‘replace’, ‘merge’}, optional</p>
-<blockquote>
-<div><p>Specifies how versions that are already in the database (i.e.
-versions with the same <code class="docutils literal"><span class="pre">capture_time</span></code> and <code class="docutils literal"><span class="pre">source_type</span></code>) should
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>versions</strong> <span class="classifier-delimiter">:</span> <span class="classifier">iterable</span></dt>
+<dd><p class="first last">Iterable of dicts from <code class="xref py py-func docutils literal notranslate"><span class="pre">format_version()</span></code></p>
+</dd>
+<dt><strong>update</strong> <span class="classifier-delimiter">:</span> <span class="classifier">{‘skip’, ‘replace’, ‘merge’}, optional</span></dt>
+<dd><p class="first">Specifies how versions that are already in the database (i.e.
+versions with the same <code class="docutils literal notranslate"><span class="pre">capture_time</span></code> and <code class="docutils literal notranslate"><span class="pre">source_type</span></code>) should
 be handled:</p>
-<blockquote>
+<blockquote class="last">
 <div><ul class="simple">
-<li><code class="docutils literal"><span class="pre">'skip'</span></code> (default) – Don’t import the version or modify
+<li><code class="docutils literal notranslate"><span class="pre">'skip'</span></code> (default) – Don’t import the version or modify
 the existing database entry.</li>
-<li><code class="docutils literal"><span class="pre">'replace'</span></code> – Replace the existing database entry with the
+<li><code class="docutils literal notranslate"><span class="pre">'replace'</span></code> – Replace the existing database entry with the
 imported one</li>
-<li><code class="docutils literal"><span class="pre">'merge'</span></code> – Similar to <cite>replace</cite>, but merges the values in
-<code class="docutils literal"><span class="pre">source_metadata</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">'merge'</span></code> – Similar to <cite>replace</cite>, but merges the values in
+<code class="docutils literal notranslate"><span class="pre">source_metadata</span></code></li>
 </ul>
 </div></blockquote>
-</div></blockquote>
-<p><strong>batch_size</strong> : integer, optional</p>
-<blockquote>
-<div><p>Default batch size is 50000 Versions.</p>
-</div></blockquote>
+</dd>
+<dt><strong>batch_size</strong> <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional</span></dt>
+<dd><p class="first last">Default batch size is 50000 Versions.</p>
+</dd>
+</dl>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>import_ids</strong> : tuple</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>import_ids</strong> <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd></dd>
+</dl>
 </td>
 </tr>
 </tbody>
@@ -229,9 +223,7 @@ imported one</li>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -253,7 +245,7 @@ imported one</li>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -271,7 +263,8 @@ imported one</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0+untagged.277.g6ab0454',
+            VERSION:'0+untagged.216.g93337c8',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -285,19 +278,13 @@ imported one</li>
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

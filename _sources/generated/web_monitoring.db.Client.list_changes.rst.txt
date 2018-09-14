@@ -1,5 +1,5 @@
-web\_monitoring\.db\.Client\.list\_changes
-==========================================
+web\_monitoring.db.Client.list\_changes
+=======================================
 
 .. currentmodule:: web_monitoring.db
 

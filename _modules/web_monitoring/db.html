@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.277.g6ab0454 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.216.g93337c8 documentation</title>
   
 
   
@@ -24,26 +24,17 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="web-monitoring-processing 0+untagged.277.g6ab0454 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -65,7 +56,7 @@
             
             
               <div class="version">
-                0+untagged.277.g6ab0454
+                0+untagged.216.g93337c8
               </div>
             
           
@@ -93,7 +84,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../db_api.html">Python API to web-monitoring-db</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../cdx_api.html">Python API to Internet Archive Wayback Machine CDX API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cdx_api.html">Python API to Internet Archive Wayback Machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../data_sources.html">Overview of Sources of Archived Web Pages</a></li>
 </ul>
 
@@ -106,7 +97,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">web-monitoring-processing</a>
@@ -114,9 +105,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -145,8 +137,6 @@
     
     
       <li class="wy-breadcrumbs-aside">
-        
-            
         
       </li>
     
@@ -224,8 +214,8 @@
     <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{start_str}</span><span class="s1">..</span><span class="si">{end_str}</span><span class="s1">&#39;</span>
 
 
-<span class="k">def</span> <span class="nf">_build_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">source_type</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span>
-                   <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_build_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">source_type</span><span class="p">,</span>
+                   <span class="n">title</span><span class="p">,</span> <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Build a Version dict from parameters, performing some validation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -244,8 +234,10 @@
     <span class="k">return</span> <span class="n">version</span>
 
 
-<span class="k">def</span> <span class="nf">_build_importable_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_url</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="n">version_hash</span><span class="p">,</span>
-                             <span class="n">source_type</span><span class="p">,</span> <span class="n">page_title</span><span class="p">,</span> <span class="n">site_agency</span><span class="p">,</span> <span class="n">site_name</span><span class="p">,</span> <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_build_importable_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_url</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span>
+                              <span class="n">version_hash</span><span class="p">,</span> <span class="n">source_type</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span>
+                              <span class="n">page_maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">page_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                              <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Build a Version dict from parameters, performing some validation.</span>
 
@@ -262,10 +254,10 @@
                <span class="s1">&#39;uri&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uri</span><span class="p">),</span>
                <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">version_hash</span><span class="p">),</span>
                <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_type</span><span class="p">),</span>
-               <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">page_title</span><span class="p">),</span>
+               <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">title</span><span class="p">),</span>
                <span class="s1">&#39;source_metadata&#39;</span><span class="p">:</span> <span class="n">source_metadata</span><span class="p">,</span>
-               <span class="s1">&#39;site_agency&#39;</span><span class="p">:</span> <span class="n">site_agency</span><span class="p">,</span>
-               <span class="s1">&#39;site_name&#39;</span><span class="p">:</span> <span class="n">site_name</span><span class="p">}</span>
+               <span class="s1">&#39;page_maintainers&#39;</span><span class="p">:</span> <span class="n">page_maintainers</span><span class="p">,</span>
+               <span class="s1">&#39;page_tags&#39;</span><span class="p">:</span> <span class="n">page_tags</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">version</span>
 
 
@@ -324,7 +316,7 @@
     <span class="c1">### PAGES ###</span>
 
 <div class="viewcode-block" id="Client.list_pages"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_pages.html#web_monitoring.db.Client.list_pages">[docs]</a>    <span class="k">def</span> <span class="nf">list_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                   <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -337,8 +329,8 @@
 <span class="sd">            pagination parameter</span>
 <span class="sd">        chunk_size : integer, optional</span>
 <span class="sd">            number of items per chunk</span>
-<span class="sd">        site : string, optional</span>
-<span class="sd">        agency : string, optional</span>
+<span class="sd">        tags : list of string, optional</span>
+<span class="sd">        maintainers : list of string, optional</span>
 <span class="sd">        url : string, optional</span>
 <span class="sd">        title : string, optional</span>
 <span class="sd">        include_versions : boolean, optional</span>
@@ -356,8 +348,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
                   <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
-                  <span class="s1">&#39;site&#39;</span><span class="p">:</span> <span class="n">site</span><span class="p">,</span>
-                  <span class="s1">&#39;agency&#39;</span><span class="p">:</span> <span class="n">agency</span><span class="p">,</span>
+                  <span class="s1">&#39;tags[]&#39;</span><span class="p">:</span> <span class="n">tags</span><span class="p">,</span>
+                  <span class="s1">&#39;maintainers[]&#39;</span><span class="p">:</span> <span class="n">maintainers</span><span class="p">,</span>
                   <span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
                   <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
                   <span class="s1">&#39;include_versions&#39;</span><span class="p">:</span> <span class="n">include_versions</span><span class="p">,</span>
@@ -824,9 +816,7 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -839,7 +829,7 @@
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -857,7 +847,8 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0+untagged.277.g6ab0454',
+            VERSION:'0+untagged.216.g93337c8',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -871,19 +862,13 @@
 
   
 
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

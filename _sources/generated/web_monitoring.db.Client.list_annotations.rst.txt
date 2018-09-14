@@ -1,5 +1,5 @@
-web\_monitoring\.db\.Client\.list\_annotations
-==============================================
+web\_monitoring.db.Client.list\_annotations
+===========================================
 
 .. currentmodule:: web_monitoring.db
 
