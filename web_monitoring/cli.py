@@ -170,26 +170,33 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
 
 
 def _get_db_page_url_info(client):
+    # If these sets get too big, we can switch to a bloom filter. It's fine if
+    # we have some false positives. Any noise reduction is worthwhile.
     url_keys = set()
     domains = set()
-    use_url_keys = True
+
+    domains_without_url_keys = set()
     for page in _list_all_db_pages(client):
-        domains.add(HOST_EXPRESSION.match(page['url']).group(1))
-        if use_url_keys is False:
+        domain = HOST_EXPRESSION.match(page['url']).group(1)
+        domains.add(domain)
+        if domain in domains_without_url_keys:
             continue
 
         url_key = page['url_key']
         if url_key:
             url_keys.add(_rough_url_key(url_key))
         else:
-            use_url_keys = False
-            url_keys.clear()
+            domains_without_url_keys.add(domain)
             logger.warn('Found DB page with no url_key; *all* pages in '
-                        'matching domains will be imported')
+                        f'"{domain}" will be imported')
 
-    filterer = None
-    if use_url_keys:
-        filterer = lambda version: _rough_url_key(version.key) in url_keys
+    def filterer(version, domain=None):
+        domain = domain or HOST_EXPRESSION.match(version.url).group(1)
+        if domain in domains_without_url_keys:
+            return _is_page(version)
+        else:
+            return _rough_url_key(version.key) in url_keys
+
     return domains, filterer
 
 
