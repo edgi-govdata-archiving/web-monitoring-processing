@@ -450,9 +450,16 @@ class WaybackClient(utils.DepthCountedContext):
 
             # If the playback includes a redirect, continue on.
             if res.status_code >= 300 and res.status_code < 400:
+                target = res.headers.get('location')
+                # Wayback sometimes has circular memento redirects ¯\_(ツ)_/¯
+                # TODO: probably need to detect longer loops than just URLs
+                # that redirect to themselves. Need to interrupt every step
+                # along a series of redirects with all this error-handling :(
+                if target == uri:
+                    raise MementoPlaybackError(f'Memento at {uri} could not be played: circular redirect')
+
                 original = res
-                res = utils.retryable_request(
-                    'GET', res.headers.get('location'), session=self.session)
+                res = utils.retryable_request('GET', target, session=self.session)
                 res.history.insert(0, original)
                 res.request = original.request
 
