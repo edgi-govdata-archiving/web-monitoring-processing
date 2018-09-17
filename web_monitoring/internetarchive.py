@@ -54,7 +54,8 @@ DATA_URL_START = re.compile(r'data:[\w]+/[\w]+;base64')
 #   http://b***z@pnnl.gov/
 #   http://@pnnl.gov/
 #   http://mailto:first.last@pnnl.gov/
-EMAILISH_URL = re.compile(r'^https?://((mailto:)|([^/@:]*@))')
+#   http://<<mailto:first.last@pnnl.gov>>/
+EMAILISH_URL = re.compile(r'^https?://(<*)((mailto:)|([^/@:]*@))')
 
 CdxRecord = namedtuple('CdxRecord', (
     # Raw CDX values
