@@ -134,3 +134,37 @@ def get_color_palette():
     differ_deletion = os.environ.get('DIFFER_COLOR_DELETION', '#d01c8b')
     return {'differ_insertion': differ_insertion,
             'differ_deletion': differ_deletion}
+
+
+class DepthCountedContext:
+    """
+    DepthCountedContext is a mixin or base class for context managers that need
+    to be perform special operations only when all nested contexts they might
+    be used in have exited.
+
+    Override the `__exit_all__(self, type, value, traceback)` method to get a
+    version of `__exit__` that is only called when exiting the top context.
+
+    As a convenience, the built-in `__enter__` returns `self`, which is fairly
+    common, so in many cases you don't need to author your own `__enter__` or
+    `__exit__` methods.
+    """
+    _context_depth = 0
+
+    def __enter__(self):
+        self._context_depth += 1
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self._context_depth > 0:
+            self._context_depth -= 1
+        if self._context_depth == 0:
+            return self.__exit_all__(type, value, traceback)
+
+    def __exit_all__(self, type, value, traceback):
+        """
+        A version of the normal `__exit__` context manager method that only
+        gets called when the top level context is exited. This is meant to be
+        overridden in your class.
+        """
+        pass

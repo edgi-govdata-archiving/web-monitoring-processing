@@ -121,7 +121,7 @@ class WaybackSession(requests.Session):
         return super().send(*args, **kwargs)
 
 
-class WaybackClient:
+class WaybackClient(utils.DepthCountedContext):
     """
     A client for retrieving data from the Internet Archive's Wayback Machine.
 
@@ -137,10 +137,7 @@ class WaybackClient:
     def __init__(self, session=None):
         self.session = session or WaybackSession()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
+    def __exit_all__(self, type, value, traceback):
         self.close()
 
     def close(self):
