@@ -284,9 +284,14 @@ class WaybackClient(utils.DepthCountedContext):
                 else:
                     final_query[key] = str(value).lower()
 
+        # TODO: our current setup requires that this request is extra robust.
+        # We may be better off if we can re-architect so that's less true, or
+        # somehow pass some of these retry semantics in at the constructor.
         response = utils.retryable_request('GET', CDX_SEARCH_URL,
                                            params=final_query,
-                                           session=self.session)
+                                           session=self.session,
+                                           retries=10,
+                                           backoff=120)
         lines = response.iter_lines()
         count = 0
 
