@@ -2,11 +2,13 @@ from collections import defaultdict
 from contextlib import contextmanager
 import hashlib
 import io
+import logging
 import lxml.html
 import os
 import requests
 import threading
 import time
+import urllib.parse
 
 from requests.exceptions import ConnectionError
 from urllib3.exceptions import (
@@ -14,6 +16,10 @@ from urllib3.exceptions import (
     MaxRetryError,
     ReadTimeoutError
 )
+
+
+logger = logging.getLogger(__name__)
+_backoff_locks = defaultdict(threading.Lock)
 
 
 def extract_title(content_bytes, encoding='utf-8'):
@@ -40,7 +46,7 @@ def _should_retry(response):
     return response.status_code == 503 or response.status_code == 504
 
 
-def retryable_request(method, url, retries=3, backoff=20,
+def retryable_request(method, url, retries=4, backoff=30,
                       should_retry=_should_retry, session=None, **kwargs):
     """
     Make a request with the `requests` library that will be automatically
@@ -85,7 +91,15 @@ def retryable_request(method, url, retries=3, backoff=20,
             retry = True
 
         if retry and retries > 0:
-            time.sleep(backoff / retries)
+            # Lock all threads requesting the same domain during backoff so
+            # that we are actually giving it a real break.
+            domain = urllib.parse.urlparse(url).netloc
+            if domain:
+                with _backoff_locks[domain]:
+                    time.sleep(backoff / retries)
+            else:
+                time.sleep(backoff / retries)
+
             response = retryable_request(method, url, retries - 1, backoff,
                                          session=internal_session, **kwargs)
         elif retryable_error:
@@ -98,6 +112,7 @@ def retryable_request(method, url, retries=3, backoff=20,
 
 
 _last_call_by_group = defaultdict(int)
+_rate_limit_lock = threading.Lock()
 
 
 @contextmanager
@@ -118,13 +133,14 @@ def rate_limited(calls_per_second=2, group='default'):
     if calls_per_second <= 0:
         yield
     else:
-        last_call = _last_call_by_group[group]
-        minimum_wait = 1.0 / calls_per_second
-        current_time = time.time()
-        if current_time - last_call < minimum_wait:
-            time.sleep(minimum_wait - (current_time - last_call))
+        with _rate_limit_lock:
+            last_call = _last_call_by_group[group]
+            minimum_wait = 1.0 / calls_per_second
+            current_time = time.time()
+            if current_time - last_call < minimum_wait:
+                time.sleep(minimum_wait - (current_time - last_call))
+            _last_call_by_group[group] = time.time()
         yield
-        _last_call_by_group[group] = time.time()
 
 
 def get_color_palette():
