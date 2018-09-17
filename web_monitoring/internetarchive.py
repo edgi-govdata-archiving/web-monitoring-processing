@@ -98,17 +98,12 @@ def original_url_for_memento(memento_url):
     return url
 
 
-def is_malformed_memento_url(url):
+def is_malformed_url(url):
     if DATA_URL_START.search(url):
         return True
 
-    try:
-        original = original_url_for_memento(url)
-    except ValueError:
-        return True
-
     # TODO: restrict to particular protocols?
-    if original.startswith('mailto:') or EMAILISH_URL.match(original):
+    if url.startswith('mailto:') or EMAILISH_URL.match(url):
         return True
 
     return False
@@ -170,7 +165,7 @@ class WaybackClient(utils.DepthCountedContext):
                fastLatest=None, gzip=None, from_date=None, to_date=None,
                filter_field=None, collapse=None, showResumeKey=True,
                resumeKey=None, page=None, pageSize=None, resolveRevisits=True,
-               **kwargs):
+               skip_malformed_results=True, **kwargs):
         """
         Search archive.org's CDX API for all captures of a given URL.
 
@@ -240,6 +235,13 @@ class WaybackClient(utils.DepthCountedContext):
             Attempt to resolve `warc/revisit` records to their actual content
             type and response code. Not supported on all CDX servers. Defaults
             to True.
+        skip_malformed_results : bool, optional
+            If true, don't yield records that look like they have no actual
+            memento associated with them. Some crawlers will erroneously
+            attempt to capture bad URLs like `http://mailto:someone@domain.com`
+            or `http://data:image/jpeg;base64,AF34...` and so on. This is a
+            filter performed client side and is not a CDX API argument.
+            (Default: True)
         **kwargs
             Any additional CDX API options.
 
@@ -308,6 +310,8 @@ class WaybackClient(utils.DepthCountedContext):
             clean_url = REDUNDANT_HTTPS_PORT.sub(
                 r'\1\2', REDUNDANT_HTTP_PORT.sub(
                     r'\1\2', data.url))
+            if skip_malformed_results and is_malformed_url(clean_url):
+                continue
             if clean_url != data.url:
                 data = data._replace(url=clean_url)
 
@@ -391,10 +395,6 @@ class WaybackClient(utils.DepthCountedContext):
 
         last_hashes = {}
         for version in self.search(**params):
-            # Skip entries that appear malformed
-            if is_malformed_memento_url(version.url):
-                continue
-
             # TODO: may want to follow redirects and resolve them in the future
             if not skip_repeats or last_hashes.get(version.url) != version.digest:
                 last_hashes[version.url] = version.digest
