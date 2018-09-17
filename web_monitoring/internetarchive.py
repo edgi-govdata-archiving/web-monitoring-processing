@@ -49,6 +49,12 @@ MEMENTO_URL_PATTERN = re.compile(
 REDUNDANT_HTTP_PORT = re.compile(r'^(http://[^:/]+):80(.*)$')
 REDUNDANT_HTTPS_PORT = re.compile(r'^(https://[^:/]+):443(.*)$')
 DATA_URL_START = re.compile(r'data:[\w]+/[\w]+;base64')
+# Matches URLs w/ users w/no pass, e-mail addresses, and mailto: URLs. These
+# basically look like an e-mail or mailto: got `http://` pasted in front, e.g:
+#   http://b***z@pnnl.gov/
+#   http://@pnnl.gov/
+#   http://mailto:first.last@pnnl.gov/
+EMAILISH_URL = re.compile(r'^https?://((mailto:)|([^/@:]*@))')
 
 CdxRecord = namedtuple('CdxRecord', (
     # Raw CDX values
@@ -90,6 +96,22 @@ def original_url_for_memento(memento_url):
         url = urllib.parse.unquote(url)
 
     return url
+
+
+def is_malformed_memento_url(url):
+    if DATA_URL_START.search(url):
+        return True
+
+    try:
+        original = original_url_for_memento(url)
+    except ValueError:
+        return True
+
+    # TODO: restrict to particular protocols?
+    if original.startswith('mailto:') or EMAILISH_URL.match(original):
+        return True
+
+    return False
 
 
 def cdx_hash(content):
@@ -370,7 +392,7 @@ class WaybackClient(utils.DepthCountedContext):
         last_hashes = {}
         for version in self.search(**params):
             # Skip entries that appear malformed
-            if DATA_URL_START.search(version.url):
+            if is_malformed_memento_url(version.url):
                 continue
 
             # TODO: may want to follow redirects and resolve them in the future
