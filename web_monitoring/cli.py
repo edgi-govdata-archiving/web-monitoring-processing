@@ -91,7 +91,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags):
                 wayback_errors['playback'] += 1
                 logger.info(f'  {error}')
             except requests.exceptions.HTTPError as error:
-                logger.info(f'  {error}')
+                logger.info(f'  (HTTPError) {error}')
                 if error.response.status_code == 404:
                     wayback_errors['missing'] += 1
                 else:
@@ -100,7 +100,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags):
             except Exception as error:
                 wayback_errors['unknown'] += 1
                 # logger.warn(f'  UNKNOWN ERROR: {error}')
-                logger.info(f'  {error}')
+                logger.info(f'  ({type(error)}) {error}; URL: {record.raw_url}')
 
     return wayback_errors
 
