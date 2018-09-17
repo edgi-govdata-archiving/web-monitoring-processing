@@ -11,9 +11,16 @@ from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
 from web_monitoring import internetarchive as ia
+from web_monitoring import utils
+
+import queue
+import asyncio
+import concurrent
 
 
 logger = logging.getLogger(__name__)
+
+PARALLEL_REQUESTS = 10
 
 HOST_EXPRESSION = re.compile(r'^[^:]+://([^/]+)')
 INDEX_PAGE_EXPRESSION = re.compile(r'index(\.\w+)?$')
@@ -63,72 +70,109 @@ def _add_and_monitor(versions):
         print("Errors: {}".format(errors))
 
 
-def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
-                      tags=None, skip_unchanged='resolved-response'):
+def load_wayback_records_worker(records, results_queue, maintainers, tags):
+    wayback_errors = {'playback': 0, 'missing': 0, 'unknown': 0}
+    with ia.WaybackClient() as wayback:
+        while True:
+            try:
+                record = next(records)
+            except StopIteration:
+                break
+
+            try:
+                version = wayback.timestamped_uri_to_version(record.date,
+                                                             record.raw_url,
+                                                             url=record.url,
+                                                             maintainers=maintainers,
+                                                             tags=tags,
+                                                             view_url=record.view_url)
+                results_queue.put(version)
+            except ia.MementoPlaybackError as error:
+                wayback_errors['playback'] += 1
+                logger.info(f'  {error}')
+            except requests.exceptions.HTTPError as error:
+                logger.info(f'  {error}')
+                if error.response.status_code == 404:
+                    wayback_errors['missing'] += 1
+                else:
+                    # logger.warn(f'     HTTP ERROR: {error}')
+                    wayback_errors['unknown'] += 1
+            except Exception as error:
+                wayback_errors['unknown'] += 1
+                # logger.warn(f'  UNKNOWN ERROR: {error}')
+                logger.info(f'  {error}')
+
+    return wayback_errors
+
+
+async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
+                            tags=None, skip_unchanged='resolved-response',
+                            url_pattern=None, worker_count=0):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
-    domains, version_filter = _get_db_page_url_info(client)
-    print('Importing {} Domains:\n  {}'.format(
-        len(domains),
-        '\n  '.join(domains)))
+    domains, version_filter = _get_db_page_url_info(client, url_pattern)
+    _print_domain_list(domains)
 
-    return import_ia_urls(
+    return await import_ia_urls(
         urls=[f'http://{domain}/*' for domain in domains],
         from_date=from_date,
         to_date=to_date,
         maintainers=maintainers,
         tags=tags,
         skip_unchanged=skip_unchanged,
-        version_filter=version_filter)
+        version_filter=version_filter,
+        worker_count=worker_count)
 
 
-def import_ia_urls(urls, *, from_date=None, to_date=None, maintainers=None,
-                   tags=None, skip_unchanged='resolved-response',
-                   version_filter=None):
+def merge_worker_summaries(summaries):
+    merged = {'playback': 0, 'missing': 0, 'unknown': 0, 'total': 0}
+    for summary in summaries:
+        for key, value in summary.items():
+            merged[key] += value
+            merged['total'] += value
+
+    return merged
+
+
+async def import_ia_urls(urls, *, from_date=None, to_date=None,
+                         maintainers=None, tags=None,
+                         skip_unchanged='resolved-response',
+                         version_filter=None, worker_count=0):
     skip_responses = skip_unchanged == 'response'
+    worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
+
     with ia.WaybackClient() as wayback:
-        def timestamped_uri_to_versions(ia_versions):
-            wayback_errors = {'playback': [], 'missing': [], 'unknown': []}
-            for version in ia_versions:
-                try:
-                    yield wayback.timestamped_uri_to_version(version.date,
-                                                             version.raw_url,
-                                                             url=version.url,
-                                                             maintainers=maintainers,
-                                                             tags=tags,
-                                                             view_url=version.view_url)
-                except ia.MementoPlaybackError as error:
-                    wayback_errors['playback'].append(error)
-                    logger.info(f'  {error}')
-                except requests.exceptions.HTTPError as error:
-                    logger.info(f'  {error}')
-                    if error.response.status_code == 404:
-                        wayback_errors['missing'].append(error)
-                    else:
-                        wayback_errors['unknown'].append(error)
-                except Exception as error:
-                    wayback_errors['unknown'].append(error)
-                    logger.info(f'  {error}')
+        wayback_records = utils.ThreadSafeIterator(
+            _list_ia_versions_for_urls(
+                urls,
+                from_date,
+                to_date,
+                skip_responses,
+                version_filter,
+                client=wayback))
 
-            playback_errors = len(wayback_errors['playback'])
-            missing_errors = len(wayback_errors['missing'])
-            unknown_errors = len(wayback_errors['unknown'])
-            if playback_errors + missing_errors + unknown_errors > 0:
-                logger.warn(f'\nErrors: {playback_errors} could not be played back, '
-                            f'{missing_errors} indexed snapshots were missing, '
-                            f'{unknown_errors} unknown errors.')
-
-        versions = timestamped_uri_to_versions(_list_ia_versions_for_urls(urls,
-                                                                          from_date,
-                                                                          to_date,
-                                                                          skip_responses,
-                                                                          version_filter,
-                                                                          client=wayback))
-
+        versions_queue = queue.Queue()
+        # Add an extra thread for the DB uploader so it can collect results in
+        # parallel if there are more than 1000
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
+        loop = asyncio.get_event_loop()
+        workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags)
+                   for i in range(worker_count)]
+        versions = utils.queue_iterator(versions_queue)
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
+        uploader = loop.run_in_executor(executor, _add_and_monitor, versions)
+        results = await asyncio.gather(*workers)
+        # Signal that there will be nothing else on the queue so uploading can finish
+        versions_queue.put(None)
 
-        _add_and_monitor(versions)
+        errors = merge_worker_summaries(results)
+        if errors['total'] > 0:
+            logger.warn('\nErrors: {playback} could not be played back, '
+                        '{missing} indexed snapshots were missing, '
+                        '{unknown} unknown errors.'.format(**errors))
+
+        await uploader
 
 
 def _filter_unchanged_versions(versions):
@@ -147,36 +191,48 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                                skip_repeats=True, version_filter=None,
                                client=None):
     version_filter = version_filter or _is_page
-    client = client or ia.WaybackClient()
     skipped = 0
 
-    for url in url_patterns:
-        ia_versions = client.list_versions(url,
-                                           from_date=from_date,
-                                           to_date=to_date,
-                                           skip_repeats=skip_repeats)
-        try:
-            for version in ia_versions:
-                if version_filter(version):
-                    yield version
-                else:
-                    skipped += 1
-                    logger.debug('Skipping URL "%s"', version.url)
-        except ValueError as error:
-            logger.warn(error)
+    with client or ia.WaybackClient() as client:
+        for url in url_patterns:
+            ia_versions = client.list_versions(url,
+                                            from_date=from_date,
+                                            to_date=to_date,
+                                            skip_repeats=skip_repeats)
+            try:
+                for version in ia_versions:
+                    if version_filter(version):
+                        yield version
+                    else:
+                        skipped += 1
+                        logger.debug('Skipping URL "%s"', version.url)
+            except ValueError as error:
+                logger.warn(error)
 
     if skipped > 0:
         logger.info('Skipped %s URLs that did not match filters', skipped)
 
 
-def _get_db_page_url_info(client):
+def list_domains(url_pattern=None):
+    client = db.Client.from_env()
+    logger.info('Loading known pages from web-monitoring-db instance...')
+    domains, version_filter = _get_db_page_url_info(client, url_pattern)
+    _print_domain_list(domains)
+
+
+def _print_domain_list(domains):
+    text = '\n  '.join(domains)
+    print(f'Found {len(domains)} matching domains:\n  {text}')
+
+
+def _get_db_page_url_info(client, url_pattern=None):
     # If these sets get too big, we can switch to a bloom filter. It's fine if
     # we have some false positives. Any noise reduction is worthwhile.
     url_keys = set()
     domains = set()
 
     domains_without_url_keys = set()
-    for page in _list_all_db_pages(client):
+    for page in _list_all_db_pages(client, url_pattern):
         domain = HOST_EXPRESSION.match(page['url']).group(1)
         domains.add(domain)
         if domain in domains_without_url_keys:
@@ -196,6 +252,17 @@ def _get_db_page_url_info(client):
             return _is_page(version)
         else:
             return _rough_url_key(version.key) in url_keys
+
+    ###### DEBUG
+    # print(f'Total domains: {len(domains)}')
+    # if len(domains) > 2:
+    #     # domains = set(['www.phmsa.dot.gov', 'www.noaa.inel.gov'] + list(domains)[0:2])
+    #     domains = set(list(domains)[0:2])
+    # # domains = domains - {'www.w3.org'}
+    # # domains = {'mrcc.illinois.edu'}
+    # # domains = {'www.doe.gov'}
+    # domains = {'www.epa.gov'}
+    ###### DEBUG
 
     return domains, filterer
 
@@ -227,11 +294,11 @@ def _is_page(version):
 # TODO: this should probably be a method on db.Client, but db.Client could also
 # do well to transform the `links` into callables, e.g:
 #     more_pages = pages['links']['next']()
-def _list_all_db_pages(client):
+def _list_all_db_pages(client, url_pattern=None):
     chunk = 1
     while chunk > 0:
         pages = client.list_pages(sort=['created_at:asc'], chunk_size=1000,
-                                  chunk=chunk)
+                                  chunk=chunk, url=url_pattern)
         yield from pages['data']
         chunk = pages['links']['next'] and (chunk + 1) or -1
 
@@ -252,11 +319,12 @@ def _parse_date_argument(date_string):
 
 
 def main():
-    doc = """Command Line Interface to the web_monitoring Python package
+    doc = f"""Command Line Interface to the web_monitoring Python package
 
 Usage:
 wm import ia <url> [--from <from_date>] [--to <to_date>] [options]
-wm import ia-known-pages [--from <from_date>] [--to <to_date>] [options]
+wm import ia-known-pages [--from <from_date>] [--to <to_date>] [--pattern <url_pattern>] [options]
+wm db list-domains [--pattern <url_pattern>]
 
 Options:
 -h --help                     Show this screen.
@@ -271,8 +339,13 @@ Options:
                                 `resolved-response` (if the final response
                                     after redirects is unchanged)
                               [default: resolved-response]
+--pattern <url_pattern>       A pattern to match when retrieving URLs from a
+                              web-monitoring-db instance.
+--parallel <parallel_count>   Number of parallel network requests to support.
+                              [default: {PARALLEL_REQUESTS}]
 """
     arguments = docopt(doc, version='0.0.1')
+    command = None
     if arguments['import']:
         skip_unchanged = arguments['--skip-unchanged']
         if skip_unchanged not in ('none', 'response', 'resolved-response'):
@@ -281,7 +354,7 @@ Options:
             return
 
         if arguments['ia']:
-            import_ia_urls(
+            command = import_ia_urls(
                 url=[arguments['<url>']],
                 maintainers=arguments.get('--maintainers'),
                 tags=arguments.get('--tags'),
@@ -289,12 +362,23 @@ Options:
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 skip_unchanged=skip_unchanged)
         elif arguments['ia-known-pages']:
-            import_ia_db_urls(
+            command = import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 maintainers=arguments.get('--maintainers'),
                 tags=arguments.get('--tags'),
-                skip_unchanged=skip_unchanged)
+                skip_unchanged=skip_unchanged,
+                url_pattern=arguments.get('--pattern'),
+                worker_count=int(arguments.get('--parallel')))
+
+    elif arguments['db']:
+        if arguments['list-domains']:
+            list_domains(url_pattern=arguments.get('--pattern'))
+
+    # Start a loop and execute commands that are async.
+    if asyncio.iscoroutine(command):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(command)
 
 
 if __name__ == '__main__':

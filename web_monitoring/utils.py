@@ -4,8 +4,10 @@ import hashlib
 import io
 import lxml.html
 import requests
+import threading
 import time
 
+from requests.exceptions import ConnectionError
 from urllib3.exceptions import (
     ConnectTimeoutError,
     MaxRetryError,
@@ -71,19 +73,25 @@ def retryable_request(method, url, retries=3, backoff=20,
     """
     internal_session = session or requests.Session()
     retry = False
+    retryable_error = None
     try:
-        response = internal_session.request(method, url, **kwargs)
-        retry = should_retry(response)
-    except (ConnectTimeoutError, MaxRetryError, ReadTimeoutError):
-        retry = True
+        try:
+            response = internal_session.request(method, url, **kwargs)
+            retry = should_retry(response)
+        except (ConnectionError, ConnectTimeoutError, MaxRetryError,
+                ReadTimeoutError) as error:
+            retryable_error = error
+            retry = True
 
-    if retry and retries > 0:
-        time.sleep(backoff / retries)
-        response = retryable_request(method, url, retries - 1, backoff,
-                                     session=internal_session, **kwargs)
-
-    if internal_session is not session:
-        internal_session.close()
+        if retry and retries > 0:
+            time.sleep(backoff / retries)
+            response = retryable_request(method, url, retries - 1, backoff,
+                                         session=internal_session, **kwargs)
+        elif retryable_error:
+            raise retryable_error
+    finally:
+        if internal_session is not session:
+            internal_session.close()
 
     return response
 
@@ -116,6 +124,50 @@ def rate_limited(calls_per_second=2, group='default'):
             time.sleep(minimum_wait - (current_time - last_call))
         yield
         _last_call_by_group[group] = time.time()
+
+
+class ThreadSafeIterator:
+    """
+    Wraps an iterator with locks to make reading from it thread-safe.
+
+    Parameters
+    ----------
+    iterator : iterator
+    """
+    def __init__(self, iterator):
+        self.iterator = iterator
+        self.lock = threading.Lock()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        with self.lock:
+            return next(self.iterator)
+
+
+def queue_iterator(queue, auto_done=True):
+    """
+    Create an iterator over the items in a :class:`queue.Queue`. The iterator
+    will stop if it encounters a `None` item.
+
+    Parameters
+    ----------
+    queue : queue.Queue
+    auto_done : bool, optional
+        If true (the default value), the iterator will automatically call
+        `queue.task_done()` for each item. If you want to actually make use of
+        this queue feature, set it to false so you can manually call
+        `queue.task_done()` at the appropriate time.
+    """
+    while True:
+        value = queue.get()
+        if auto_done:
+            queue.task_done()
+        if value:
+            yield value
+        else:
+            return
 
 
 class DepthCountedContext:
