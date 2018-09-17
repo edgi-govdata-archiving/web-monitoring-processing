@@ -53,9 +53,9 @@ def wayback_has_captures(url, from_date=None):
     list of JSON
     """
     try:
-        wayback = internetarchive.WaybackClient()
-        versions = wayback.list_versions(url, from_date=from_date)
-        next(versions)
+        with internetarchive.WaybackClient() as wayback:
+            versions = wayback.list_versions(url, from_date=from_date)
+            next(versions)
     except ValueError:
         return False
     else:
