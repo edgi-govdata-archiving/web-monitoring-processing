@@ -393,7 +393,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         _process_errors(res)
         return res.json()
 
-    def add_versions(self, versions, *, update='skip', batch_size=1000):
+    def add_versions(self, versions, *, update='skip', create_pages=None,
+                     skip_unchanged_versions=None, batch_size=1000):
         """
         Submit versions in bulk for importing into web-monitoring-db.
 
@@ -415,6 +416,12 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                 * ``'merge'`` -- Similar to `replace`, but merges the values in
                   ``source_metadata``
 
+        create_pages : bool, optional
+            If True, create new pages for any URLs in the import set that don't
+            already exist.
+        skip_unchanged_versions : bool, optional
+            If true, don't import versions of a page that have the same hash as
+            the version captured immediately before them.
         batch_size : integer, optional
             Default batch size is 50000 Versions.
 
@@ -429,10 +436,15 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             # versions might be a generator. This comprehension will pull on it
             validated_versions = [_build_importable_version(**v)
                                   for v in batch]
+
+            params = {'update': update, 'create_pages': create_pages,
+                      'skip_unchanged_versions': skip_unchanged_versions}
+            params = {k: v if isinstance(v, str) else str(v).lower()
+                      for k, v in params.items() if v is not None}
             res = requests.post(
                 url, auth=self._auth,
                 headers={'Content-Type': 'application/x-json-stream'},
-                params={'update': update},
+                params=params,
                 data='\n'.join(map(json.dumps, validated_versions)))
             _process_errors(res)
             import_id = res.json()['data']['id']
