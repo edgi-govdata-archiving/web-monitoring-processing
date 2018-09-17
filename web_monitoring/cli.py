@@ -58,11 +58,12 @@ SUBRESOURCE_EXTENSIONS = (
 # better to use the underlying library code.
 
 
-def _add_and_monitor(versions):
+def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
     cli = db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
     versions = tqdm(versions, desc='importing', unit=' versions')
-    import_ids = cli.add_versions(versions)
+    import_ids = cli.add_versions(versions, create_pages=create_pages,
+                                  skip_unchanged_versions=skip_unchanged_versions)
     print('Import jobs IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids)
@@ -121,7 +122,8 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         tags=tags,
         skip_unchanged=skip_unchanged,
         version_filter=version_filter,
-        worker_count=worker_count)
+        worker_count=worker_count,
+        create_pages=False)
 
 
 def merge_worker_summaries(summaries):
@@ -137,7 +139,8 @@ def merge_worker_summaries(summaries):
 async def import_ia_urls(urls, *, from_date=None, to_date=None,
                          maintainers=None, tags=None,
                          skip_unchanged='resolved-response',
-                         version_filter=None, worker_count=0):
+                         version_filter=None, worker_count=0,
+                         create_pages=True):
     skip_responses = skip_unchanged == 'response'
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
 
@@ -161,7 +164,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
         versions = utils.queue_iterator(versions_queue)
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
-        uploader = loop.run_in_executor(executor, _add_and_monitor, versions)
+        uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
         results = await asyncio.gather(*workers)
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
