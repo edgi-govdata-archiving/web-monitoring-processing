@@ -1,6 +1,7 @@
 # Command Line Interface
 # See scripts/ directory for associated executable(s). All of the interesting
 # functionality is implemented in this module to make it easier to test.
+from datetime import datetime, timedelta
 from docopt import docopt
 import logging
 from os.path import splitext
@@ -310,6 +311,12 @@ def _parse_date_argument(date_string):
     """Parse a CLI argument that should represent a date into a datetime"""
     if not date_string:
         return None
+
+    try:
+        hours = float(date_string)
+        return datetime.utcnow() - timedelta(hours=hours)
+    except ValueError:
+        pass
 
     try:
         parsed = pandas.to_datetime(date_string)
