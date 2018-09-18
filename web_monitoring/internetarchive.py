@@ -431,7 +431,7 @@ class WaybackClient(utils.DepthCountedContext):
             An HTTP response with the content of the memento, including a
             history of any redirects involved.
         """
-        with utils.rate_limited(calls_per_second=20, group='get_memento'):
+        with utils.rate_limited(calls_per_second=25, group='get_memento'):
             history = []
             urls = set()
             response = utils.retryable_request('GET', url, allow_redirects=False, session=self.session)
