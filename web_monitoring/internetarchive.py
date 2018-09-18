@@ -411,6 +411,37 @@ class WaybackClient(utils.DepthCountedContext):
             raise ValueError("Internet archive does not have archived "
                              "versions of {}".format(url))
 
+    def get_memento(self, url):
+        with utils.rate_limited(calls_per_second=20, group='get_memento'):
+            # Check to make sure we are actually getting a memento playback.
+            res = utils.retryable_request(
+                'GET', url, allow_redirects=False, session=self.session)
+            if res.headers.get('memento-datetime') is None:
+                message = res.headers.get('X-Archive-Wayback-Runtime-Error')
+                if message:
+                    raise MementoPlaybackError(f'Memento at {url} could not be played: {message}')
+                elif res.ok:
+                    raise MementoPlaybackError(f'Memento at {url} could not be played')
+                else:
+                    res.raise_for_status()
+
+            # If the playback includes a redirect, continue on.
+            if res.status_code >= 300 and res.status_code < 400:
+                target = res.headers.get('location')
+                # Wayback sometimes has circular memento redirects ¯\_(ツ)_/¯
+                # TODO: probably need to detect longer loops than just URLs
+                # that redirect to themselves. Need to interrupt every step
+                # along a series of redirects with all this error-handling :(
+                if target == url:
+                    raise MementoPlaybackError(f'Memento at {url} could not be played: circular redirect')
+
+                original = res
+                res = utils.retryable_request('GET', target, session=self.session)
+                res.history.insert(0, original)
+                res.request = original.request
+
+            return res
+
     def timestamped_uri_to_version(self, dt, uri, *, url,
                                    maintainers=None, tags=None, view_url=None):
         """
@@ -436,34 +467,7 @@ class WaybackClient(utils.DepthCountedContext):
         dict : Version
             suitable for passing to :class:`Client.add_versions`
         """
-        with utils.rate_limited(calls_per_second=20, group='timestamped_uri_to_version'):
-            # Check to make sure we are actually getting a memento playback.
-            res = utils.retryable_request(
-                'GET', uri, allow_redirects=False, session=self.session)
-            if res.headers.get('memento-datetime') is None:
-                message = res.headers.get('X-Archive-Wayback-Runtime-Error')
-                if message:
-                    raise MementoPlaybackError(f'Memento at {uri} could not be played: {message}')
-                elif res.ok:
-                    raise MementoPlaybackError(f'Memento at {uri} could not be played')
-                else:
-                    res.raise_for_status()
-
-            # If the playback includes a redirect, continue on.
-            if res.status_code >= 300 and res.status_code < 400:
-                target = res.headers.get('location')
-                # Wayback sometimes has circular memento redirects ¯\_(ツ)_/¯
-                # TODO: probably need to detect longer loops than just URLs
-                # that redirect to themselves. Need to interrupt every step
-                # along a series of redirects with all this error-handling :(
-                if target == uri:
-                    raise MementoPlaybackError(f'Memento at {uri} could not be played: circular redirect')
-
-                original = res
-                res = utils.retryable_request('GET', target, session=self.session)
-                res.history.insert(0, original)
-                res.request = original.request
-
+        res = self.get_memento(uri)
         version_hash = utils.hash_content(res.content)
         title = utils.extract_title(res.content)
         content_type = (res.headers['content-type'] or '').split(';', 1)
