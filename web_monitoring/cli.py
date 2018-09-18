@@ -358,7 +358,7 @@ Options:
 
         if arguments['ia']:
             command = import_ia_urls(
-                url=[arguments['<url>']],
+                urls=[arguments['<url>']],
                 maintainers=arguments.get('--maintainers'),
                 tags=arguments.get('--tags'),
                 from_date=_parse_date_argument(arguments['<from_date>']),
