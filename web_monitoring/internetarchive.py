@@ -139,6 +139,8 @@ class WaybackSession(requests.Session):
         return super().send(*args, **kwargs)
 
 
+# TODO: add retry, backoff, cross_thread_backoff, and rate_limit options that
+# create a custom instance of urllib3.utils.Retry
 class WaybackClient(utils.DepthCountedContext):
     """
     A client for retrieving data from the Internet Archive's Wayback Machine.
@@ -411,36 +413,51 @@ class WaybackClient(utils.DepthCountedContext):
             raise ValueError("Internet archive does not have archived "
                              "versions of {}".format(url))
 
+    # TODO: make this nicer by taking an optional date, so `url` can be a
+    # memento url or an original URL + plus date and we'll compose a memento
+    # URL. Probably needs a third optional argument for `find_closest=False`
     def get_memento(self, url):
+        """
+        Fetch version content and combine it with metadata to build a Version.
+
+        Parameters
+        ----------
+        url : string
+            URL of memento in Wayback (e.g. `http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/`)
+
+        Returns
+        -------
+        dict : requests.Response
+            An HTTP response with the content of the memento, including a
+            history of any redirects involved.
+        """
         with utils.rate_limited(calls_per_second=20, group='get_memento'):
-            # Check to make sure we are actually getting a memento playback.
-            res = utils.retryable_request(
-                'GET', url, allow_redirects=False, session=self.session)
-            if res.headers.get('memento-datetime') is None:
-                message = res.headers.get('X-Archive-Wayback-Runtime-Error')
-                if message:
-                    raise MementoPlaybackError(f'Memento at {url} could not be played: {message}')
-                elif res.ok:
-                    raise MementoPlaybackError(f'Memento at {url} could not be played')
+            history = []
+            urls = set()
+            response = utils.retryable_request('GET', url, allow_redirects=False, session=self.session)
+            while True:
+                urls.add(response.url)
+                if response.headers.get('memento-datetime') is None:
+                    message = response.headers.get('X-Archive-Wayback-Runtime-Error')
+                    if message:
+                        raise MementoPlaybackError(f'Memento at {url} could not be played: {message}')
+                    elif response.ok:
+                        raise MementoPlaybackError(f'Memento at {url} could not be played')
+                    else:
+                        response.raise_for_status()
+
+                if response.next:
+                    # Wayback sometimes has circular memento redirects ¯\_(ツ)_/¯
+                    if response.next.url in urls:
+                        raise MementoPlaybackError(f'Memento at {url} is circular')
+
+                    history.append(response)
+                    response = utils.retryable_send(response.next, allow_redirects=False)
                 else:
-                    res.raise_for_status()
+                    break
 
-            # If the playback includes a redirect, continue on.
-            if res.status_code >= 300 and res.status_code < 400:
-                target = res.headers.get('location')
-                # Wayback sometimes has circular memento redirects ¯\_(ツ)_/¯
-                # TODO: probably need to detect longer loops than just URLs
-                # that redirect to themselves. Need to interrupt every step
-                # along a series of redirects with all this error-handling :(
-                if target == url:
-                    raise MementoPlaybackError(f'Memento at {url} could not be played: circular redirect')
-
-                original = res
-                res = utils.retryable_request('GET', target, session=self.session)
-                res.history.insert(0, original)
-                res.request = original.request
-
-            return res
+            response.history = history
+            return response
 
     def timestamped_uri_to_version(self, dt, uri, *, url,
                                    maintainers=None, tags=None, view_url=None):

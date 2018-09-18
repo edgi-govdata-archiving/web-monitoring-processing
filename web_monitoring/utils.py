@@ -1,7 +1,9 @@
 from collections import defaultdict
 from contextlib import contextmanager
+import functools
 import hashlib
 import io
+import itertools
 import logging
 import lxml.html
 import os
@@ -46,69 +48,65 @@ def _should_retry(response):
     return response.status_code == 503 or response.status_code == 504
 
 
-def retryable_request(method, url, retries=4, backoff=30,
-                      should_retry=_should_retry, session=None, **kwargs):
-    """
-    Make a request with the `requests` library that will be automatically
-    retried up to a set number of times.
-
-    Parameters
-    ----------
-    method : string
-        HTTP request method to use
-    url : string
-        URL to request data from
-    retries : int, optional
-        Maximum number of retries
-    backoff : int or float, optional
-        Maximum number of seconds to wait before retrying. After each attempt,
-        the wait time is calculated by: `backoff / retries_left`, so the final
-        attempt will occur `backoff` seconds after the penultimate attempt.
-    should_retry : function, optional
-        A callback that receives the HTTP response and returns a boolean
-        indicating whether the call should be retried. By default, it retries
-        for responses with 503 and 504 status codes (gateway errors).
-    session : requests.Session, optional
-        A session object to use when making requests.
-    **kwargs : dict, optional
-        Any additional keyword parameters are passed on to `requests`
-
-    Returns
-    -------
-    response : requests.Response
-        The HTTP response object from `requests`
-    """
-    internal_session = session or requests.Session()
-    retry = False
-    retryable_error = None
-    try:
+# TODO: this is terrible and should be destroyed, but is here for temporary
+# compatibility. We already knew this was a bad design, but we've really
+# painted ourselves into a corner now.
+def retryable_network(func):
+    @functools.wraps(func)
+    def wrapper(*args, retries=4, backoff=30, should_retry=_should_retry, session=None, **kwargs):
+        internal_session = session or requests.Session()
+        kwargs['session'] = internal_session
+        response = None
         try:
-            response = internal_session.request(method, url, **kwargs)
-            retry = should_retry(response)
-        except (ConnectionError, ConnectTimeoutError, MaxRetryError,
-                ReadTimeoutError) as error:
-            retryable_error = error
-            retry = True
+            while retries >= 0:
+                try:
+                    response = func(*args, **kwargs)
+                    if retries == 0 or not should_retry(response):
+                        return response
+                except (ConnectionError, ConnectTimeoutError, MaxRetryError,
+                        ReadTimeoutError) as error:
+                    if retries == 0:
+                        raise error
 
-        if retry and retries > 0:
-            # Lock all threads requesting the same domain during backoff so
-            # that we are actually giving it a real break.
-            domain = urllib.parse.urlparse(url).netloc
-            if domain:
-                with _backoff_locks[domain]:
+                # Lock all threads requesting the same domain during backoff so
+                # that we are actually giving it a real break.
+                url = ''
+                if response:
+                    url = response.request.url
+                else:
+                    for arg in itertools.chain(args, kwargs.values()):
+                        if isinstance(arg, str) and arg.startswith('http'):
+                            url = arg
+                            break
+                        elif hasattr(arg, 'url'):
+                            url = arg.url
+                            break
+
+                domain = urllib.parse.urlparse(url).netloc
+                if domain:
+                    with _backoff_locks[domain]:
+                        time.sleep(backoff / retries)
+                else:
                     time.sleep(backoff / retries)
-            else:
-                time.sleep(backoff / retries)
 
-            response = retryable_request(method, url, retries - 1, backoff,
-                                         session=internal_session, **kwargs)
-        elif retryable_error:
-            raise retryable_error
-    finally:
-        if internal_session is not session:
-            internal_session.close()
+                retries -= 1
+        finally:
+            if internal_session is not session:
+                internal_session.close()
 
-    return response
+        return response
+
+    return wrapper
+
+
+@retryable_network
+def retryable_request(method, url, session, **kwargs):
+    return session.request(method, url, **kwargs)
+
+
+@retryable_network
+def retryable_send(request, session, **kwargs):
+    return session.send(request, **kwargs)
 
 
 _last_call_by_group = defaultdict(int)
