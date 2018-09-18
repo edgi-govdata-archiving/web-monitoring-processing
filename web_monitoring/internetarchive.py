@@ -45,7 +45,7 @@ ARCHIVE_RAW_URL_TEMPLATE = 'http://web.archive.org/web/{timestamp}id_/{url}'
 ARCHIVE_VIEW_URL_TEMPLATE = 'http://web.archive.org/web/{timestamp}/{url}'
 URL_DATE_FORMAT = '%Y%m%d%H%M%S'
 MEMENTO_URL_PATTERN = re.compile(
-    r'^http(?:s)?://web.archive.org/web/\d+(?:id_)?/(.+)$')
+    r'^http(?:s)?://web.archive.org/web/(\d+)(?:id_)?/(.+)$')
 REDUNDANT_HTTP_PORT = re.compile(r'^(http://[^:/]+):80(.*)$')
 REDUNDANT_HTTPS_PORT = re.compile(r'^(https://[^:/]+):443(.*)$')
 DATA_URL_START = re.compile(r'data:[\w]+/[\w]+;base64')
@@ -73,6 +73,43 @@ CdxRecord = namedtuple('CdxRecord', (
 ))
 
 
+def split_memento_url(memento_url):
+    'Extract the raw date and URL components from a memento URL.'
+    match = MEMENTO_URL_PATTERN.match(memento_url)
+    if match is None:
+        raise ValueError(f'"{memento_url}" is not a memento URL')
+
+    return match.group(2), match.group(1)
+
+
+def clean_memento_url_component(url):
+    # A URL *may* be percent encoded, decode ONLY if so (we don’t want to
+    # accidentally decode the querystring if there is one)
+    lower_url = url.lower()
+    if lower_url.startswith('http%3a') or lower_url.startswith('https%3a'):
+        url = urllib.parse.unquote(url)
+
+    return url
+
+
+def memento_url_data(memento_url):
+    """
+    Get the original URL and date that a memento URL represents a capture of.
+
+    Examples
+    --------
+    Extract original URL and date.
+
+    >>> memento_url_data('http://web.archive.org/web/20170813195036/https://arpa-e.energy.gov/?q=engage/events-workshops')
+    ('https://arpa-e.energy.gov/?q=engage/events-workshops', datetime.datetime(2017, 8, 13, 19, 50, 36))
+    """
+    raw_url, timestamp = split_memento_url(memento_url)
+    url = clean_memento_url_component(raw_url)
+    date = datetime.strptime(timestamp, URL_DATE_FORMAT)
+
+    return url, date
+
+
 def original_url_for_memento(memento_url):
     """
     Get the original URL that a memento URL represents a capture of.
@@ -84,19 +121,7 @@ def original_url_for_memento(memento_url):
     >>> original_url_for_memento('http://web.archive.org/web/20170813195036/https://arpa-e.energy.gov/?q=engage/events-workshops')
     'https://arpa-e.energy.gov/?q=engage/events-workshops'
     """
-    match = MEMENTO_URL_PATTERN.match(memento_url)
-    if match is None:
-        raise ValueError(f'"{memento_url}" is not a memento URL')
-
-    url = match.group(1)
-
-    # A URL *may* be percent encoded, decode ONLY if so (we don’t want to
-    # accidentally decode the querystring if there is one)
-    lower_url = url.lower()
-    if lower_url.startswith('http%3a') or lower_url.startswith('https%3a'):
-        url = urllib.parse.unquote(url)
-
-    return url
+    return clean_memento_url_component(split_memento_url(memento_url)[0])
 
 
 def is_malformed_url(url):
@@ -416,14 +441,28 @@ class WaybackClient(utils.DepthCountedContext):
     # TODO: make this nicer by taking an optional date, so `url` can be a
     # memento url or an original URL + plus date and we'll compose a memento
     # URL. Probably needs a third optional argument for `find_closest=False`
-    def get_memento(self, url):
+    # TODO: for generic use, needs to be able to return the memento itself if
+    # the memento was a redirect (different than allowing a nearby-in-time
+    # memento of the same URL)
+    def get_memento(self, url, redirect_target_window=12 * 60 * 60):
         """
-        Fetch version content and combine it with metadata to build a Version.
+        Fetch a memento from the Wayback Machine. This retrieves the content
+        that was ultimately returned from a memento, following any redirects
+        that were present at the time the memento was captured. (That is, if
+        `http://example.com/a` redirected to `http://example.com/b`, this
+        returns the memento for `/b` when you request `/a`.)
 
         Parameters
         ----------
         url : string
             URL of memento in Wayback (e.g. `http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/`)
+        redirect_taget_window : int, optional
+            If the memento is of a redirect, allow up to this many seconds
+            between the capture of the redirect and the capture of the target
+            URL. (Note this does NOT apply when the originally requested
+            memento didn't exist and wayback redirects to the next-closest-in-
+            -time one. That will always raise a MementoPlaybackError.)
+            Defaults to 43,200 (12 hours).
 
         Returns
         -------
@@ -432,21 +471,62 @@ class WaybackClient(utils.DepthCountedContext):
             history of any redirects involved.
         """
         with utils.rate_limited(calls_per_second=25, group='get_memento'):
+            # Correctly following redirects is actually pretty complicated. In
+            # the simplest case, a memento is a simple web page, and that's
+            # no problem. However...
+            #   1.  If the response was a >= 400 status, we have to determine
+            #       whether that status is coming from the memento or from the
+            #       the Wayback Machine itself.
+            #   2.  If the response was a 3xx status (a redirect) we have to
+            #       determine the same thing, but it's a little more complex...
+            #       a) If the redirect *is* the memento, its target may be an
+            #          actual memento (see #1) or it may be a redirect (#2).
+            #          The targeted URL is frequently captured anywhere from
+            #          the same second to a few hours later, so it is likely
+            #          the target will result in case 2b (below).
+            #       b) If there is no memento for the requested time, but there
+            #          are mementos for the same URL at another time, Wayback
+            #          *may* redirect to that memento.
+            #          - If this was on the original request, that's *not* ok
+            #            because it means we're getting a different memento
+            #            than we asked for.
+            #          - If the redirect came from a URL that was the target of
+            #            of a memento redirect (2a), then this is expected.
+            #            Before following the redirect, though, we first sanity
+            #            check it to make sure the memento we are redirecting
+            #            to actually came from nearby in time (sometimes
+            #            Wayback will redirect to captures *months* away).
             history = []
             urls = set()
+            previous_was_memento = False
+            orginal_url, original_date = memento_url_data(url)
             response = utils.retryable_request('GET', url, allow_redirects=False, session=self.session)
             while True:
-                urls.add(response.url)
-                if response.headers.get('memento-datetime') is None:
-                    message = response.headers.get('X-Archive-Wayback-Runtime-Error')
-                    if message:
-                        raise MementoPlaybackError(f'Memento at {url} could not be played: {message}')
-                    elif response.ok:
-                        raise MementoPlaybackError(f'Memento at {url} could not be played')
-                    else:
-                        response.raise_for_status()
+                is_memento = 'Memento-Datetime' in response.headers
+
+                if not is_memento:
+                    # If handling a reponse the original memento redirected to,
+                    # a non-memento redirect may be ok. The target URL will
+                    # rarely have been captured at the same time. (See 2b)
+                    playable = False
+                    if previous_was_memento and response.is_redirect:
+                        current_url = original_url_for_memento(response.url)
+                        target_url, target_date = memento_url_data(response.next.url)
+                        if current_url == target_url and abs(target_date - original_date).seconds < redirect_target_window:
+                            playable = True
+
+                    if not playable:
+                        message = response.headers.get('X-Archive-Wayback-Runtime-Error')
+                        if message:
+                            raise MementoPlaybackError(f'Memento at {url} could not be played: {message}')
+                        elif response.ok:
+                            raise MementoPlaybackError(f'Memento at {url} could not be played')
+                        else:
+                            response.raise_for_status()
 
                 if response.next:
+                    previous_was_memento = is_memento
+                    urls.add(response.url)
                     # Wayback sometimes has circular memento redirects ¯\_(ツ)_/¯
                     if response.next.url in urls:
                         raise MementoPlaybackError(f'Memento at {url} is circular')
