@@ -455,7 +455,8 @@ class WaybackClient(utils.DepthCountedContext):
         Parameters
         ----------
         url : string
-            URL of memento in Wayback (e.g. `http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/`)
+            URL of memento in Wayback (e.g.
+            `http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/`)
         redirect_taget_window : int, optional
             If the memento is of a redirect, allow up to this many seconds
             between the capture of the redirect and the capture of the target
@@ -509,10 +510,10 @@ class WaybackClient(utils.DepthCountedContext):
                     # a non-memento redirect may be ok. The target URL will
                     # rarely have been captured at the same time. (See 2b)
                     playable = False
-                    if previous_was_memento and response.is_redirect:
+                    if previous_was_memento and response.next:
                         current_url = original_url_for_memento(response.url)
                         target_url, target_date = memento_url_data(response.next.url)
-                        if current_url == target_url and abs(target_date - original_date).seconds < redirect_target_window:
+                        if current_url.casefold() == target_url.casefold() and abs(target_date - original_date).seconds <= redirect_target_window:
                             playable = True
 
                     if not playable:
