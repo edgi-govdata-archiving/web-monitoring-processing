@@ -20,7 +20,16 @@ import hashlib
 import urllib.parse
 import re
 import requests
+import threading
+import time
 from web_monitoring import utils
+
+from requests.exceptions import ConnectionError
+from urllib3.exceptions import (
+    ConnectTimeoutError,
+    MaxRetryError,
+    ReadTimeoutError
+)
 
 
 class WaybackException(Exception):
@@ -141,6 +150,9 @@ def cdx_hash(content):
     return b32encode(hashlib.sha1(content).digest()).decode()
 
 
+session_lock = threading.RLock()
+
+
 class WaybackSession(requests.Session):
     """
     A custom session object that network pools connections and resources. It
@@ -152,29 +164,86 @@ class WaybackSession(requests.Session):
 
     _closed = False
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        adapter = utils.SynchronizedHttpAdapter(
-            max_retries=utils.SynchronizedRetry(5, backoff_factor=2,
-                                                status_forcelist=(503, 504)))
-        cdx_adapter = utils.SynchronizedHttpAdapter(
-            max_retries=utils.SynchronizedRetry(10, backoff_factor=2,
-                                                status_forcelist=(503, 504)))
-        self.mount('https://web.archive.org/cdx', cdx_adapter)
-        self.mount('http://web.archive.org/cdx', cdx_adapter)
-        self.mount('https://', adapter)
-        self.mount('http://', adapter)
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     adapter = utils.SynchronizedHttpAdapter(
+    #         max_retries=utils.SynchronizedRetry(5, backoff_factor=2,
+    #                                             status_forcelist=(503, 504)))
+    #     cdx_adapter = utils.SynchronizedHttpAdapter(
+    #         max_retries=utils.SynchronizedRetry(10, backoff_factor=2,
+    #                                             status_forcelist=(503, 504)))
+    #     self.mount('https://web.archive.org/cdx', cdx_adapter)
+    #     self.mount('http://web.archive.org/cdx', cdx_adapter)
+    #     self.mount('https://', adapter)
+    #     self.mount('http://', adapter)
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     adapter = requests.adapters.HTTPAdapter(
+    #         max_retries=Retry(5, backoff_factor=2, status_forcelist(503, 504)))
+    #     cdx_adapter = requests.adapters.HTTPAdapter(
+    #         max_retries=Retry(10, backoff_factor=2, status_forcelist(503, 504)))
+    #     self.mount('https://web.archive.org/cdx', cdx_adapter)
+    #     self.mount('http://web.archive.org/cdx', cdx_adapter)
+    #     self.mount('https://', adapter)
+    #     self.mount('http://', adapter)
 
     def close(self):
         super().close()
         self._closed = True
 
-    def send(self, *args, **kwargs):
+    def send(self, request, *args, **kwargs):
         if self._closed:
             raise SessionClosedError('This session has already been closed '
                                      'and cannot send new HTTP requests.')
 
-        return super().send(*args, **kwargs)
+        # return super().send(request, *args, **kwargs)
+
+        retries = 0
+        max_retries = 5
+        backoff = 2
+        if request.url.startswith('http://web.archive.org/cdx') or request.url.startswith('https://web.archive.org/cdx'):
+            max_retries = 10
+            backoff = 2
+
+        with session_lock:
+            pass  # We just need to make sure the lock is free
+
+        raisable = None
+        response = None
+        locked = False
+        try:
+            while True:
+                try:
+                    response = super().send(request, *args, **kwargs)
+                    raisable = None
+                    if response.status_code != 503 and response.status_code != 504:
+                        return response
+                except (ConnectionError, ConnectTimeoutError, MaxRetryError,
+                        ReadTimeoutError) as error:
+                    raisable = error
+
+                retries += 1
+                if retries > max_retries:
+                    break
+
+                if locked is False:
+                    locked = True
+                    session_lock.acquire()
+
+                # The first retry has no delay.
+                if retries > 1:
+                    with session_lock:
+                        seconds = backoff * 2 ** (retries - 1)
+                        time.sleep(seconds)
+        finally:
+            # pass
+            if locked:
+                session_lock.release()
+
+        if raisable:
+            raise raisable
+        return response
 
 
 # TODO: add retry, backoff, cross_thread_backoff, and rate_limit options that
