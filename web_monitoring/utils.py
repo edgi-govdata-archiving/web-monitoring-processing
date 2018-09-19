@@ -111,6 +111,38 @@ def retryable_send(request, session, **kwargs):
     return session.send(request, **kwargs)
 
 
+def retryable(retries=4, backoff=2, should_retry=None, should_retry_error=None, should_retry_error_types=()):
+    should_retry = should_retry or (lambda x: False)
+    should_retry_error = lambda x: True
+
+    def decorate(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            retry_count = 0
+            while True:
+                try:
+                    result = func(*args, **kwargs)
+                    if retry_count >= retries or not should_retry(result):
+                        return result
+                except should_retry_error_types:
+                    if retry_count >= retries:
+                        raise
+                except Exception as error:
+                    if retry_count >= retries or not should_retry_error(error):
+                        raise
+
+                # The first retry has no delay.
+                if retry_count > 0:
+                    seconds = backoff * 2 ** (retry_count - 1)
+                    time.sleep(seconds)
+
+                retry_count += 1
+
+        return wrapper
+
+    return decorate
+
+
 _last_call_by_group = defaultdict(int)
 _rate_limit_lock = threading.Lock()
 
@@ -294,3 +326,28 @@ class SynchronizedRetry(Retry):
         if backoff <= 0:
             return
         self._sleep_synchronized(backoff)
+
+
+class SessionClosedError(Exception):
+    ...
+
+
+class DisableAfterCloseSession(requests.Session):
+    """
+    A custom session object raises a :class:`SessionClosedError` if you try to
+    use it after closing it, to help identify and avoid potentially dangerous
+    code patterns. (Standard session objects continue to be usable after
+    closing, even if they may not work exactly as expected.)
+    """
+    _closed = False
+
+    def close(self):
+        super().close()
+        self._closed = True
+
+    def send(self, *args, **kwargs):
+        if self._closed:
+            raise SessionClosedError('This session has already been closed '
+                                     'and cannot send new HTTP requests.')
+
+        return super().send(*args, **kwargs)
