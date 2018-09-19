@@ -21,7 +21,6 @@ import logging
 import urllib.parse
 import re
 import requests
-import threading
 import time
 from web_monitoring import utils
 
@@ -155,86 +154,82 @@ def cdx_hash(content):
     return b32encode(hashlib.sha1(content).digest()).decode()
 
 
-import requests.adapters
-from urllib3.util.retry import Retry
-retry_statuses = set((413, 421, 429, 500, 502, 503, 504, 599))
-
-
-def should_retry(response):
-    if 'Memento-Datetime' in response.headers:
-        return False
-
-    return response.status_code in retry_statuses
-
-def should_retry_error(error):
-    if isinstance(error, (ConnectTimeoutError, MaxRetryError,
-                            ReadTimeoutError, ProxyError, RetryError,
-                            Timeout)):
-        return True
-
-    if isinstance(error, ConnectionError):
-        text = str(error)
-        if 'NewConnectionError' in text or 'Max retries' in text:
-            return True
-
-    return False
-
 class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
     """
     A custom session object that network pools connections and resources for
     requests to the Wayback Machine.
+
+    Parameters
+    ----------
+    retries : int, optional
+        The maximum number of retries for requests.
+    backoff : int or float, optional
+        Number of seconds from which to calculate how long to back off and wait
+        when retrying requests. The first retry is always immediate, but
+        subsequent retries are calculated as:
+            seconds = backoff * 2 ^ (retry number - 1)
+        So if this was `2`, retries would happen after the following delays:
+            0 seconds, 4 seconds, 8 seconds, 16 seconds, ...
     """
 
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     adapter = requests.adapters.HTTPAdapter(
-    #         max_retries=Retry(total=5, backoff_factor=2,
-    #                           status_forcelist=(503, 504)))
-    #     cdx_adapter = requests.adapters.HTTPAdapter(
-    #         max_retries=Retry(total=10, backoff_factor=2,
-    #                           status_forcelist=(503, 504)))
-    #     self.mount('https://web.archive.org/cdx', cdx_adapter)
-    #     self.mount('http://web.archive.org/cdx', cdx_adapter)
-    #     self.mount('https://', adapter)
-    #     self.mount('http://', adapter)
+    # It seems Wayback sometimes produces 500 errors for transient issues, so
+    # they make sense to retry here. Usually not in other contexts, though.
+    retryable_statuses = frozenset((413, 421, 429, 500, 502, 503, 504, 599))
 
-    # send with retry logic
-    # def send(self, request, *args, **kwargs):
-    #     max_retries = 5
-    #     backoff = 2
-    #     if request.url.startswith('http://web.archive.org/cdx') or request.url.startswith('https://web.archive.org/cdx'):
-    #         max_retries = 10
-    #         backoff = 2
+    retryable_errors = (ConnectTimeoutError, MaxRetryError, ReadTimeoutError,
+                        ProxyError, RetryError, Timeout)
+    handleable_errors = (ConnectionError,) + retryable_errors
 
-    #     retries = 0
-    #     while True:
-    #         try:
-    #             response = super().send(request, *args, **kwargs)
-    #             if retries >= max_retries or not self.should_retry(response):
-    #                 return response
-    #         except Exception as error:
-    #             if retries >= max_retries or not self.should_retry_error(error):
-    #                 raise
+    def __init__(self, retries=5, backoff=2):
+        super().__init__()
+        self.retries = retries
+        self.backoff = backoff
+        # NOTE: the nice way to accomplish retry/backoff is with a urllib3:
+        #     adapter = requests.adapters.HTTPAdapter(
+        #         max_retries=Retry(total=5, backoff_factor=2,
+        #                           status_forcelist=(503, 504)))
+        #     self.mount('http://', adapter)
+        # But Wayback mementos can have errors, which complicates things. See:
+        # https://github.com/urllib3/urllib3/issues/1445#issuecomment-422950868
 
-    #         # The first retry has no delay.
-    #         if retries > 0:
-    #             seconds = backoff * 2 ** (retries - 1)
-    #             time.sleep(seconds)
+    # Customize the built-in `send` functionality with retryability.
+    # NOTE: worth considering whether we should push this logic to a custom
+    # requests.adapters.HTTPAdapter
+    def send(self, *args, **kwargs):
+        maximum = self.retries
+        retries = 0
+        while True:
+            try:
+                result = super().send(*args, **kwargs)
+                if retries >= maximum or not self.should_retry(result):
+                    return result
+            except WaybackSession.handleable_errors as error:
+                if retries >= maximum or not self.should_retry_error(error):
+                    raise
 
-    #         retries += 1
+            # The first retry has no delay.
+            if retries > 0:
+                seconds = self.backoff * 2 ** (retries - 1)
+                time.sleep(seconds)
 
-    def send(self, request, *args, **kwargs):
-        if request.url.startswith('http://web.archive.org/cdx') or request.url.startswith('https://web.archive.org/cdx'):
-            return self.send_cdx(request, *args, **kwargs)
-        return self.send_base(request, *args, **kwargs)
+            retries += 1
 
-    @utils.retryable(retries=5, should_retry=should_retry, should_retry_error=should_retry_error)
-    def send_base(self, *args, **kwargs):
-        return super().send(*args, **kwargs)
+    def should_retry(self, response):
+        # A memento may actually be a capture of an error, so don't retry it :P
+        if 'Memento-Datetime' in response.headers:
+            return False
 
-    @utils.retryable(retries=10, should_retry=should_retry, should_retry_error=should_retry_error)
-    def send_cdx(self, *args, **kwargs):
-        return super().send(*args, **kwargs)
+        return response.status_code in self.retryable_statuses
+
+    def should_retry_error(self, error):
+        if isinstance(error, WaybackSession.retryable_errors):
+            return True
+        elif isinstance(error, ConnectionError):
+            text = str(error)
+            if 'NewConnectionError' in text or 'Max retries' in text:
+                return True
+
+        return False
 
 
 # TODO: add retry, backoff, cross_thread_backoff, and rate_limit options that
@@ -547,7 +542,7 @@ class WaybackClient(utils.DepthCountedContext):
             An HTTP response with the content of the memento, including a
             history of any redirects involved.
         """
-        with utils.rate_limited(calls_per_second=25, group='get_memento'):
+        with utils.rate_limited(calls_per_second=30, group='get_memento'):
             # Correctly following redirects is actually pretty complicated. In
             # the simplest case, a memento is a simple web page, and that's
             # no problem. However...
