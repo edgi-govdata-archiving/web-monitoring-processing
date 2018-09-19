@@ -270,64 +270,6 @@ class DepthCountedContext:
         pass
 
 
-_domain_request_locks = defaultdict(threading.Lock)
-
-
-def extract_domain(url):
-    return urllib.parse.urlparse(url).netloc
-
-
-class SynchronizedHttpAdapter(requests.adapters.HTTPAdapter):
-    """
-    A custom HTTP adapter that
-    """
-    def __init__(self, *args, max_retries=None, **kwargs):
-        if not isinstance(max_retries, Retry):
-            max_retries = SynchronizedRetry(max_retries)
-        super().__init__(*args, **kwargs, max_retries=max_retries)
-
-    def send(self, request, *args, **kwargs):
-        domain = extract_domain(request.url)
-        if domain:
-            with _domain_request_locks[domain]:
-                pass  # we are only making sure we shouldn't be waiting
-        return super().send(request, *args, **kwargs)
-
-
-class SynchronizedRetry(Retry):
-    """
-    A custom urllib retry strategy that synchronizes backoffs across threads.
-    That is, when it is backing off, any other thread that is requesting from
-    the domain being backed-off will also wait.
-    """
-    def _sleep_synchronized(self, seconds):
-        domain = None
-        if len(self.history) > 0:
-            domain = extract_domain(self.history[-1].url)
-
-        if domain:
-            with _domain_request_locks[domain]:
-                time.sleep(seconds)
-        else:
-            time.sleep(seconds)
-
-    # These are based on the existing methods, but substituting
-    # _sleep_synchronized for time.sleep
-    def sleep_for_retry(self, response=None):
-        retry_after = self.get_retry_after(response)
-        if retry_after:
-            self._sleep_synchronized(retry_after)
-            return True
-
-        return False
-
-    def _sleep_backoff(self):
-        backoff = self.get_backoff_time()
-        if backoff <= 0:
-            return
-        self._sleep_synchronized(backoff)
-
-
 class SessionClosedError(Exception):
     ...
 
