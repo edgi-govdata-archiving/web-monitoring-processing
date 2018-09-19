@@ -17,6 +17,7 @@ from base64 import b32encode
 from collections import namedtuple
 from datetime import datetime
 import hashlib
+import logging
 import urllib.parse
 import re
 import requests
@@ -24,12 +25,20 @@ import threading
 import time
 from web_monitoring import utils
 
-from requests.exceptions import ConnectionError
+from requests.exceptions import (
+    ConnectionError,
+    ProxyError,
+    RetryError,
+    Timeout
+)
 from urllib3.exceptions import (
     ConnectTimeoutError,
     MaxRetryError,
     ReadTimeoutError
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class WaybackException(Exception):
@@ -153,6 +162,9 @@ def cdx_hash(content):
 session_lock = threading.RLock()
 
 
+import requests.adapters
+from urllib3.util.retry import Retry
+retry_statuses = set((413, 429, 503, 504))
 class WaybackSession(requests.Session):
     """
     A custom session object that network pools connections and resources. It
@@ -180,9 +192,11 @@ class WaybackSession(requests.Session):
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
     #     adapter = requests.adapters.HTTPAdapter(
-    #         max_retries=Retry(5, backoff_factor=2, status_forcelist(503, 504)))
+    #         max_retries=Retry(total=5, backoff_factor=2,
+    #                           status_forcelist=(503, 504)))
     #     cdx_adapter = requests.adapters.HTTPAdapter(
-    #         max_retries=Retry(10, backoff_factor=2, status_forcelist(503, 504)))
+    #         max_retries=Retry(total=10, backoff_factor=2,
+    #                           status_forcelist=(503, 504)))
     #     self.mount('https://web.archive.org/cdx', cdx_adapter)
     #     self.mount('http://web.archive.org/cdx', cdx_adapter)
     #     self.mount('https://', adapter)
@@ -192,12 +206,86 @@ class WaybackSession(requests.Session):
         super().close()
         self._closed = True
 
+    # TODO: make this logic into a mixin class
+    # Just a normal, closable session
+    # def send(self, request, *args, **kwargs):
+    #     if self._closed:
+    #         raise SessionClosedError('This session has already been closed '
+    #                                  'and cannot send new HTTP requests.')
+
+    #     return super().send(request, *args, **kwargs)
+
+    # send with thread-sync'd retry logic
+    # def send(self, request, *args, **kwargs):
+    #     if self._closed:
+    #         raise SessionClosedError('This session has already been closed '
+    #                                  'and cannot send new HTTP requests.')
+
+    #     retries = 0
+    #     max_retries = 5
+    #     backoff = 2
+    #     if request.url.startswith('http://web.archive.org/cdx') or request.url.startswith('https://web.archive.org/cdx'):
+    #         max_retries = 10
+    #         backoff = 2
+
+    #     raisable = None
+    #     response = None
+    #     locked = False
+    #     # Make sure we release any locks when returning or raising (we lock
+    #     # once we start retrying, so no other requests go through while any
+    #     # backoff is happening on any thread).
+    #     try:
+    #         while True:
+    #             try:
+    #                 with session_lock:
+    #                     pass  # We are only making sure this lock is free.
+    #                 response = super().send(request, *args, **kwargs)
+    #                 raisable = None
+    #                 if (response.status_code not in retry_statuses) or 'Memento-Datetime' in response.headers:
+    #                     return response
+    #             except (ConnectTimeoutError, MaxRetryError, ReadTimeoutError,
+    #                     ProxyError, RetryError, Timeout) as error:
+    #                 raisable = error
+    #             except ConnectionError as error:
+    #                 # requests classifies underlying urllib3 errors too broadly :\
+    #                 # See also https://github.com/requests/requests/issues/2811
+    #                 text = str(error)
+    #                 if 'NewConnectionError' in text or 'Max retries' in text:
+    #                     raisable = error
+    #                 else:
+    #                     raise
+
+    #             retries += 1
+    #             if retries > max_retries:
+    #                 break
+
+    #             if locked is False:
+    #                 locked = True
+    #                 session_lock.acquire()
+
+    #             # The first retry has no delay.
+    #             if retries > 1:
+    #                 seconds = backoff * 2 ** (retries - 1)
+    #                 logger.warn(f'BACKING OFF {seconds} seconds')
+    #                 time.sleep(seconds)
+    #                 # with session_lock:
+    #                 #     time.sleep(seconds)
+    #     finally:
+    #         # pass
+    #         if locked:
+    #             session_lock.release()
+
+    #     if raisable:
+    #         if isinstance(raisable, ConnectionError):
+    #             logger.warn(f'BAILING with error: ({type(raisable)}) {raisable}')
+    #         raise raisable
+    #     return response
+
+    # send with unsync'd retry logic
     def send(self, request, *args, **kwargs):
         if self._closed:
             raise SessionClosedError('This session has already been closed '
                                      'and cannot send new HTTP requests.')
-
-        # return super().send(request, *args, **kwargs)
 
         retries = 0
         max_retries = 5
@@ -206,42 +294,39 @@ class WaybackSession(requests.Session):
             max_retries = 10
             backoff = 2
 
-        with session_lock:
-            pass  # We just need to make sure the lock is free
-
         raisable = None
         response = None
         locked = False
-        try:
-            while True:
-                try:
-                    response = super().send(request, *args, **kwargs)
-                    raisable = None
-                    if response.status_code != 503 and response.status_code != 504:
-                        return response
-                except (ConnectionError, ConnectTimeoutError, MaxRetryError,
-                        ReadTimeoutError) as error:
+        while True:
+            try:
+                response = super().send(request, *args, **kwargs)
+                raisable = None
+                if response.status_code not in retry_statuses or 'Memento-Datetime' in response.headers:
+                    return response
+            except (ConnectTimeoutError, MaxRetryError, ReadTimeoutError,
+                    ProxyError, RetryError, Timeout) as error:
+                raisable = error
+            except ConnectionError as error:
+                # requests classifies underlying urllib3 errors too broadly :\
+                # See also https://github.com/requests/requests/issues/2811
+                text = str(error)
+                if 'NewConnectionError' in text or 'Max retries' in text:
                     raisable = error
+                else:
+                    raise
 
-                retries += 1
-                if retries > max_retries:
-                    break
+            retries += 1
+            if retries > max_retries:
+                break
 
-                if locked is False:
-                    locked = True
-                    session_lock.acquire()
-
-                # The first retry has no delay.
-                if retries > 1:
-                    with session_lock:
-                        seconds = backoff * 2 ** (retries - 1)
-                        time.sleep(seconds)
-        finally:
-            # pass
-            if locked:
-                session_lock.release()
+            # The first retry has no delay.
+            if retries > 1:
+                seconds = backoff * 2 ** (retries - 1)
+                time.sleep(seconds)
 
         if raisable:
+            if isinstance(raisable, ConnectionError):
+                logger.warn(f'BAILING with error: ({type(raisable)}) {raisable}')
             raise raisable
         return response
 
