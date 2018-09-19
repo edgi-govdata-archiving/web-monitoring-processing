@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytest
 import requests_mock
 from web_monitoring.utils import extract_title, retryable_request, rate_limited
 
@@ -45,6 +46,7 @@ def test_separate_rate_limited_groups_do_not_affect_each_other():
     assert duration.total_seconds() < 0.55
 
 
+@pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
 def test_retryable_request_retries():
     with requests_mock.Mocker() as mock:
         mock.get('http://test.com', [{'text': 'bad', 'status_code': 503},
@@ -53,6 +55,7 @@ def test_retryable_request_retries():
         assert response.ok
 
 
+@pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
 def test_retryable_request_stops_after_given_retries():
     with requests_mock.Mocker() as mock:
         mock.get('http://test.com', [{'text': 'bad1', 'status_code': 503},
@@ -64,6 +67,7 @@ def test_retryable_request_stops_after_given_retries():
         assert response.text == 'bad3'
 
 
+@pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
 def test_retryable_request_only_retries_gateway_errors():
     with requests_mock.Mocker() as mock:
         mock.get('http://test.com', [{'text': 'bad1', 'status_code': 400},
@@ -72,6 +76,7 @@ def test_retryable_request_only_retries_gateway_errors():
         assert response.status_code == 400
 
 
+@pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
 def test_retryable_request_with_custom_retry_logic():
     with requests_mock.Mocker() as mock:
         mock.get('http://test.com', [{'text': 'bad1', 'status_code': 400},

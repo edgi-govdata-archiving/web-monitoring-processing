@@ -152,6 +152,19 @@ class WaybackSession(requests.Session):
 
     _closed = False
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        adapter = utils.SynchronizedHttpAdapter(
+            max_retries=utils.SynchronizedRetry(5, backoff_factor=2,
+                                                status_forcelist=(503, 504)))
+        cdx_adapter = utils.SynchronizedHttpAdapter(
+            max_retries=utils.SynchronizedRetry(10, backoff_factor=2,
+                                                status_forcelist=(503, 504)))
+        self.mount('https://web.archive.org/cdx', cdx_adapter)
+        self.mount('http://web.archive.org/cdx', cdx_adapter)
+        self.mount('https://', adapter)
+        self.mount('http://', adapter)
+
     def close(self):
         super().close()
         self._closed = True
@@ -315,11 +328,8 @@ class WaybackClient(utils.DepthCountedContext):
         # TODO: our current setup requires that this request is extra robust.
         # We may be better off if we can re-architect so that's less true, or
         # somehow pass some of these retry semantics in at the constructor.
-        response = utils.retryable_request('GET', CDX_SEARCH_URL,
-                                           params=final_query,
-                                           session=self.session,
-                                           retries=10,
-                                           backoff=120)
+        response = self.session.request('GET', CDX_SEARCH_URL,
+                                        params=final_query)
         lines = response.iter_lines()
         count = 0
 
@@ -428,6 +438,12 @@ class WaybackClient(utils.DepthCountedContext):
 
         last_hashes = {}
         for version in self.search(**params):
+            # TODO: make skip_repeats smarter so we can use it again: only
+            # check & skip the hash if the mime_type is not `warc/revisit`,
+            # `unk`, `-` or `` and status_code is not `3xx`, `-` or ``.
+            # Possible betterment: CAN skip warc/revisits with same hash IF
+            # previous version of this URL with the same hash was not a revisit
+            # and was not a 3xx status code.
             # TODO: may want to follow redirects and resolve them in the future
             if not skip_repeats or last_hashes.get(version.url) != version.digest:
                 last_hashes[version.url] = version.digest
@@ -501,7 +517,7 @@ class WaybackClient(utils.DepthCountedContext):
             urls = set()
             previous_was_memento = False
             orginal_url, original_date = memento_url_data(url)
-            response = utils.retryable_request('GET', url, allow_redirects=False, session=self.session)
+            response = self.session.request('GET', url, allow_redirects=False)
             while True:
                 is_memento = 'Memento-Datetime' in response.headers
 
@@ -533,7 +549,7 @@ class WaybackClient(utils.DepthCountedContext):
                         raise MementoPlaybackError(f'Memento at {url} is circular')
 
                     history.append(response)
-                    response = utils.retryable_send(response.next, allow_redirects=False)
+                    response = self.session.send(response.next, allow_redirects=False)
                 else:
                     break
 
