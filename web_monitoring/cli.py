@@ -145,7 +145,9 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
     skip_responses = skip_unchanged == 'response'
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
 
-    with ia.WaybackClient() as wayback:
+    # Use a custom session to make sure CDX calls are extra robust.
+    session = ia.WaybackSession(retries=10, backoff=4)
+    with ia.WaybackClient(session) as wayback:
         wayback_records = utils.ThreadSafeIterator(
             _list_ia_versions_for_urls(
                 urls,
