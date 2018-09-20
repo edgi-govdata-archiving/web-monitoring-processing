@@ -62,6 +62,8 @@ SUBRESOURCE_EXTENSIONS = (
 def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
     cli = db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
+    # TODO: create this on the main thread so we can update totals when we
+    # discover them in CDX, but update progress here as we import.
     versions = tqdm(versions, desc='importing', unit=' versions')
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
@@ -72,9 +74,13 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
         print("Errors: {}".format(errors))
 
 
-def load_wayback_records_worker(records, results_queue, maintainers, tags):
+def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, go_slow_and_try_hard=False):
     wayback_errors = {'playback': 0, 'missing': 0, 'unknown': 0}
-    with ia.WaybackClient() as wayback:
+    session = None
+    if go_slow_and_try_hard:
+        # TODO: increase the timeout, too (WaybackSession needs to add support)
+        session = ia.WaybackSession(retries=8, backoff=4, timeout=(30.5, 60))
+    with ia.WaybackClient(session=session) as wayback:
         while True:
             try:
                 record = next(records)
@@ -93,19 +99,24 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags):
                 wayback_errors['playback'] += 1
                 logger.info(f'  {error}')
             except requests.exceptions.HTTPError as error:
-                logger.info(f'  (HTTPError) {error}')
                 if error.response.status_code == 404:
+                    logger.info(f'  Never actually crawled: {record.raw_url}')
                     wayback_errors['missing'] += 1
                 else:
-                    # logger.warn(f'     HTTP ERROR: {error}')
+                    logger.info(f'  (HTTPError) {error}')
                     wayback_errors['unknown'] += 1
+                    if failure_queue and not go_slow_and_try_hard:
+                        failure_queue.put(record)
             except ia.WaybackRetryError as error:
                 wayback_errors['unknown'] += 1
                 logger.info(f'  {error}; URL: {record.raw_url}')
+                if failure_queue and not go_slow_and_try_hard:
+                    failure_queue.put(record)
             except Exception as error:
                 wayback_errors['unknown'] += 1
-                # logger.warn(f'  UNKNOWN ERROR: {error}')
                 logger.info(f'  ({type(error)}) {error}; URL: {record.raw_url}')
+                if failure_queue and not go_slow_and_try_hard:
+                    failure_queue.put(record)
 
     return wayback_errors
 
@@ -161,17 +172,28 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 client=wayback))
 
         versions_queue = queue.Queue()
+        retry_queue = queue.Queue()
         # Add an extra thread for the DB uploader so it can collect results in
         # parallel if there are more than 1000
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
         loop = asyncio.get_event_loop()
-        workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags)
+        workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue)
                    for i in range(worker_count)]
         versions = utils.queue_iterator(versions_queue)
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
         uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
         results = await asyncio.gather(*workers)
+
+        # If there are failures to retry, re-spawn the workers to run them
+        # with more retries and higher timeouts.
+        if not retry_queue.empty():
+            print(f'Retrying about {retry_queue.qsize()} failed records...')
+            retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, True)
+                       for i in range(worker_count)]
+            results += await asyncio.gather(*workers)
+
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
 

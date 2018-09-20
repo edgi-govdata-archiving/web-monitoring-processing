@@ -57,10 +57,11 @@ class MementoPlaybackError(WaybackException):
 
 
 class WaybackRetryError(WaybackException):
-    def __init__(self, retries, causal_error):
+    def __init__(self, retries, total_time, causal_error):
         self.retries = retries
         self.cause = causal_error
-        super().__init__(f'Retried {retries} times (error: {causal_error})')
+        self.time = total_time
+        super().__init__(f'Retried {retries} times over {total_time or "?"} seconds (error: {causal_error})')
 
 
 CDX_SEARCH_URL = 'http://web.archive.org/cdx/search/cdx'
@@ -183,6 +184,12 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
             seconds = backoff * 2 ^ (retry number - 1)
         So if this was `2`, retries would happen after the following delays:
             0 seconds, 4 seconds, 8 seconds, 16 seconds, ...
+    timeout : int or float or tuple of (int or float, int or float), optional
+        A timeout to use for all requests. If not set, there will be no
+        no explicit timeout. See the Requests docs for more:
+        http://docs.python-requests.org/en/master/user/advanced/#timeouts
+    user_agent : str, optional
+        A custom user-agent string to use in all requests.
     """
 
     # It seems Wayback sometimes produces 500 errors for transient issues, so
@@ -193,10 +200,11 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
                         ProxyError, RetryError, Timeout)
     handleable_errors = (ConnectionError,) + retryable_errors
 
-    def __init__(self, retries=5, backoff=2, user_agent=None):
+    def __init__(self, retries=5, backoff=2, timeout=None, user_agent=None):
         super().__init__()
         self.retries = retries
         self.backoff = backoff
+        self.timeout = timeout
         self.headers = {'User-Agent': user_agent or f'edgi.web_monitoring.WaybackClient/{__version__}'}
         # NOTE: the nice way to accomplish retry/backoff is with a urllib3:
         #     adapter = requests.adapters.HTTPAdapter(
@@ -210,6 +218,10 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
     # NOTE: worth considering whether we should push this logic to a custom
     # requests.adapters.HTTPAdapter
     def send(self, *args, **kwargs):
+        if self.timeout is not None and 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
+        total_time = 0
         maximum = self.retries
         retries = 0
         while True:
@@ -219,7 +231,7 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
                     return result
             except WaybackSession.handleable_errors as error:
                 if retries >= maximum:
-                    raise WaybackRetryError(retries, error)
+                    raise WaybackRetryError(retries, total_time, error)
                 elif not self.should_retry_error(error):
                     raise
 
