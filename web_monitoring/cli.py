@@ -76,10 +76,11 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
 
 def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, go_slow_and_try_hard=False):
     summary = worker_summary()
-    session = None
     if go_slow_and_try_hard:
-        # TODO: increase the timeout, too (WaybackSession needs to add support)
-        session = ia.WaybackSession(retries=8, backoff=4)
+        session = ia.WaybackSession(retries=8, backoff=4, timeout=60.5)
+    else:
+        session = ia.WaybackSession(retries=3, backoff=2, timeout=(30.5, 2))
+
     with ia.WaybackClient(session=session) as wayback:
         while True:
             try:
