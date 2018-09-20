@@ -22,7 +22,7 @@ import urllib.parse
 import re
 import requests
 import time
-from web_monitoring import utils
+from web_monitoring import utils, __version__
 
 from requests.exceptions import (
     ConnectionError,
@@ -193,10 +193,11 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
                         ProxyError, RetryError, Timeout)
     handleable_errors = (ConnectionError,) + retryable_errors
 
-    def __init__(self, retries=5, backoff=2):
+    def __init__(self, retries=5, backoff=2, user_agent=None):
         super().__init__()
         self.retries = retries
         self.backoff = backoff
+        self.headers = {'User-Agent': user_agent or f'edgi.web_monitoring.WaybackClient/{__version__}'}
         # NOTE: the nice way to accomplish retry/backoff is with a urllib3:
         #     adapter = requests.adapters.HTTPAdapter(
         #         max_retries=Retry(total=5, backoff_factor=2,
