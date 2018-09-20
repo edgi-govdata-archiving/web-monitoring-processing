@@ -75,15 +75,16 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
 
 
 def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, go_slow_and_try_hard=False):
-    wayback_errors = {'playback': 0, 'missing': 0, 'unknown': 0}
+    summary = worker_summary()
     session = None
     if go_slow_and_try_hard:
         # TODO: increase the timeout, too (WaybackSession needs to add support)
-        session = ia.WaybackSession(retries=8, backoff=4, timeout=(30.5, 60))
+        session = ia.WaybackSession(retries=8, backoff=4)
     with ia.WaybackClient(session=session) as wayback:
         while True:
             try:
                 record = next(records)
+                summary['total'] += 1
             except StopIteration:
                 break
 
@@ -95,30 +96,31 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                                                              tags=tags,
                                                              view_url=record.view_url)
                 results_queue.put(version)
+                summary['success'] += 1
             except ia.MementoPlaybackError as error:
-                wayback_errors['playback'] += 1
+                summary['playback'] += 1
                 logger.info(f'  {error}')
             except requests.exceptions.HTTPError as error:
                 if error.response.status_code == 404:
-                    logger.info(f'  Never actually crawled: {record.raw_url}')
-                    wayback_errors['missing'] += 1
+                    logger.info(f'  Missing memento: {record.raw_url}')
+                    summary['missing'] += 1
                 else:
                     logger.info(f'  (HTTPError) {error}')
-                    wayback_errors['unknown'] += 1
+                    summary['unknown'] += 1
                     if failure_queue and not go_slow_and_try_hard:
                         failure_queue.put(record)
             except ia.WaybackRetryError as error:
-                wayback_errors['unknown'] += 1
+                summary['unknown'] += 1
                 logger.info(f'  {error}; URL: {record.raw_url}')
                 if failure_queue and not go_slow_and_try_hard:
                     failure_queue.put(record)
             except Exception as error:
-                wayback_errors['unknown'] += 1
+                summary['unknown'] += 1
                 logger.info(f'  ({type(error)}) {error}; URL: {record.raw_url}')
                 if failure_queue and not go_slow_and_try_hard:
                     failure_queue.put(record)
 
-    return wayback_errors
+    return summary
 
 
 async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
@@ -141,12 +143,20 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         create_pages=False)
 
 
+def worker_summary():
+    return {'total': 0, 'success': 0, 'playback': 0, 'missing': 0,
+            'unknown': 0}
+
+
 def merge_worker_summaries(summaries):
-    merged = {'playback': 0, 'missing': 0, 'unknown': 0, 'total': 0}
+    merged = worker_summary()
     for summary in summaries:
         for key, value in summary.items():
             merged[key] += value
-            merged['total'] += value
+
+    # Add percentage calculations
+    merged.update({f'{k}_pct': v / merged['total']
+                   for k, v in merged.items() if k != 'total'})
 
     return merged
 
@@ -179,34 +189,39 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
         loop = asyncio.get_event_loop()
         workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue)
                    for i in range(worker_count)]
+
         versions = utils.queue_iterator(versions_queue)
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
         uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
+
         results = await asyncio.gather(*workers)
+        summary = merge_worker_summaries(results)
+        print('\nLoaded {total} CDX records:\n'
+              '  {success:6} successes ({success_pct:.2f}%),\n'
+              '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
+              '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
+              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(**summary))
 
         # If there are failures to retry, re-spawn the workers to run them
         # with more retries and higher timeouts.
         if not retry_queue.empty():
-            print(f'Retrying about {retry_queue.qsize()} failed records...')
+            print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+            retry_queue.put(None)
             retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
             workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, True)
                        for i in range(worker_count)]
-            results += await asyncio.gather(*workers)
+
+            results = await asyncio.gather(*workers)
+            summary = merge_worker_summaries(results)
+            print('\nLoaded {total} CDX records:\n'
+                  '  {success:6} successes ({success_pct:.2f}%),\n'
+                  '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
+                  '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
+                  '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(**summary))
 
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
-
-        # TODO: create a queue for workers to drop failed records into, then
-        # retry just those failures at the end with ultra-high retry and
-        # timeout values. That also means timeouts need to be configurable per
-        # session or on `timestamped_uri_to_version`.
-
-        errors = merge_worker_summaries(results)
-        if errors['total'] > 0:
-            logger.warn('\nErrors: {playback} could not be played back, '
-                        '{missing} indexed snapshots were missing, '
-                        '{unknown} unknown errors.'.format(**errors))
 
         await uploader
 
