@@ -180,9 +180,9 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
     backoff : int or float, optional
         Number of seconds from which to calculate how long to back off and wait
         when retrying requests. The first retry is always immediate, but
-        subsequent retries are calculated as:
+        subsequent retries increase by powers of 2:
             seconds = backoff * 2 ^ (retry number - 1)
-        So if this was `2`, retries would happen after the following delays:
+        So if this was `4`, retries would happen after the following delays:
             0 seconds, 4 seconds, 8 seconds, 16 seconds, ...
     timeout : int or float or tuple of (int or float, int or float), optional
         A timeout to use for all requests. If not set, there will be no
@@ -200,7 +200,7 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
                         ProxyError, RetryError, Timeout)
     handleable_errors = (ConnectionError,) + retryable_errors
 
-    def __init__(self, retries=5, backoff=2, timeout=None, user_agent=None):
+    def __init__(self, retries=6, backoff=2, timeout=None, user_agent=None):
         super().__init__()
         self.retries = retries
         self.backoff = backoff
@@ -238,6 +238,7 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
             # The first retry has no delay.
             if retries > 0:
                 seconds = self.backoff * 2 ** (retries - 1)
+                total_time += seconds
                 time.sleep(seconds)
 
             retries += 1
