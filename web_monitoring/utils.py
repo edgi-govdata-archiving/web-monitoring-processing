@@ -12,7 +12,6 @@ import requests.adapters
 import threading
 import time
 import urllib.parse
-from urllib3.util.retry import Retry
 
 from requests.exceptions import ConnectionError
 from urllib3.exceptions import (
