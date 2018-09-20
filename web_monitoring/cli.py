@@ -99,6 +99,9 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags):
                 else:
                     # logger.warn(f'     HTTP ERROR: {error}')
                     wayback_errors['unknown'] += 1
+            except ia.WaybackRetryError as error:
+                wayback_errors['unknown'] += 1
+                logger.info(f'  {error}; URL: {record.raw_url}')
             except Exception as error:
                 wayback_errors['unknown'] += 1
                 # logger.warn(f'  UNKNOWN ERROR: {error}')
@@ -171,6 +174,11 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
         results = await asyncio.gather(*workers)
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
+
+        # TODO: create a queue for workers to drop failed records into, then
+        # retry just those failures at the end with ultra-high retry and
+        # timeout values. That also means timeouts need to be configurable per
+        # session or on `timestamped_uri_to_version`.
 
         errors = merge_worker_summaries(results)
         if errors['total'] > 0:
