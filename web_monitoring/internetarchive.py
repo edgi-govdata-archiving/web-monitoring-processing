@@ -49,8 +49,18 @@ class UnexpectedResponseFormat(WaybackException):
     ...
 
 
+# TODO: split this up into a family of more specific errors? When playback
+# failed partway into a redirect chain, when a redirect goes outside
+# redirect_target_window, when a memento was circular?
 class MementoPlaybackError(WaybackException):
     ...
+
+
+class WaybackRetryError(WaybackException):
+    def __init__(self, retries, causal_error):
+        self.retries = retries
+        self.cause = causal_error
+        super().__init__(f'Retried {retries} times (error: {causal_error})')
 
 
 CDX_SEARCH_URL = 'http://web.archive.org/cdx/search/cdx'
@@ -154,6 +164,9 @@ def cdx_hash(content):
     return b32encode(hashlib.sha1(content).digest()).decode()
 
 
+# TODO: make rate limiting configurable at the session level, rather than
+# arbitrarily set inside get_memento(). Idea: have a rate limit lock type and
+# pass an instance to the constructor here.
 class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
     """
     A custom session object that network pools connections and resources for
@@ -204,7 +217,9 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
                 if retries >= maximum or not self.should_retry(result):
                     return result
             except WaybackSession.handleable_errors as error:
-                if retries >= maximum or not self.should_retry_error(error):
+                if retries >= maximum:
+                    raise WaybackRetryError(retries, error)
+                elif not self.should_retry_error(error):
                     raise
 
             # The first retry has no delay.
@@ -511,10 +526,14 @@ class WaybackClient(utils.DepthCountedContext):
 
     # TODO: make this nicer by taking an optional date, so `url` can be a
     # memento url or an original URL + plus date and we'll compose a memento
-    # URL. Probably needs a third optional argument for `find_closest=False`
+    # URL.
+    # TODO: add optional argument for `find_closest=False`? This would allow
+    # get_memento() to return a different memento than the requested one if the
+    # requested one isn't playback-able. This could also be a different method.
     # TODO: for generic use, needs to be able to return the memento itself if
     # the memento was a redirect (different than allowing a nearby-in-time
-    # memento of the same URL)
+    # memento of the same URL, which would be the above argument). Probably
+    # call this `follow_redirects=True`?
     def get_memento(self, url, redirect_target_window=12 * 60 * 60):
         """
         Fetch a memento from the Wayback Machine. This retrieves the content
