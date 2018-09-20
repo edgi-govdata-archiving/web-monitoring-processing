@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 import vcr
-from utils import SessionClosedError
+from web_monitoring.utils import SessionClosedError
 from web_monitoring.internetarchive import (WaybackClient,
                                             original_url_for_memento,
                                             MementoPlaybackError)
