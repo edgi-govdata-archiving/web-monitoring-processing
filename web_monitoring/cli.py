@@ -156,8 +156,12 @@ def merge_worker_summaries(summaries):
             merged[key] += value
 
     # Add percentage calculations
-    merged.update({f'{k}_pct': v / merged['total']
-                   for k, v in merged.items() if k != 'total'})
+    if merged['total']:
+        merged.update({f'{k}_pct': v / merged['total']
+                       for k, v in merged.items() if k != 'total'})
+    else:
+        merged.update({f'{k}_pct': 0.0
+                       for k, v in merged.items() if k != 'total'})
 
     return merged
 
