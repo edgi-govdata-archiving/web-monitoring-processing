@@ -202,11 +202,6 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         results = await asyncio.gather(*workers)
         summary = merge_worker_summaries(results)
-        print('\nLoaded {total} CDX records:\n'
-              '  {success:6} successes ({success_pct:.2f}%),\n'
-              '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
-              '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
-              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(**summary))
 
         # If there are failures to retry, re-spawn the workers to run them
         # with more retries and higher timeouts.
@@ -217,13 +212,19 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, True)
                        for i in range(worker_count)]
 
+            # Update summary info
             results = await asyncio.gather(*workers)
-            summary = merge_worker_summaries(results)
-            print('\nLoaded {total} CDX records:\n'
-                  '  {success:6} successes ({success_pct:.2f}%),\n'
-                  '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
-                  '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
-                  '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(**summary))
+            retry_summary = merge_worker_summaries(results)
+            summary['success'] += retry_summary['success']
+            summary['success_pct'] = summary['success'] / summary['total']
+            summary['unknown'] -= retry_summary['success']
+            summary['unknown_pct'] = summary['unknown'] / summary['total']
+
+        print('\nLoaded {total} CDX records:\n'
+              '  {success:6} successes ({success_pct:.2f}%),\n'
+              '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
+              '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
+              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(**summary))
 
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
