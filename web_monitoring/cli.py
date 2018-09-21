@@ -79,7 +79,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
     if go_slow_and_try_hard:
         session = ia.WaybackSession(retries=8, backoff=4, timeout=60.5)
     else:
-        session = ia.WaybackSession(retries=3, backoff=2, timeout=(30.5, 2))
+        session = ia.WaybackSession(retries=4, backoff=2, timeout=(30.5, 2))
 
     with ia.WaybackClient(session=session) as wayback:
         while True:
