@@ -168,7 +168,7 @@ class ThreadSafeIterator:
     iterator : iterator
     """
     def __init__(self, iterator):
-        self.iterator = iterator
+        self.iterator = iter(iterator)
         self.lock = threading.Lock()
 
     def __iter__(self):
