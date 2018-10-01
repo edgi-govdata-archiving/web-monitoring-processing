@@ -8,6 +8,7 @@ from os.path import splitext
 import pandas
 import re
 import requests
+import toolz
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
@@ -182,48 +183,68 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
     # Use a custom session to make sure CDX calls are extra robust.
     session = ia.WaybackSession(retries=10, backoff=4)
     with ia.WaybackClient(session) as wayback:
-        wayback_records = utils.ThreadSafeIterator(
-            _list_ia_versions_for_urls(
-                urls,
-                from_date,
-                to_date,
-                skip_responses,
-                version_filter,
-                client=wayback))
+        # wayback_records = utils.ThreadSafeIterator(
+        #     _list_ia_versions_for_urls(
+        #         urls,
+        #         from_date,
+        #         to_date,
+        #         skip_responses,
+        #         version_filter,
+        #         client=wayback))
 
-        versions_queue = queue.Queue()
-        retry_queue = queue.Queue()
-        # Add an extra thread for the DB uploader so it can collect results in
-        # parallel if there are more than 1000
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
         loop = asyncio.get_event_loop()
-        workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue)
-                   for i in range(worker_count)]
-
+        versions_queue = queue.Queue()
         versions = utils.queue_iterator(versions_queue)
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
         uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
 
-        results = await asyncio.gather(*workers)
-        summary = merge_worker_summaries(results)
+        summary = worker_summary()
+        all_records = _list_ia_versions_for_urls(
+            urls,
+            from_date,
+            to_date,
+            skip_responses,
+            version_filter,
+            client=wayback)
+        for wayback_records in toolz.partition_all(2000, all_records):
+            wayback_records = utils.ThreadSafeIterator(wayback_records)
 
-        # If there are failures to retry, re-spawn the workers to run them
-        # with more retries and higher timeouts.
-        if not retry_queue.empty():
-            print(f'\nRetrying about {retry_queue.qsize()} failed records...')
-            retry_queue.put(None)
-            retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, True)
+            # versions_queue = queue.Queue()
+            retry_queue = queue.Queue()
+            # Add an extra thread for the DB uploader so it can collect results in
+            # parallel if there are more than 1000
+            # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
+            # loop = asyncio.get_event_loop()
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue)
                        for i in range(worker_count)]
 
-            # Update summary info
+            # versions = utils.queue_iterator(versions_queue)
+            # if skip_unchanged == 'resolved-response':
+            #     versions = _filter_unchanged_versions(versions)
+            # uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
+
             results = await asyncio.gather(*workers)
-            retry_summary = merge_worker_summaries(results)
-            summary['success'] += retry_summary['success']
-            summary['success_pct'] = summary['success'] / summary['total']
-            summary['unknown'] -= retry_summary['success']
-            summary['unknown_pct'] = summary['unknown'] / summary['total']
+            # summary = merge_worker_summaries(results)
+            summary = merge_worker_summaries((summary, *results))
+
+            # If there are failures to retry, re-spawn the workers to run them
+            # with more retries and higher timeouts.
+            if not retry_queue.empty():
+                print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+                retry_queue.put(None)
+                retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
+                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, True)
+                           for i in range(worker_count)]
+
+                # Update summary info
+                results = await asyncio.gather(*workers)
+                retry_summary = merge_worker_summaries(results)
+                summary['success'] += retry_summary['success']
+                summary['success_pct'] = summary['success'] / summary['total']
+                summary['unknown'] -= retry_summary['success']
+                summary['unknown_pct'] = summary['unknown'] / summary['total']
 
         print('\nLoaded {total} CDX records:\n'
               '  {success:6} successes ({success_pct:.2f}%),\n'
