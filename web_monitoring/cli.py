@@ -130,6 +130,11 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     domains, version_filter = _get_db_page_url_info(client, url_pattern)
+
+    # Wayback search treats URLs as SURT, so dedupe obvious repeats first.
+    www_subdomain = re.compile(r'^www\d*\.')
+    domains = set((www_subdomain.sub('', domain) for domain in domains))
+
     _print_domain_list(domains)
 
     return await import_ia_urls(
