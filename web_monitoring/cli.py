@@ -157,8 +157,8 @@ def worker_summary():
 def merge_worker_summaries(summaries):
     merged = worker_summary()
     for summary in summaries:
-        for key, value in summary.items():
-            merged[key] += value
+        for key in merged.keys():
+            merged[key] += summary[key]
 
     # Add percentage calculations
     if merged['total']:
