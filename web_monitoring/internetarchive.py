@@ -80,6 +80,8 @@ DATA_URL_START = re.compile(r'data:[\w]+/[\w]+;base64')
 #   http://mailto:first.last@pnnl.gov/
 #   http://<<mailto:first.last@pnnl.gov>>/
 EMAILISH_URL = re.compile(r'^https?://(<*)((mailto:)|([^/@:]*@))')
+# Make sure it roughly starts with a valid protocol + domain + port?
+URL_ISH = re.compile(r'^[\w+\-]+://[^/?=&]+\.\w\w+(:\d+)?(/|$)')
 
 CdxRecord = namedtuple('CdxRecord', (
     # Raw CDX values
@@ -154,6 +156,9 @@ def is_malformed_url(url):
 
     # TODO: restrict to particular protocols?
     if url.startswith('mailto:') or EMAILISH_URL.match(url):
+        return True
+
+    if URL_ISH.match(url) is None:
         return True
 
     return False
