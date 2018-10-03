@@ -3,9 +3,11 @@
 # functionality is implemented in this module to make it easier to test.
 from datetime import datetime, timedelta
 from docopt import docopt
+import json
 import logging
 from os.path import splitext
 import pandas
+from pathlib import Path
 import re
 import requests
 import toolz
@@ -75,12 +77,11 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
         print("Errors: {}".format(errors))
 
 
-def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, go_slow_and_try_hard=False):
+def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, session_options=None, unplaybackable=None):
     summary = worker_summary()
-    if go_slow_and_try_hard:
-        session = ia.WaybackSession(retries=8, backoff=4, timeout=60.5)
-    else:
-        session = ia.WaybackSession(retries=4, backoff=2, timeout=(30.5, 2))
+    session_options = session_options or dict(retries=4, backoff=2, timeout=(30.5, 2))
+    session = ia.WaybackSession(**session_options)
+    start_date = datetime.utcnow()
 
     with ia.WaybackClient(session=session) as wayback:
         while True:
@@ -89,6 +90,10 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                 summary['total'] += 1
             except StopIteration:
                 break
+
+            if unplaybackable is not None and record.raw_url in unplaybackable:
+                summary['playback'] += 1
+                continue
 
             try:
                 version = wayback.timestamped_uri_to_version(record.date,
@@ -101,6 +106,8 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                 summary['success'] += 1
             except ia.MementoPlaybackError as error:
                 summary['playback'] += 1
+                if unplaybackable is not None:
+                    unplaybackable[record.raw_url] = start_date
                 logger.info(f'  {error}')
             except requests.exceptions.HTTPError as error:
                 if error.response.status_code == 404:
@@ -109,17 +116,17 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                 else:
                     logger.info(f'  (HTTPError) {error}')
                     summary['unknown'] += 1
-                    if failure_queue and not go_slow_and_try_hard:
+                    if failure_queue:
                         failure_queue.put(record)
             except ia.WaybackRetryError as error:
                 summary['unknown'] += 1
                 logger.info(f'  {error}; URL: {record.raw_url}')
-                if failure_queue and not go_slow_and_try_hard:
+                if failure_queue:
                     failure_queue.put(record)
             except Exception as error:
                 summary['unknown'] += 1
                 logger.info(f'  ({type(error)}) {error}; URL: {record.raw_url}')
-                if failure_queue and not go_slow_and_try_hard:
+                if failure_queue:
                     failure_queue.put(record)
 
     return summary
@@ -127,7 +134,8 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
 
 async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                             tags=None, skip_unchanged='resolved-response',
-                            url_pattern=None, worker_count=0):
+                            url_pattern=None, worker_count=0,
+                            unplaybackable_path=None):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     domains, version_filter = _get_db_page_url_info(client, url_pattern)
@@ -147,7 +155,8 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         skip_unchanged=skip_unchanged,
         version_filter=version_filter,
         worker_count=worker_count,
-        create_pages=False)
+        create_pages=False,
+        unplaybackable_path=unplaybackable_path)
 
 
 def worker_summary():
@@ -163,7 +172,7 @@ def merge_worker_summaries(summaries):
 
     # Add percentage calculations
     if merged['total']:
-        merged.update({f'{k}_pct': v / merged['total']
+        merged.update({f'{k}_pct': 100 * v / merged['total']
                        for k, v in merged.items() if k != 'total'})
     else:
         merged.update({f'{k}_pct': 0.0
@@ -176,12 +185,18 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                          maintainers=None, tags=None,
                          skip_unchanged='resolved-response',
                          version_filter=None, worker_count=0,
-                         create_pages=True):
+                         create_pages=True, unplaybackable_path=None):
     skip_responses = skip_unchanged == 'response'
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
+    unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
     # Use a custom session to make sure CDX calls are extra robust.
     session = ia.WaybackSession(retries=10, backoff=4)
+
+    memento_options_intermediate = dict(retries=3, backoff=4, timeout=(30.5, 2))
+    memento_options_final = dict(retries=7, backoff=4, timeout=60.5)
+    final_retry_queue = queue.Queue()
+
     with ia.WaybackClient(session) as wayback:
         # wayback_records = utils.ThreadSafeIterator(
         #     _list_ia_versions_for_urls(
@@ -217,7 +232,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             # parallel if there are more than 1000
             # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
             # loop = asyncio.get_event_loop()
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue)
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue, None, unplaybackable)
                        for i in range(worker_count)]
 
             # versions = utils.queue_iterator(versions_queue)
@@ -235,7 +250,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 print(f'\nRetrying about {retry_queue.qsize()} failed records...')
                 retry_queue.put(None)
                 retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
-                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, True)
+                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, final_retry_queue, memento_options_intermediate, unplaybackable)
                            for i in range(worker_count)]
 
                 # Update summary info
@@ -246,6 +261,23 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 summary['unknown'] -= retry_summary['success']
                 summary['unknown_pct'] = summary['unknown'] / summary['total']
 
+        # If there are failures to retry, re-spawn the workers to run them
+        # with more retries and higher timeouts.
+        if not final_retry_queue.empty():
+            print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+            final_retry_queue.put(None)
+            retries = utils.ThreadSafeIterator(utils.queue_iterator(final_retry_queue))
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, memento_options_final, unplaybackable)
+                       for i in range(worker_count)]
+
+            # Update summary info
+            results = await asyncio.gather(*workers)
+            retry_summary = merge_worker_summaries(results)
+            summary['success'] += retry_summary['success']
+            summary['success_pct'] = summary['success'] / summary['total']
+            summary['unknown'] -= retry_summary['success']
+            summary['unknown_pct'] = summary['unknown'] / summary['total']
+
         print('\nLoaded {total} CDX records:\n'
               '  {success:6} successes ({success_pct:.2f}%),\n'
               '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
@@ -254,6 +286,9 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
+
+        print('Saving list of non-playbackable URLs...')
+        save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
         await uploader
 
@@ -290,10 +325,49 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                         skipped += 1
                         logger.debug('Skipping URL "%s"', version.url)
             except ValueError as error:
-                logger.warn(error)
+                # TODO: there should probably be no exception in this case
+                if 'does not have archived versions' not in str(error):
+                    logger.warn(error)
 
     if skipped > 0:
         logger.info('Skipped %s URLs that did not match filters', skipped)
+
+
+def load_unplaybackable_mementos(path):
+    unplaybackable = {}
+    if path:
+        try:
+            with open(path) as file:
+                unplaybackable = json.load(file)
+        except FileNotFoundError:
+            pass
+    return unplaybackable
+
+
+def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
+    if path is None:
+        return
+
+    threshold = datetime.utcnow() - timedelta(seconds=expiration)
+    urls = list(mementos.keys())
+    for url in urls:
+        date = mementos[url]
+        needs_format = False
+        if isinstance(date, str):
+            date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ')
+        else:
+            needs_format = True
+
+        if date < threshold:
+            del mementos[url]
+        elif needs_format:
+            mementos[url] = date.isoformat(timespec='seconds') + 'Z'
+
+    file_path = Path(path)
+    if not file_path.parent.exists():
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open('w') as file:
+        json.dump(mementos, file)
 
 
 def list_domains(url_pattern=None):
@@ -432,6 +506,11 @@ Options:
                               web-monitoring-db instance.
 --parallel <parallel_count>   Number of parallel network requests to support.
                               [default: {PARALLEL_REQUESTS}]
+--unplaybackable <play_path>  A file in which to list memento URLs that can not
+                              be played back. When importing is complete, a
+                              list of unplaybackable mementos will be written
+                              to this file. If it exists before importing,
+                              memento URLs listed in it will be skipped.
 """
     arguments = docopt(doc, version='0.0.1')
     command = None
@@ -449,7 +528,8 @@ Options:
                 tags=arguments.get('--tags'),
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
-                skip_unchanged=skip_unchanged)
+                skip_unchanged=skip_unchanged,
+                unplaybackable_path=arguments.get('--unplaybackable'))
         elif arguments['ia-known-pages']:
             command = import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
@@ -458,7 +538,8 @@ Options:
                 tags=arguments.get('--tags'),
                 skip_unchanged=skip_unchanged,
                 url_pattern=arguments.get('--pattern'),
-                worker_count=int(arguments.get('--parallel')))
+                worker_count=int(arguments.get('--parallel')),
+                unplaybackable_path=arguments.get('--unplaybackable'))
 
     elif arguments['db']:
         if arguments['list-domains']:
