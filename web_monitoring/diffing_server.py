@@ -1,5 +1,6 @@
 import concurrent.futures
 from docopt import docopt
+import json
 import hashlib
 import inspect
 import os
@@ -186,7 +187,12 @@ class DiffHandler(BaseHandler):
         # Echo the client's request unless the differ func has specified
         # somethine else.
         res.setdefault('type', differ)
-        self.write(res)
+        # By default self.write outputs JSON when res is a dict. We improve
+        # default tornado.escape.encode_json by removing JSON whitespace
+        # https://www.tornadoweb.org/en/stable/_modules/tornado/web.html#RequestHandler.write
+        # https://www.tornadoweb.org/en/stable/_modules/tornado/escape.html#json_encode
+        self.set_header("Content-Type", "application/json; charset=UTF-8")
+        self.write(json.dumps(res, separators=',:').replace("</", "<\\/"))
 
     def write_error(self, status_code, **kwargs):
         response = {'code': status_code, 'error': self._reason}
