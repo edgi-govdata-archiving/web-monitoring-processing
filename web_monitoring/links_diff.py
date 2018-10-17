@@ -1,3 +1,4 @@
+import cchardet as chardet
 from bs4 import BeautifulSoup
 from .content_type import raise_if_not_diffable_html
 from .differs import compute_dmp_diff

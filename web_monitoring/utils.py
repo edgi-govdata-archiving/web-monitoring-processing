@@ -1,5 +1,6 @@
 from collections import defaultdict
 from contextlib import contextmanager
+import cchardet as chardet
 import hashlib
 import io
 import lxml.html

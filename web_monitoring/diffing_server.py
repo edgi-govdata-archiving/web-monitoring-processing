@@ -1,3 +1,4 @@
+import cchardet as chardet
 import concurrent.futures
 from docopt import docopt
 import hashlib
