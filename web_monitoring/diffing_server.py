@@ -54,6 +54,7 @@ XML_PROLOG_PATTERN = re.compile(
     b'<?xml\\s[^>]*encoding=[\'"]([^\'"]+)[\'"].*\?>',
     re.IGNORECASE)
 
+tornado.httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
 client = tornado.httpclient.AsyncHTTPClient()
 
 
