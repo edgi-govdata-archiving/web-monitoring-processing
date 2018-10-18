@@ -1,5 +1,4 @@
 from urllib.parse import urlparse
-import cchardet as chardet
 from bs4 import BeautifulSoup
 
 day_list = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']

@@ -1,4 +1,3 @@
-import cchardet as chardet
 from bs4 import BeautifulSoup, Comment
 from diff_match_patch import diff, diff_bytes
 from web_monitoring.utils import get_color_palette
