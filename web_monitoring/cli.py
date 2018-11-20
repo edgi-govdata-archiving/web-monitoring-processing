@@ -79,7 +79,7 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
 
 def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, session_options=None, unplaybackable=None):
     summary = worker_summary()
-    session_options = session_options or dict(retries=4, backoff=2, timeout=(30.5, 2))
+    session_options = session_options or dict(retries=3, backoff=2, timeout=(30.5, 2))
     session = ia.WaybackSession(**session_options)
     start_date = datetime.utcnow()
 
