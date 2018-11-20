@@ -6,6 +6,7 @@ import io
 import itertools
 import lxml.html
 import logging
+import re
 import requests
 import requests.adapters
 import threading
@@ -21,7 +22,10 @@ from urllib3.exceptions import (
 
 
 logger = logging.getLogger(__name__)
+
 _backoff_locks = defaultdict(threading.Lock)
+
+WHITESPACE_PATTERN = re.compile(r'\s+')
 
 
 def extract_title(content_bytes, encoding='utf-8'):
@@ -36,7 +40,8 @@ def extract_title(content_bytes, encoding='utf-8'):
     if title is None:
         return ''
     else:
-        return title.text
+        # In HTML, all consecutive whitespace (including line breaks) collapses
+        return WHITESPACE_PATTERN.sub(' ', title.text.strip())
 
 
 def hash_content(content_bytes):

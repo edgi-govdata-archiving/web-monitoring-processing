@@ -20,6 +20,21 @@ def test_extract_title_from_titleless_page():
     assert title == ''
 
 
+def test_extract_title_handles_whitespace():
+    title = extract_title(b'''<html>
+        <head>
+            <meta charset="utf-8">
+            <title>
+
+                THIS IS
+                THE  TITLE
+            </title>
+        </head>
+        <body>Blah</body>
+    </html>''')
+    assert title == 'THIS IS THE TITLE'
+
+
 def test_rate_limited():
     start_time = datetime.utcnow()
     for i in range(2):
