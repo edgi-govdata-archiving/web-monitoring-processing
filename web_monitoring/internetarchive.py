@@ -49,6 +49,11 @@ class UnexpectedResponseFormat(WaybackException):
     ...
 
 
+class BlockedByRobotsError(WaybackException):
+    # A URL can't be queried in Wayback because it was blocked by robots.txt
+    ...
+
+
 # TODO: split this up into a family of more specific errors? When playback
 # failed partway into a redirect chain, when a redirect goes outside
 # redirect_target_window, when a memento was circular?
@@ -65,6 +70,11 @@ class WaybackRetryError(WaybackException):
 
 
 CDX_SEARCH_URL = 'http://web.archive.org/cdx/search/cdx'
+# This /web/timemap URL has newer features, but has other bugs and doesn't
+# support some features, like resume keys (for paging). It ignores robots.txt,
+# while /cdx/search obeys robots.txt (for now).
+# CDX_SEARCH_URL = 'http://web.archive.org/web/timemap/cdx'
+
 ARCHIVE_RAW_URL_TEMPLATE = 'http://web.archive.org/web/{timestamp}id_/{url}'
 ARCHIVE_VIEW_URL_TEMPLATE = 'http://web.archive.org/web/{timestamp}/{url}'
 URL_DATE_FORMAT = '%Y%m%d%H%M%S'
@@ -437,7 +447,9 @@ class WaybackClient(utils.DepthCountedContext):
                 capture_time = datetime.strptime(data.timestamp,
                                                  URL_DATE_FORMAT)
             except Exception:
-                raise UnexpectedResponseFormat(text)
+                if 'RobotAccessControlException' in text:
+                    raise BlockedByRobotsError(f'CDX search for URL was blocked by robots.txt "{query["url"]}" (parameters: {final_query})')
+                raise UnexpectedResponseFormat(f'Could not parse CDX output: "{text}" (parameters: {final_query})')
 
             clean_url = REDUNDANT_HTTPS_PORT.sub(
                 r'\1\2', REDUNDANT_HTTP_PORT.sub(

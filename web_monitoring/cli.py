@@ -324,6 +324,8 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     else:
                         skipped += 1
                         logger.debug('Skipping URL "%s"', version.url)
+            except ia.BlockedByRobotsError as error:
+                logger.warn(str(error))
             except ValueError as error:
                 # TODO: there should probably be no exception in this case
                 if 'does not have archived versions' not in str(error):
