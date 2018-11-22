@@ -1,6 +1,7 @@
 # Command Line Interface
 # See scripts/ directory for associated executable(s). All of the interesting
 # functionality is implemented in this module to make it easier to test.
+from collections import defaultdict
 from datetime import datetime, timedelta
 from docopt import docopt
 import json
@@ -55,6 +56,16 @@ SUBRESOURCE_EXTENSIONS = (
     '.tif',
     '.ico',
 )
+# Never query CDX for *all* snapshots at any of these domains (instead, always
+# query for each specific URL we want).
+NEVER_QUERY_DOMAINS = (
+    'instagram.com',
+    'youtube.com',
+    'amazon.com'
+)
+# Query an entire domain for snapshots if we are interested in more than this
+# many URLs in the domain (NEVER_QUERY_DOMAINS above overrides this).
+MAX_QUERY_URLS_PER_DOMAIN = 20
 
 
 # These functions lump together library code into monolithic operations for the
@@ -138,16 +149,16 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                             unplaybackable_path=None):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
-    domains, version_filter = _get_db_page_url_info(client, url_pattern)
+    urls, version_filter = _get_db_page_url_info(client, url_pattern)
 
     # Wayback search treats URLs as SURT, so dedupe obvious repeats first.
-    www_subdomain = re.compile(r'^www\d*\.')
-    domains = set((www_subdomain.sub('', domain) for domain in domains))
+    www_subdomain = re.compile(r'^https?://www\d*\.')
+    urls = set((www_subdomain.sub('http://', url) for url in urls))
 
-    _print_domain_list(domains)
+    _print_domain_list(urls)
 
     return await import_ia_urls(
-        urls=[f'http://{domain}/*' for domain in domains],
+        urls=urls,
         from_date=from_date,
         to_date=to_date,
         maintainers=maintainers,
@@ -173,10 +184,12 @@ def merge_worker_summaries(summaries):
     # Add percentage calculations
     if merged['total']:
         merged.update({f'{k}_pct': 100 * v / merged['total']
-                       for k, v in merged.items() if k != 'total'})
+                       for k, v in merged.items()
+                       if k != 'total' and not k.endswith('_pct')})
     else:
         merged.update({f'{k}_pct': 0.0
-                       for k, v in merged.items() if k != 'total'})
+                       for k, v in merged.items()
+                       if k != 'total' and not k.endswith('_pct')})
 
     return merged
 
@@ -215,7 +228,8 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             versions = _filter_unchanged_versions(versions)
         uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
 
-        summary = worker_summary()
+        # summary = worker_summary()
+        summary = merge_worker_summaries([worker_summary()])
         all_records = _list_ia_versions_for_urls(
             urls,
             from_date,
@@ -384,16 +398,30 @@ def _print_domain_list(domains):
     print(f'Found {len(domains)} matching domains:\n  {text}')
 
 
+def _can_query_domain(domain):
+    if domain in NEVER_QUERY_DOMAINS:
+        return False
+
+    return next((False for item in NEVER_QUERY_DOMAINS
+                if domain.endswith(f'.{item}')), True)
+
+
 def _get_db_page_url_info(client, url_pattern=None):
     # If these sets get too big, we can switch to a bloom filter. It's fine if
     # we have some false positives. Any noise reduction is worthwhile.
     url_keys = set()
-    domains = set()
+    domains = defaultdict(lambda: {'query_domain': False, 'urls': []})
 
     domains_without_url_keys = set()
     for page in _list_all_db_pages(client, url_pattern):
         domain = HOST_EXPRESSION.match(page['url']).group(1)
-        domains.add(domain)
+        data = domains[domain]
+        if not data['query_domain']:
+            if len(data['urls']) >= MAX_QUERY_URLS_PER_DOMAIN and _can_query_domain(domain):
+                data['query_domain'] = True
+            else:
+                data['urls'].append(page['url'])
+
         if domain in domains_without_url_keys:
             continue
 
@@ -412,6 +440,13 @@ def _get_db_page_url_info(client, url_pattern=None):
         else:
             return _rough_url_key(version.key) in url_keys
 
+    url_list = []
+    for domain, data in domains.items():
+        if data['query_domain']:
+            url_list.append(f'http://{domain}/*')
+        else:
+            url_list.extend(data['urls'])
+
     ###### DEBUG
     # print(f'Total domains: {len(domains)}')
     # if len(domains) > 2:
@@ -423,7 +458,7 @@ def _get_db_page_url_info(client, url_pattern=None):
     # domains = {'www.epa.gov'}
     ###### DEBUG
 
-    return domains, filterer
+    return url_list, filterer
 
 
 def _rough_url_key(url_key):
