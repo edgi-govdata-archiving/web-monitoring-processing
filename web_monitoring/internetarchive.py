@@ -185,15 +185,18 @@ def cdx_hash(content):
 
 
 #####################################################################
-# HACK: handle malformed headers that Wayback sends for content that was
-# originally gzipped. We don't know when Wayback will fix this. See:
+# HACK: handle malformed Content-Encoding headers from Wayback.
+# When you send `Accept-Encoding: gzip` on a request for a memento, Wayback
+# will faithfully gzip the response body. However, if the original response
+# from the web server that was snapshotted was gzipped, Wayback screws up the
+# `Content-Encoding` header on the memento response, leading any HTTP client to
+# *not* decompress the gzipped body. Wayback folks have no clear timeline for
+# a fix, hence the workaround here. More info in this issue:
 # https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/309
 #
-# This fixes things by subclassing urllib3's Response class, overriding the
-# `from_httplib()` class method (which creates a response object from a
-# built-in httplib response object), and looking for Wayback's bad headers. It
-# then fixes them up before returning to the original Response class. Since the
-# urllib3 Response only sees the fixed headers, it decodes the body correctly.
+# This subclass of urllib3's response class identifies the malformed headers
+# and repairs them before instantiating the actual response object, so when it
+# reads the body, it knows to decode it correctly.
 #
 # See what we're overriding from urllib3:
 # https://github.com/urllib3/urllib3/blob/a6ec68a5c5c5743c59fe5c62c635c929586c429b/src/urllib3/response.py#L499-L526
