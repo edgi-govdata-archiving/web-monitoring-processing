@@ -22,6 +22,7 @@ import urllib.parse
 import re
 import requests
 import time
+from urllib3.connectionpool import HTTPConnectionPool
 from web_monitoring import utils, __version__
 
 from requests.exceptions import (
@@ -183,6 +184,35 @@ def cdx_hash(content):
     return b32encode(hashlib.sha1(content).digest()).decode()
 
 
+#####################################################################
+# HACK: handle malformed headers that Wayback sends for content that was
+# originally gzipped. We don't know when Wayback will fix this. See:
+# https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/309
+#
+# This fixes things by subclassing urllib3's Response class, overriding the
+# `from_httplib()` class method (which creates a response object from a
+# built-in httplib response object), and looking for Wayback's bad headers. It
+# then fixes them up before returning to the original Response class. Since the
+# urllib3 Response only sees the fixed headers, it decodes the body correctly.
+#
+# See what we're overriding from urllib3:
+# https://github.com/urllib3/urllib3/blob/a6ec68a5c5c5743c59fe5c62c635c929586c429b/src/urllib3/response.py#L499-L526
+class WaybackResponse(HTTPConnectionPool.ResponseCls):
+    @classmethod
+    def from_httplib(cls, httplib_response, **response_kwargs):
+        headers = httplib_response.msg
+        pairs = headers.items()
+        if ('content-encoding', '') in pairs and ('Content-Encoding', 'gzip') in pairs:
+            del headers['content-encoding']
+            headers['Content-Encoding'] = 'gzip'
+        return super().from_httplib(httplib_response, **response_kwargs)
+
+
+HTTPConnectionPool.ResponseCls = WaybackResponse
+# END HACK
+#####################################################################
+
+
 # TODO: make rate limiting configurable at the session level, rather than
 # arbitrarily set inside get_memento(). Idea: have a rate limit lock type and
 # pass an instance to the constructor here.
@@ -223,7 +253,10 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
         self.retries = retries
         self.backoff = backoff
         self.timeout = timeout
-        self.headers = {'User-Agent': user_agent or f'edgi.web_monitoring.WaybackClient/{__version__}'}
+        self.headers = {
+            'User-Agent': user_agent or f'edgi.web_monitoring.WaybackClient/{__version__}',
+            'Accept-Encoding': 'gzip, deflate'
+        }
         # NOTE: the nice way to accomplish retry/backoff is with a urllib3:
         #     adapter = requests.adapters.HTTPAdapter(
         #         max_retries=Retry(total=5, backoff_factor=2,
