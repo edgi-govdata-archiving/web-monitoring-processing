@@ -597,14 +597,12 @@ class WaybackClient(utils.DepthCountedContext):
     # TODO: make this nicer by taking an optional date, so `url` can be a
     # memento url or an original URL + plus date and we'll compose a memento
     # URL.
-    # TODO: add optional argument for `find_closest=False`? This would allow
-    # get_memento() to return a different memento than the requested one if the
-    # requested one isn't playback-able. This could also be a different method.
     # TODO: for generic use, needs to be able to return the memento itself if
     # the memento was a redirect (different than allowing a nearby-in-time
     # memento of the same URL, which would be the above argument). Probably
     # call this `follow_redirects=True`?
-    def get_memento(self, url, redirect_target_window=12 * 60 * 60):
+    def get_memento(self, url, exact=True, exact_redirects=None,
+                    target_window=24 * 60 * 60):
         """
         Fetch a memento from the Wayback Machine. This retrieves the content
         that was ultimately returned from a memento, following any redirects
@@ -617,13 +615,23 @@ class WaybackClient(utils.DepthCountedContext):
         url : string
             URL of memento in Wayback (e.g.
             `http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/`)
-        redirect_taget_window : int, optional
+        exact : boolean, optional
+            If false and the requested memento either doesn't exist or can't be
+            played back, this returns the closest-in-time memento to the
+            requested one, so long as it is within `target_window`.
+            Default: True
+        exact_redirects : boolean, optional
+            If false and the requested memento is a redirect whose *target*
+            doesn't exist or or can't be played back, this returns the closest-
+            in-time memento to the intended target, so long as it is within
+            `target_window`. If unset, this will be the same as `exact`.
+        taget_window : int, optional
             If the memento is of a redirect, allow up to this many seconds
             between the capture of the redirect and the capture of the target
             URL. (Note this does NOT apply when the originally requested
             memento didn't exist and wayback redirects to the next-closest-in-
             -time one. That will always raise a MementoPlaybackError.)
-            Defaults to 43,200 (12 hours).
+            Defaults to 86,400 (24 hours).
 
         Returns
         -------
@@ -631,6 +639,9 @@ class WaybackClient(utils.DepthCountedContext):
             An HTTP response with the content of the memento, including a
             history of any redirects involved.
         """
+        if exact_redirects is None:
+            exact_redirects = exact
+
         with utils.rate_limited(calls_per_second=30, group='get_memento'):
             # Correctly following redirects is actually pretty complicated. In
             # the simplest case, a memento is a simple web page, and that's
@@ -666,14 +677,19 @@ class WaybackClient(utils.DepthCountedContext):
                 is_memento = 'Memento-Datetime' in response.headers
 
                 if not is_memento:
-                    # If handling a reponse the original memento redirected to,
-                    # a non-memento redirect may be ok. The target URL will
-                    # rarely have been captured at the same time. (See 2b)
+                    # The exactness requirements for redirects from memento
+                    # playbacks and non-playbacks is different -- even with
+                    # strict matching, a memento that redirects to a non-
+                    # memento is normal and ok; the target of a redirect will
+                    # rarely have been captured at the same time as the
+                    # redirect itself. (See 2b)
                     playable = False
-                    if previous_was_memento and response.next:
+                    if response.next and (
+                       (len(history) == 0 and exact == False) or
+                       (len(history) > 0 and (previous_was_memento or exact_redirects == False))):
                         current_url = original_url_for_memento(response.url)
                         target_url, target_date = memento_url_data(response.next.url)
-                        if current_url.casefold() == target_url.casefold() and abs(target_date - original_date).seconds <= redirect_target_window:
+                        if current_url.casefold() == target_url.casefold() and abs(target_date - original_date).seconds <= target_window:
                             playable = True
 
                     if not playable:
@@ -725,7 +741,7 @@ class WaybackClient(utils.DepthCountedContext):
         dict : Version
             suitable for passing to :class:`Client.add_versions`
         """
-        res = self.get_memento(uri)
+        res = self.get_memento(uri, exact_redirects=False)
         version_hash = utils.hash_content(res.content)
         title = utils.extract_title(res.content)
         content_type = (res.headers['content-type'] or '').split(';', 1)
