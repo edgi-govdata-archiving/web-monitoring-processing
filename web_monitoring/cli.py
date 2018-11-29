@@ -88,6 +88,13 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
         print("Errors: {}".format(errors))
 
 
+def _log_adds(versions):
+    versions = tqdm(versions, desc='importing', unit=' versions')
+    for version in versions:
+        print('')  # Line break from tqdm output
+        print(json.dumps(version))
+
+
 def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, session_options=None, unplaybackable=None):
     summary = worker_summary()
     session_options = session_options or dict(retries=3, backoff=2, timeout=(30.5, 2))
@@ -146,7 +153,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
 async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                             tags=None, skip_unchanged='resolved-response',
                             url_pattern=None, worker_count=0,
-                            unplaybackable_path=None):
+                            unplaybackable_path=None, dry_run=False):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     urls, version_filter = _get_db_page_url_info(client, url_pattern)
@@ -167,7 +174,8 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         version_filter=version_filter,
         worker_count=worker_count,
         create_pages=False,
-        unplaybackable_path=unplaybackable_path)
+        unplaybackable_path=unplaybackable_path,
+        dry_run=dry_run)
 
 
 def worker_summary():
@@ -194,11 +202,14 @@ def merge_worker_summaries(summaries):
     return merged
 
 
+# TODO: this function probably be split apart so `dry_run` doesn't need to
+# exist as an argument.
 async def import_ia_urls(urls, *, from_date=None, to_date=None,
                          maintainers=None, tags=None,
                          skip_unchanged='resolved-response',
                          version_filter=None, worker_count=0,
-                         create_pages=True, unplaybackable_path=None):
+                         create_pages=True, unplaybackable_path=None,
+                         dry_run=False):
     skip_responses = skip_unchanged == 'response'
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
@@ -226,7 +237,11 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
         versions = utils.queue_iterator(versions_queue)
         if skip_unchanged == 'resolved-response':
             versions = _filter_unchanged_versions(versions)
-        uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
+
+        if dry_run:
+            uploader = loop.run_in_executor(executor, _log_adds, versions)
+        else:
+            uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
 
         # summary = worker_summary()
         summary = merge_worker_summaries([worker_summary()])
@@ -296,13 +311,15 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
               '  {success:6} successes ({success_pct:.2f}%),\n'
               '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
               '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
-              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(**summary))
+              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
+                **summary))
 
         # Signal that there will be nothing else on the queue so uploading can finish
         versions_queue.put(None)
 
-        print('Saving list of non-playbackable URLs...')
-        save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
+        if not dry_run:
+            print('Saving list of non-playbackable URLs...')
+            save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
         await uploader
 
@@ -548,6 +565,7 @@ Options:
                               list of unplaybackable mementos will be written
                               to this file. If it exists before importing,
                               memento URLs listed in it will be skipped.
+--dry-run                     Don't upload data to web-monitoring-db.
 """
     arguments = docopt(doc, version='0.0.1')
     command = None
@@ -566,7 +584,8 @@ Options:
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 skip_unchanged=skip_unchanged,
-                unplaybackable_path=arguments.get('--unplaybackable'))
+                unplaybackable_path=arguments.get('--unplaybackable'),
+                dry_run=arguments.get('--dry-run'))
         elif arguments['ia-known-pages']:
             command = import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
@@ -576,7 +595,8 @@ Options:
                 skip_unchanged=skip_unchanged,
                 url_pattern=arguments.get('--pattern'),
                 worker_count=int(arguments.get('--parallel')),
-                unplaybackable_path=arguments.get('--unplaybackable'))
+                unplaybackable_path=arguments.get('--unplaybackable'),
+                dry_run=arguments.get('--dry-run'))
 
     elif arguments['db']:
         if arguments['list-domains']:
