@@ -539,16 +539,16 @@ def main():
     doc = f"""Command Line Interface to the web_monitoring Python package
 
 Usage:
-wm import ia <url> [--from <from_date>] [--to <to_date>] [options]
-wm import ia-known-pages [--from <from_date>] [--to <to_date>] [--pattern <url_pattern>] [options]
+wm import ia <url> [--from <from_date>] [--to <to_date>] [--tag <tag>...] [--maintainer <maintainer>...] [options]
+wm import ia-known-pages [--from <from_date>] [--to <to_date>] [--pattern <url_pattern>] [--tag <tag>...] [--maintainer <maintainer>...] [options]
 wm db list-domains [--pattern <url_pattern>]
 
 Options:
 -h --help                     Show this screen.
 --version                     Show version.
---maintainers <maintainers>   Comma-separated list of entities that maintain
-                              the imported pages.
---tags <tags>                 Comma-separated list of tags to apply to pages
+--maintainer <maintainer>     Name of entity that maintains the imported pages.
+                              Repeat to add multiple maintainers.
+--tag <tag>                   Tags to apply to pages. Repeat for multiple tags.
 --skip-unchanged <skip_type>  Skip consecutive captures of the same content.
                               Can be:
                                 `none` (no skipping),
@@ -579,8 +579,8 @@ Options:
         if arguments['ia']:
             command = import_ia_urls(
                 urls=[arguments['<url>']],
-                maintainers=arguments.get('--maintainers'),
-                tags=arguments.get('--tags'),
+                maintainers=arguments.get('--maintainer'),
+                tags=arguments.get('--tag'),
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 skip_unchanged=skip_unchanged,
@@ -590,8 +590,8 @@ Options:
             command = import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
-                maintainers=arguments.get('--maintainers'),
-                tags=arguments.get('--tags'),
+                maintainers=arguments.get('--maintainer'),
+                tags=arguments.get('--tag'),
                 skip_unchanged=skip_unchanged,
                 url_pattern=arguments.get('--pattern'),
                 worker_count=int(arguments.get('--parallel')),
