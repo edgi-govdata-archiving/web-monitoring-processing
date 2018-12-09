@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.124.g58dc7eb documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.120.g1bf5f4e documentation</title>
   
 
   
@@ -56,7 +56,7 @@
             
             
               <div class="version">
-                0+untagged.124.g58dc7eb
+                0+untagged.120.g1bf5f4e
               </div>
             
           
@@ -319,7 +319,7 @@
                    <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                   <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                   <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List all Pages, optionally filtered by search criteria.</span>
 
@@ -342,6 +342,7 @@
 <span class="sd">            SHA256 hash of Version content</span>
 <span class="sd">        start_date : datetime, optional</span>
 <span class="sd">        end_date : datetime, optional</span>
+<span class="sd">        active : boolean, optional</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -358,7 +359,8 @@
                   <span class="s1">&#39;include_latest&#39;</span><span class="p">:</span> <span class="n">include_latest</span><span class="p">,</span>
                   <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
                   <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
-                  <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)}</span>
+                  <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
+                  <span class="s1">&#39;active&#39;</span><span class="p">:</span> <span class="n">active</span><span class="p">}</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages&#39;</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
