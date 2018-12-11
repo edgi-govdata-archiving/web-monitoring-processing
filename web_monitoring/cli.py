@@ -509,7 +509,7 @@ def _list_all_db_pages(client, url_pattern=None):
     chunk = 1
     while chunk > 0:
         pages = client.list_pages(sort=['created_at:asc'], chunk_size=1000,
-                                  chunk=chunk, url=url_pattern)
+                                  chunk=chunk, url=url_pattern, active=True)
         yield from pages['data']
         chunk = pages['links']['next'] and (chunk + 1) or -1
 
