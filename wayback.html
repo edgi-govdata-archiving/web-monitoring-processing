@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.91.g61d6c8a documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.88.g1264595 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.91.g61d6c8a
+                0+untagged.88.g1264595
               </div>
             
           
@@ -184,12 +184,42 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2adfd741a308&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2acc38cab830&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
 simple way is to use the built-in Python function <a class="reference external" href="https://docs.python.org/3/library/functions.html#next" title="(in Python v3.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">next()</span></code></a>, like so:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="n">record</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This takes a moment to run because, now that we’ve asked to see the first item
+in the generator, this lazy object goes to fetch a chunk of results from the
+Wayback Machine. Looking at the record in detail,</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [6]: </span><span class="n">record</span>
+<span class="gh">Out[6]: </span><span class="go">CdxRecord(key=&#39;gov,nasa)/&#39;, timestamp=&#39;19961231235847&#39;, url=&#39;http://www.nasa.gov/&#39;, mime_type=&#39;text/html&#39;, status_code=&#39;200&#39;, digest=&#39;MGIGF4GRGGF5GKV6VNCBAXOE3OR5BTZC&#39;, length=&#39;1811&#39;, date=datetime.datetime(1996, 12, 31, 23, 58, 47), raw_url=&#39;http://web.archive.org/web/19961231235847id_/http://www.nasa.gov/&#39;, view_url=&#39;http://web.archive.org/web/19961231235847/http://www.nasa.gov/&#39;)</span>
+</pre></div>
+</div>
+<p>we can find our answer: Wayback’s first snapshot of nasa.gov was in 1996. We
+can use dot access on <code class="docutils literal notranslate"><span class="pre">record</span></code> to access the date specifically.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [7]: </span><span class="n">record</span><span class="o">.</span><span class="n">date</span>
+<span class="gh">Out[7]: </span><span class="go">datetime.datetime(1996, 12, 31, 23, 58, 47)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="how-many-times-does-the-word-mars-appear-on-nasa-gov">
+<h3>How many times does the word ‘mars’ appear on nasa.gov?<a class="headerlink" href="#how-many-times-does-the-word-mars-appear-on-nasa-gov" title="Permalink to this headline">¶</a></h3>
+<p>Above, we access the metadata for the oldest snapshot on nasa.gov, stored in
+the variable <code class="docutils literal notranslate"><span class="pre">record</span></code>. Starting from where we left off, we’ll access the
+<em>content</em> of the snapshot and do a very simple analysis.</p>
+<p>The Wayback Machine provides two ways to look at the data it has captured.
+There is a copy edited for human viewers on the web, available at the record’s
+<code class="docutils literal notranslate"><span class="pre">view_url</span></code>, and there is the original copy of what was captured when the page
+was originally scraped, availabe at the record’s <code class="docutils literal notranslate"><span class="pre">raw_url</span></code>. For analysis
+purposes, we generally want the <code class="docutils literal notranslate"><span class="pre">raw_url</span></code>.</p>
+<p>Let’s download the raw content using <code class="docutils literal notranslate"><span class="pre">requests</span></code>.</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="gp">In [9]: </span><span class="n">content</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
 <span class="gt">---------------------------------------------------------------------------</span>
 <span class="ne">TimeoutError</span><span class="g g-Whitespace">                              </span>Traceback (most recent call last)
 <span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connection.py</span> in <span class="ni">_new_conn</span><span class="nt">(self)</span>
@@ -257,7 +287,7 @@ simple way is to use the built-in Python function <a class="reference external" 
 <span class="ne">--&gt; </span><span class="mi">168</span>                 <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Failed to establish a new connection: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">169</span> 
 
-<span class="ne">NewConnectionError</span>: &lt;urllib3.connection.HTTPConnection object at 0x2adfd75b3ac8&gt;: Failed to establish a new connection: [Errno 110] Connection timed out
+<span class="ne">NewConnectionError</span>: &lt;urllib3.connection.HTTPConnection object at 0x2acc38db9438&gt;: Failed to establish a new connection: [Errno 110] Connection timed out
 
 <span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
 
@@ -277,103 +307,50 @@ simple way is to use the built-in Python function <a class="reference external" 
 <span class="ne">--&gt; </span><span class="mi">398</span>             <span class="k">raise</span> <span class="n">MaxRetryError</span><span class="p">(</span><span class="n">_pool</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">error</span> <span class="ow">or</span> <span class="n">ResponseError</span><span class="p">(</span><span class="n">cause</span><span class="p">))</span>
 <span class="g g-Whitespace">    </span><span class="mi">399</span> 
 
-<span class="ne">MaxRetryError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2adfd75b3ac8&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
+<span class="ne">MaxRetryError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /web/19961231235847id_/http://www.nasa.gov/ (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2acc38db9438&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
 
 <span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
 
 <span class="ne">ConnectionError</span><span class="g g-Whitespace">                           </span>Traceback (most recent call last)
-<span class="nn">&lt;ipython-input-5-cd201c3bbb27&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">record</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-
-<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/web_monitoring/internetarchive.py</span> in <span class="ni">search</span><span class="nt">(self, url, matchType, limit, offset, fastLatest, gzip, from_date, to_date, filter_field, collapse, showResumeKey, resumeKey, page, pageSize, resolveRevisits, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">265</span>         <span class="n">response</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">retryable_request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">CDX_SEARCH_URL</span><span class="p">,</span>
-<span class="g g-Whitespace">    </span><span class="mi">266</span>                                            <span class="n">params</span><span class="o">=</span><span class="n">final_query</span><span class="p">,</span>
-<span class="ne">--&gt; </span><span class="mi">267</span>                                            <span class="n">session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">268</span>         <span class="n">lines</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">()</span>
-<span class="g g-Whitespace">    </span><span class="mi">269</span>         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/web_monitoring/utils.py</span> in <span class="ni">retryable_request</span><span class="nt">(method, url, retries, backoff, should_retry, session, **kwargs)</span>
-<span class="g g-Whitespace">     </span><span class="mi">66</span>     <span class="s2">&quot;&quot;&quot;</span>
-<span class="g g-Whitespace">     </span><span class="mi">67</span><span class="s2">     internal_session = session or requests.Session()</span>
-<span class="ne">---&gt; </span><span class="mi">68</span><span class="s2">     response = internal_session.request(method, url, **kwargs)</span>
-<span class="g g-Whitespace">     </span><span class="mi">69</span><span class="s2">     if should_retry(response) and retries &gt; 0:</span>
-<span class="g g-Whitespace">     </span><span class="mi">70</span><span class="s2">         time.sleep(backoff / retries)</span>
-
-<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/sessions.py</span> in <span class="ni">request</span><span class="nt">(self, method, url, params, data, headers, cookies, files, auth, timeout, allow_redirects, proxies, hooks, stream, verify, cert, json)</span>
-<span class="g g-Whitespace">    </span><span class="mi">531</span><span class="s2">         }</span>
-<span class="g g-Whitespace">    </span><span class="mi">532</span><span class="s2">         send_kwargs.update(settings)</span>
-<span class="ne">--&gt; </span><span class="mi">533</span><span class="s2">         resp = self.send(prep, **send_kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">534</span><span class="s2"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">535</span><span class="s2">         return resp</span>
-
-<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/web_monitoring/internetarchive.py</span> in <span class="ni">send</span><span class="nt">(self, *args, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">118</span><span class="s2">                                      &#39;and cannot send new HTTP requests.&#39;)</span>
-<span class="g g-Whitespace">    </span><span class="mi">119</span><span class="s2"> </span>
-<span class="ne">--&gt; </span><span class="mi">120</span><span class="s2">         return super().send(*args, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">121</span><span class="s2"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">122</span><span class="s2"> </span>
-
-<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/sessions.py</span> in <span class="ni">send</span><span class="nt">(self, request, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">644</span><span class="s2"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">645</span><span class="s2">         # Send the request</span>
-<span class="ne">--&gt; </span><span class="mi">646</span><span class="s2">         r = adapter.send(request, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">647</span><span class="s2"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">648</span><span class="s2">         # Total elapsed time of the request (approximately)</span>
-
-<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/adapters.py</span> in <span class="ni">send</span><span class="nt">(self, request, stream, timeout, verify, cert, proxies)</span>
-<span class="g g-Whitespace">    </span><span class="mi">514</span><span class="s2">                 raise SSLError(e, request=request)</span>
-<span class="g g-Whitespace">    </span><span class="mi">515</span><span class="s2"> </span>
-<span class="ne">--&gt; </span><span class="mi">516</span><span class="s2">             raise ConnectionError(e, request=request)</span>
-<span class="g g-Whitespace">    </span><span class="mi">517</span><span class="s2"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">518</span><span class="s2">         except ClosedPoolError as e:</span>
-
-<span class="ne">ConnectionError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2adfd75b3ac8&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
-</pre></div>
-</div>
-<p>This takes a moment to run because, now that we’ve asked to see the first item
-in the generator, this lazy object goes to fetch a chunk of results from the
-Wayback Machine. Looking at the record in detail,</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [6]: </span><span class="n">record</span>
-<span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="nn">&lt;ipython-input-6-b3663dc189e2&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">record</span>
-
-<span class="ne">NameError</span>: name &#39;record&#39; is not defined
-</pre></div>
-</div>
-<p>we can find our answer: Wayback’s first snapshot of nasa.gov was in 1996. We
-can use dot access on <code class="docutils literal notranslate"><span class="pre">record</span></code> to access the date specifically.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [7]: </span><span class="n">record</span><span class="o">.</span><span class="n">date</span>
-<span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="nn">&lt;ipython-input-7-ef153e79ffe6&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">record</span><span class="o">.</span><span class="n">date</span>
-
-<span class="ne">NameError</span>: name &#39;record&#39; is not defined
-</pre></div>
-</div>
-</div>
-<div class="section" id="how-many-times-does-the-word-mars-appear-on-nasa-gov">
-<h3>How many times does the word ‘mars’ appear on nasa.gov?<a class="headerlink" href="#how-many-times-does-the-word-mars-appear-on-nasa-gov" title="Permalink to this headline">¶</a></h3>
-<p>Above, we access the metadata for the oldest snapshot on nasa.gov, stored in
-the variable <code class="docutils literal notranslate"><span class="pre">record</span></code>. Starting from where we left off, we’ll access the
-<em>content</em> of the snapshot and do a very simple analysis.</p>
-<p>The Wayback Machine provides two ways to look at the data it has captured.
-There is a copy edited for human viewers on the web, available at the record’s
-<code class="docutils literal notranslate"><span class="pre">view_url</span></code>, and there is the original copy of what was captured when the page
-was originally scraped, availabe at the record’s <code class="docutils literal notranslate"><span class="pre">raw_url</span></code>. For analysis
-purposes, we generally want the <code class="docutils literal notranslate"><span class="pre">raw_url</span></code>.</p>
-<p>Let’s download the raw content using <code class="docutils literal notranslate"><span class="pre">requests</span></code>.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="kn">import</span> <span class="nn">requests</span>
-
-<span class="gp">In [9]: </span><span class="n">content</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
-<span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
 <span class="nn">&lt;ipython-input-9-9f40e3e01cf3&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
 <span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">content</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
 
-<span class="ne">NameError</span>: name &#39;record&#39; is not defined
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/api.py</span> in <span class="ni">get</span><span class="nt">(url, params, **kwargs)</span>
+<span class="g g-Whitespace">     </span><span class="mi">73</span> 
+<span class="g g-Whitespace">     </span><span class="mi">74</span>     <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;allow_redirects&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">75</span>     <span class="k">return</span> <span class="n">request</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">76</span> 
+<span class="g g-Whitespace">     </span><span class="mi">77</span> 
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/api.py</span> in <span class="ni">request</span><span class="nt">(method, url, **kwargs)</span>
+<span class="g g-Whitespace">     </span><span class="mi">58</span>     <span class="c1"># cases, and look like a memory leak in others.</span>
+<span class="g g-Whitespace">     </span><span class="mi">59</span>     <span class="k">with</span> <span class="n">sessions</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<span class="ne">---&gt; </span><span class="mi">60</span>         <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">61</span> 
+<span class="g g-Whitespace">     </span><span class="mi">62</span> 
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/sessions.py</span> in <span class="ni">request</span><span class="nt">(self, method, url, params, data, headers, cookies, files, auth, timeout, allow_redirects, proxies, hooks, stream, verify, cert, json)</span>
+<span class="g g-Whitespace">    </span><span class="mi">531</span>         <span class="p">}</span>
+<span class="g g-Whitespace">    </span><span class="mi">532</span>         <span class="n">send_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">533</span>         <span class="n">resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">prep</span><span class="p">,</span> <span class="o">**</span><span class="n">send_kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">534</span> 
+<span class="g g-Whitespace">    </span><span class="mi">535</span>         <span class="k">return</span> <span class="n">resp</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/sessions.py</span> in <span class="ni">send</span><span class="nt">(self, request, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">644</span> 
+<span class="g g-Whitespace">    </span><span class="mi">645</span>         <span class="c1"># Send the request</span>
+<span class="ne">--&gt; </span><span class="mi">646</span>         <span class="n">r</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">647</span> 
+<span class="g g-Whitespace">    </span><span class="mi">648</span>         <span class="c1"># Total elapsed time of the request (approximately)</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/adapters.py</span> in <span class="ni">send</span><span class="nt">(self, request, stream, timeout, verify, cert, proxies)</span>
+<span class="g g-Whitespace">    </span><span class="mi">514</span>                 <span class="k">raise</span> <span class="n">SSLError</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">515</span> 
+<span class="ne">--&gt; </span><span class="mi">516</span>             <span class="k">raise</span> <span class="n">ConnectionError</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">517</span> 
+<span class="g g-Whitespace">    </span><span class="mi">518</span>         <span class="k">except</span> <span class="n">ClosedPoolError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+
+<span class="ne">ConnectionError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /web/19961231235847id_/http://www.nasa.gov/ (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2acc38db9438&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
 </pre></div>
 </div>
 <p>We can use the built-in method <code class="docutils literal notranslate"><span class="pre">count</span></code> on strings to count the number of
