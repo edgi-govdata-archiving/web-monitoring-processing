@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.68.g0220c82 documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.65.gbb12cbb documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.68.g0220c82
+                0+untagged.65.gbb12cbb
               </div>
             
           
@@ -184,7 +184,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2ae2c5e57678&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b63a1863518&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -257,7 +257,7 @@ simple way is to use the built-in Python function <a class="reference external" 
 <span class="ne">--&gt; </span><span class="mi">168</span>                 <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Failed to establish a new connection: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
 <span class="g g-Whitespace">    </span><span class="mi">169</span> 
 
-<span class="ne">NewConnectionError</span>: &lt;urllib3.connection.HTTPConnection object at 0x2ae2c5f23c88&gt;: Failed to establish a new connection: [Errno 110] Connection timed out
+<span class="ne">NewConnectionError</span>: &lt;urllib3.connection.HTTPConnection object at 0x2b63a199eda0&gt;: Failed to establish a new connection: [Errno 110] Connection timed out
 
 <span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
 
@@ -277,7 +277,7 @@ simple way is to use the built-in Python function <a class="reference external" 
 <span class="ne">--&gt; </span><span class="mi">398</span>             <span class="k">raise</span> <span class="n">MaxRetryError</span><span class="p">(</span><span class="n">_pool</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">error</span> <span class="ow">or</span> <span class="n">ResponseError</span><span class="p">(</span><span class="n">cause</span><span class="p">))</span>
 <span class="g g-Whitespace">    </span><span class="mi">399</span> 
 
-<span class="ne">MaxRetryError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2ae2c5f23c88&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
+<span class="ne">MaxRetryError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2b63a199eda0&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
 
 <span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
 
@@ -327,7 +327,7 @@ simple way is to use the built-in Python function <a class="reference external" 
 <span class="g g-Whitespace">    </span><span class="mi">517</span><span class="s2"> </span>
 <span class="g g-Whitespace">    </span><span class="mi">518</span><span class="s2">         except ClosedPoolError as e:</span>
 
-<span class="ne">ConnectionError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2ae2c5f23c88&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
+<span class="ne">ConnectionError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2b63a199eda0&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
 </pre></div>
 </div>
 <p>This takes a moment to run because, now that we’ve asked to see the first item
