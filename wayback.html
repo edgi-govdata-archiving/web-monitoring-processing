@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.70.gbd7a435 documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.68.g0220c82 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.70.gbd7a435
+                0+untagged.68.g0220c82
               </div>
             
           
@@ -184,25 +184,173 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b61c398b678&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2ae2c5e57678&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
 simple way is to use the built-in Python function <a class="reference external" href="https://docs.python.org/3/library/functions.html#next" title="(in Python v3.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">next()</span></code></a>, like so:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="n">record</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">TimeoutError</span><span class="g g-Whitespace">                              </span>Traceback (most recent call last)
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connection.py</span> in <span class="ni">_new_conn</span><span class="nt">(self)</span>
+<span class="g g-Whitespace">    </span><span class="mi">158</span>             <span class="n">conn</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">create_connection</span><span class="p">(</span>
+<span class="ne">--&gt; </span><span class="mi">159</span>                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dns_host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span> <span class="o">**</span><span class="n">extra_kw</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">160</span> 
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/util/connection.py</span> in <span class="ni">create_connection</span><span class="nt">(address, timeout, source_address, socket_options)</span>
+<span class="g g-Whitespace">     </span><span class="mi">79</span>     <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+<span class="ne">---&gt; </span><span class="mi">80</span>         <span class="k">raise</span> <span class="n">err</span>
+<span class="g g-Whitespace">     </span><span class="mi">81</span> 
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/util/connection.py</span> in <span class="ni">create_connection</span><span class="nt">(address, timeout, source_address, socket_options)</span>
+<span class="g g-Whitespace">     </span><span class="mi">69</span>                 <span class="n">sock</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">source_address</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">70</span>             <span class="n">sock</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">sa</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">71</span>             <span class="k">return</span> <span class="n">sock</span>
+
+<span class="ne">TimeoutError</span>: [Errno 110] Connection timed out
+
+<span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
+
+<span class="ne">NewConnectionError</span><span class="g g-Whitespace">                        </span>Traceback (most recent call last)
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connectionpool.py</span> in <span class="ni">urlopen</span><span class="nt">(self, method, url, body, headers, retries, redirect, assert_same_host, timeout, pool_timeout, release_conn, chunked, body_pos, **response_kw)</span>
+<span class="g g-Whitespace">    </span><span class="mi">599</span>                                                   <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
+<span class="ne">--&gt; </span><span class="mi">600</span>                                                   <span class="n">chunked</span><span class="o">=</span><span class="n">chunked</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">601</span> 
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connectionpool.py</span> in <span class="ni">_make_request</span><span class="nt">(self, conn, method, url, timeout, chunked, **httplib_request_kw)</span>
+<span class="g g-Whitespace">    </span><span class="mi">353</span>         <span class="k">else</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">354</span>             <span class="n">conn</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">httplib_request_kw</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">355</span> 
+
+<span class="nn">/opt/python/3.6.3/lib/python3.6/http/client.py</span> in <span class="ni">request</span><span class="nt">(self, method, url, body, headers, encode_chunked)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1238</span>         <span class="sd">&quot;&quot;&quot;Send a complete request to the server.&quot;&quot;&quot;</span>
+<span class="ne">-&gt; </span><span class="mi">1239</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_send_request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">encode_chunked</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1240</span> 
+
+<span class="nn">/opt/python/3.6.3/lib/python3.6/http/client.py</span> in <span class="ni">_send_request</span><span class="nt">(self, method, url, body, headers, encode_chunked)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1284</span>             <span class="n">body</span> <span class="o">=</span> <span class="n">_encode</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="s1">&#39;body&#39;</span><span class="p">)</span>
+<span class="ne">-&gt; </span><span class="mi">1285</span>         <span class="bp">self</span><span class="o">.</span><span class="n">endheaders</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">encode_chunked</span><span class="o">=</span><span class="n">encode_chunked</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1286</span> 
+
+<span class="nn">/opt/python/3.6.3/lib/python3.6/http/client.py</span> in <span class="ni">endheaders</span><span class="nt">(self, message_body, encode_chunked)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1233</span>             <span class="k">raise</span> <span class="n">CannotSendHeader</span><span class="p">()</span>
+<span class="ne">-&gt; </span><span class="mi">1234</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_send_output</span><span class="p">(</span><span class="n">message_body</span><span class="p">,</span> <span class="n">encode_chunked</span><span class="o">=</span><span class="n">encode_chunked</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1235</span> 
+
+<span class="nn">/opt/python/3.6.3/lib/python3.6/http/client.py</span> in <span class="ni">_send_output</span><span class="nt">(self, message_body, encode_chunked)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1025</span>         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[:]</span>
+<span class="ne">-&gt; </span><span class="mi">1026</span>         <span class="bp">self</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1027</span> 
+
+<span class="nn">/opt/python/3.6.3/lib/python3.6/http/client.py</span> in <span class="ni">send</span><span class="nt">(self, data)</span>
+<span class="g g-Whitespace">    </span><span class="mi">963</span>             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_open</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">964</span>                 <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+<span class="g g-Whitespace">    </span><span class="mi">965</span>             <span class="k">else</span><span class="p">:</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connection.py</span> in <span class="ni">connect</span><span class="nt">(self)</span>
+<span class="g g-Whitespace">    </span><span class="mi">180</span>     <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="ne">--&gt; </span><span class="mi">181</span>         <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_conn</span><span class="p">()</span>
+<span class="g g-Whitespace">    </span><span class="mi">182</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_conn</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connection.py</span> in <span class="ni">_new_conn</span><span class="nt">(self)</span>
+<span class="g g-Whitespace">    </span><span class="mi">167</span>             <span class="k">raise</span> <span class="n">NewConnectionError</span><span class="p">(</span>
+<span class="ne">--&gt; </span><span class="mi">168</span>                 <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Failed to establish a new connection: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">169</span> 
+
+<span class="ne">NewConnectionError</span>: &lt;urllib3.connection.HTTPConnection object at 0x2ae2c5f23c88&gt;: Failed to establish a new connection: [Errno 110] Connection timed out
+
+<span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
+
+<span class="ne">MaxRetryError</span><span class="g g-Whitespace">                             </span>Traceback (most recent call last)
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/adapters.py</span> in <span class="ni">send</span><span class="nt">(self, request, stream, timeout, verify, cert, proxies)</span>
+<span class="g g-Whitespace">    </span><span class="mi">448</span>                     <span class="n">retries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_retries</span><span class="p">,</span>
+<span class="ne">--&gt; </span><span class="mi">449</span>                     <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+<span class="g g-Whitespace">    </span><span class="mi">450</span>                 <span class="p">)</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/connectionpool.py</span> in <span class="ni">urlopen</span><span class="nt">(self, method, url, body, headers, retries, redirect, assert_same_host, timeout, pool_timeout, release_conn, chunked, body_pos, **response_kw)</span>
+<span class="g g-Whitespace">    </span><span class="mi">637</span>             <span class="n">retries</span> <span class="o">=</span> <span class="n">retries</span><span class="o">.</span><span class="n">increment</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">_pool</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+<span class="ne">--&gt; </span><span class="mi">638</span>                                         <span class="n">_stacktrace</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">2</span><span class="p">])</span>
+<span class="g g-Whitespace">    </span><span class="mi">639</span>             <span class="n">retries</span><span class="o">.</span><span class="n">sleep</span><span class="p">()</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/urllib3/util/retry.py</span> in <span class="ni">increment</span><span class="nt">(self, method, url, response, error, _pool, _stacktrace)</span>
+<span class="g g-Whitespace">    </span><span class="mi">397</span>         <span class="k">if</span> <span class="n">new_retry</span><span class="o">.</span><span class="n">is_exhausted</span><span class="p">():</span>
+<span class="ne">--&gt; </span><span class="mi">398</span>             <span class="k">raise</span> <span class="n">MaxRetryError</span><span class="p">(</span><span class="n">_pool</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">error</span> <span class="ow">or</span> <span class="n">ResponseError</span><span class="p">(</span><span class="n">cause</span><span class="p">))</span>
+<span class="g g-Whitespace">    </span><span class="mi">399</span> 
+
+<span class="ne">MaxRetryError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2ae2c5f23c88&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
+
+<span class="n">During</span> <span class="n">handling</span> <span class="n">of</span> <span class="n">the</span> <span class="n">above</span> <span class="n">exception</span><span class="p">,</span> <span class="n">another</span> <span class="n">exception</span> <span class="n">occurred</span><span class="p">:</span>
+
+<span class="ne">ConnectionError</span><span class="g g-Whitespace">                           </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-5-cd201c3bbb27&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">record</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/web_monitoring/internetarchive.py</span> in <span class="ni">search</span><span class="nt">(self, url, matchType, limit, offset, fastLatest, gzip, from_date, to_date, filter_field, collapse, showResumeKey, resumeKey, page, pageSize, resolveRevisits, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">265</span>         <span class="n">response</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">retryable_request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">CDX_SEARCH_URL</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">266</span>                                            <span class="n">params</span><span class="o">=</span><span class="n">final_query</span><span class="p">,</span>
+<span class="ne">--&gt; </span><span class="mi">267</span>                                            <span class="n">session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">268</span>         <span class="n">lines</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">()</span>
+<span class="g g-Whitespace">    </span><span class="mi">269</span>         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/web_monitoring/utils.py</span> in <span class="ni">retryable_request</span><span class="nt">(method, url, retries, backoff, should_retry, session, **kwargs)</span>
+<span class="g g-Whitespace">     </span><span class="mi">66</span>     <span class="s2">&quot;&quot;&quot;</span>
+<span class="g g-Whitespace">     </span><span class="mi">67</span><span class="s2">     internal_session = session or requests.Session()</span>
+<span class="ne">---&gt; </span><span class="mi">68</span><span class="s2">     response = internal_session.request(method, url, **kwargs)</span>
+<span class="g g-Whitespace">     </span><span class="mi">69</span><span class="s2">     if should_retry(response) and retries &gt; 0:</span>
+<span class="g g-Whitespace">     </span><span class="mi">70</span><span class="s2">         time.sleep(backoff / retries)</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/sessions.py</span> in <span class="ni">request</span><span class="nt">(self, method, url, params, data, headers, cookies, files, auth, timeout, allow_redirects, proxies, hooks, stream, verify, cert, json)</span>
+<span class="g g-Whitespace">    </span><span class="mi">531</span><span class="s2">         }</span>
+<span class="g g-Whitespace">    </span><span class="mi">532</span><span class="s2">         send_kwargs.update(settings)</span>
+<span class="ne">--&gt; </span><span class="mi">533</span><span class="s2">         resp = self.send(prep, **send_kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">534</span><span class="s2"> </span>
+<span class="g g-Whitespace">    </span><span class="mi">535</span><span class="s2">         return resp</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/web_monitoring/internetarchive.py</span> in <span class="ni">send</span><span class="nt">(self, *args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">118</span><span class="s2">                                      &#39;and cannot send new HTTP requests.&#39;)</span>
+<span class="g g-Whitespace">    </span><span class="mi">119</span><span class="s2"> </span>
+<span class="ne">--&gt; </span><span class="mi">120</span><span class="s2">         return super().send(*args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">121</span><span class="s2"> </span>
+<span class="g g-Whitespace">    </span><span class="mi">122</span><span class="s2"> </span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/sessions.py</span> in <span class="ni">send</span><span class="nt">(self, request, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">644</span><span class="s2"> </span>
+<span class="g g-Whitespace">    </span><span class="mi">645</span><span class="s2">         # Send the request</span>
+<span class="ne">--&gt; </span><span class="mi">646</span><span class="s2">         r = adapter.send(request, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">647</span><span class="s2"> </span>
+<span class="g g-Whitespace">    </span><span class="mi">648</span><span class="s2">         # Total elapsed time of the request (approximately)</span>
+
+<span class="nn">~/virtualenv/python3.6.3/lib/python3.6/site-packages/requests/adapters.py</span> in <span class="ni">send</span><span class="nt">(self, request, stream, timeout, verify, cert, proxies)</span>
+<span class="g g-Whitespace">    </span><span class="mi">514</span><span class="s2">                 raise SSLError(e, request=request)</span>
+<span class="g g-Whitespace">    </span><span class="mi">515</span><span class="s2"> </span>
+<span class="ne">--&gt; </span><span class="mi">516</span><span class="s2">             raise ConnectionError(e, request=request)</span>
+<span class="g g-Whitespace">    </span><span class="mi">517</span><span class="s2"> </span>
+<span class="g g-Whitespace">    </span><span class="mi">518</span><span class="s2">         except ClosedPoolError as e:</span>
+
+<span class="ne">ConnectionError</span>: HTTPConnectionPool(host=&#39;web.archive.org&#39;, port=80): Max retries exceeded with url: /cdx/search/cdx?url=nasa.gov&amp;showResumeKey=true&amp;resolveRevisits=true (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x2ae2c5f23c88&gt;: Failed to establish a new connection: [Errno 110] Connection timed out&#39;,))
 </pre></div>
 </div>
 <p>This takes a moment to run because, now that we’ve asked to see the first item
 in the generator, this lazy object goes to fetch a chunk of results from the
 Wayback Machine. Looking at the record in detail,</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [6]: </span><span class="n">record</span>
-<span class="gh">Out[6]: </span><span class="go">CdxRecord(key=&#39;gov,nasa)/&#39;, timestamp=&#39;19961231235847&#39;, url=&#39;http://www.nasa.gov/&#39;, mime_type=&#39;text/html&#39;, status_code=&#39;200&#39;, digest=&#39;MGIGF4GRGGF5GKV6VNCBAXOE3OR5BTZC&#39;, length=&#39;1811&#39;, date=datetime.datetime(1996, 12, 31, 23, 58, 47), raw_url=&#39;http://web.archive.org/web/19961231235847id_/http://www.nasa.gov/&#39;, view_url=&#39;http://web.archive.org/web/19961231235847/http://www.nasa.gov/&#39;)</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-6-b3663dc189e2&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">record</span>
+
+<span class="ne">NameError</span>: name &#39;record&#39; is not defined
 </pre></div>
 </div>
 <p>we can find our answer: Wayback’s first snapshot of nasa.gov was in 1996. We
 can use dot access on <code class="docutils literal notranslate"><span class="pre">record</span></code> to access the date specifically.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [7]: </span><span class="n">record</span><span class="o">.</span><span class="n">date</span>
-<span class="gh">Out[7]: </span><span class="go">datetime.datetime(1996, 12, 31, 23, 58, 47)</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-7-ef153e79ffe6&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">record</span><span class="o">.</span><span class="n">date</span>
+
+<span class="ne">NameError</span>: name &#39;record&#39; is not defined
 </pre></div>
 </div>
 </div>
@@ -220,18 +368,34 @@ purposes, we generally want the <code class="docutils literal notranslate"><span
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="kn">import</span> <span class="nn">requests</span>
 
 <span class="gp">In [9]: </span><span class="n">content</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-9-9f40e3e01cf3&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">content</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+<span class="ne">NameError</span>: name &#39;record&#39; is not defined
 </pre></div>
 </div>
 <p>We can use the built-in method <code class="docutils literal notranslate"><span class="pre">count</span></code> on strings to count the number of
 times that <code class="docutils literal notranslate"><span class="pre">'mars'</span></code> appears in the content.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [10]: </span><span class="n">content</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
-<span class="gh">Out[10]: </span><span class="go">30</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-10-889844488d13&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">content</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;content&#39; is not defined
 </pre></div>
 </div>
 <p>This is case-sensitive, so to be more accurate we should convert the content to
 lowercase first.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [11]: </span><span class="n">content</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
-<span class="gh">Out[11]: </span><span class="go">39</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-11-df7ca11ec6dc&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">content</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;content&#39; is not defined
 </pre></div>
 </div>
 <p>We picked up a couple additional occurrences that the original count missed.</p>
@@ -242,25 +406,41 @@ the visible text.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [12]: </span><span class="kn">from</span> <span class="nn">web_monitoring.differs</span> <span class="kn">import</span> <span class="n">_get_visible_text</span>
 
 <span class="gp">In [13]: </span><span class="n">visible</span> <span class="o">=</span> <span class="n">_get_visible_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-13-6e0d7175e6d8&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">visible</span> <span class="o">=</span> <span class="n">_get_visible_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;content&#39; is not defined
 </pre></div>
 </div>
 <p>To get a quick sense of the difference between <code class="docutils literal notranslate"><span class="pre">content</span></code> and <code class="docutils literal notranslate"><span class="pre">visible</span></code>
 let’s look at the first 80 characters of each.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="k">print</span><span class="p">(</span><span class="n">content</span><span class="p">[:</span><span class="mi">80</span><span class="p">])</span>
-<span class="go">&lt;HTML&gt;</span>
-<span class="go">&lt;HEAD&gt;</span>
-<span class="go">  &lt;META NAME=&quot;GENERATOR&quot; CONTENT=&quot;Adobe PageMill 2.0 Mac&quot;&gt;</span>
-<span class="go">  &lt;META</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-14-a5109afbe5c6&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="k">print</span><span class="p">(</span><span class="n">content</span><span class="p">[:</span><span class="mi">80</span><span class="p">])</span>
+
+<span class="ne">NameError</span>: name &#39;content&#39; is not defined
 
 <span class="gp">In [15]: </span><span class="k">print</span><span class="p">(</span><span class="n">visible</span><span class="p">[:</span><span class="mi">80</span><span class="p">])</span>
-<span class="go">                                                                                 Welcome to  NASA  and the  Mars Pathfinder Mission !</span>
+<span class="go">                                                                                                                                                                                                                                                                            ---------------------------------------------------------------------------</span>
+<span class="go">NameError                                 Traceback (most recent call last)</span>
+<span class="go">&lt;ipython-input-15-8c14d593723d&gt; in &lt;module&gt;()</span>
+<span class="go">----&gt; 1 print(visible[:80])</span>
 
-<span class="go">This is a substitute for t</span>
+<span class="go">NameError: name &#39;visible&#39; is not defined</span>
 </pre></div>
 </div>
 <p>And now let’s do the word count on just the visible content.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="n">visible</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
-<span class="gh">Out[16]: </span><span class="go">19</span>
+<span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">&lt;ipython-input-16-c3e3dbcb7885&gt;</span> in <span class="ni">&lt;module&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">visible</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;visible&#39; is not defined
 </pre></div>
 </div>
 <p>Our count of <code class="docutils literal notranslate"><span class="pre">visible</span></code> excludes appearances of <code class="docutils literal notranslate"><span class="pre">'mars'</span></code> that aren’t in the
