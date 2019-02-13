@@ -101,75 +101,80 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
     session = ia.WaybackSession(**session_options)
     start_date = datetime.utcnow()
     retry_record = None
+    wayback = ia.WaybackClient(session=session)
 
-    with ia.WaybackClient(session=session) as wayback:
-        while True:
-            is_retry = False
-            if retry_record:
-                record = retry_record
-                is_retry = True
-                retry_record = None
+    while True:
+        is_retry = False
+        if retry_record:
+            record = retry_record
+            is_retry = True
+            retry_record = None
+        else:
+            try:
+                record = next(records)
+                summary['total'] += 1
+            except StopIteration:
+                break
+
+        if unplaybackable is not None and record.raw_url in unplaybackable:
+            summary['playback'] += 1
+            continue
+
+        try:
+            version = wayback.timestamped_uri_to_version(record.date,
+                                                            record.raw_url,
+                                                            url=record.url,
+                                                            maintainers=maintainers,
+                                                            tags=tags,
+                                                            view_url=record.view_url)
+            results_queue.put(version)
+            summary['success'] += 1
+        except ia.MementoPlaybackError as error:
+            summary['playback'] += 1
+            if unplaybackable is not None:
+                unplaybackable[record.raw_url] = start_date
+            logger.info(f'  {error}')
+        except requests.exceptions.HTTPError as error:
+            if error.response.status_code == 404:
+                logger.info(f'  Missing memento: {record.raw_url}')
+                summary['missing'] += 1
             else:
-                try:
-                    record = next(records)
-                    summary['total'] += 1
-                except StopIteration:
-                    break
+                logger.info(f'  (HTTPError) {error}')
+                summary['unknown'] += 1
+                if failure_queue:
+                    failure_queue.put(record)
+        except ia.WaybackRetryError as error:
+            summary['unknown'] += 1
+            logger.info(f'  {error}; URL: {record.raw_url}')
 
-            if unplaybackable is not None and record.raw_url in unplaybackable:
-                summary['playback'] += 1
+            # EXPERIMENT: reset the session and retry if we just utterly
+            # failed to connect.
+            if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
+                session.close()
+                session = ia.WaybackSession(**session_options)
+                wayback = ia.WaybackClient(session=session)
+                retry_record = record
                 continue
 
-            try:
-                version = wayback.timestamped_uri_to_version(record.date,
-                                                             record.raw_url,
-                                                             url=record.url,
-                                                             maintainers=maintainers,
-                                                             tags=tags,
-                                                             view_url=record.view_url)
-                results_queue.put(version)
-                summary['success'] += 1
-            except ia.MementoPlaybackError as error:
-                summary['playback'] += 1
-                if unplaybackable is not None:
-                    unplaybackable[record.raw_url] = start_date
-                logger.info(f'  {error}')
-            except requests.exceptions.HTTPError as error:
-                if error.response.status_code == 404:
-                    logger.info(f'  Missing memento: {record.raw_url}')
-                    summary['missing'] += 1
-                else:
-                    logger.info(f'  (HTTPError) {error}')
-                    summary['unknown'] += 1
-                    if failure_queue:
-                        failure_queue.put(record)
-            except ia.WaybackRetryError as error:
-                summary['unknown'] += 1
-                logger.info(f'  {error}; URL: {record.raw_url}')
+            if failure_queue:
+                failure_queue.put(record)
+        except Exception as error:
+            summary['unknown'] += 1
+            logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
 
-                # EXPERIMENT: reset the session and retry if we just utterly
-                # failed to connect.
-                if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
-                    session = ia.WaybackSession(**session_options)
-                    retry_record = record
-                    continue
+            # EXPERIMENT: reset the session and retry if we just utterly
+            # failed to connect.
+            if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
+                session.close()
+                session = ia.WaybackSession(**session_options)
+                wayback = ia.WaybackClient(session=session)
+                retry_record = record
+                continue
 
-                if failure_queue:
-                    failure_queue.put(record)
-            except Exception as error:
-                summary['unknown'] += 1
-                logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
+            if failure_queue:
+                failure_queue.put(record)
 
-                # EXPERIMENT: reset the session and retry if we just utterly
-                # failed to connect.
-                if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
-                    session = ia.WaybackSession(**session_options)
-                    retry_record = record
-                    continue
-
-                if failure_queue:
-                    failure_queue.put(record)
-
+    wayback.close()
     return summary
 
 
