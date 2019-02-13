@@ -625,7 +625,7 @@ class WaybackClient(utils.DepthCountedContext):
             doesn't exist or or can't be played back, this returns the closest-
             in-time memento to the intended target, so long as it is within
             `target_window`. If unset, this will be the same as `exact`.
-        taget_window : int, optional
+        target_window : int, optional
             If the memento is of a redirect, allow up to this many seconds
             between the capture of the redirect and the capture of the target
             URL. (Note this does NOT apply when the originally requested
