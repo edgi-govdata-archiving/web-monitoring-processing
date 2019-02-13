@@ -286,9 +286,9 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 results = await asyncio.gather(*workers)
                 retry_summary = merge_worker_summaries(results)
                 summary['success'] += retry_summary['success']
-                summary['success_pct'] = summary['success'] / summary['total']
+                summary['success_pct'] = 100 * summary['success'] / summary['total']
                 summary['unknown'] -= retry_summary['success']
-                summary['unknown_pct'] = summary['unknown'] / summary['total']
+                summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
 
         # If there are failures to retry, re-spawn the workers to run them
         # with more retries and higher timeouts.
@@ -303,9 +303,9 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             results = await asyncio.gather(*workers)
             retry_summary = merge_worker_summaries(results)
             summary['success'] += retry_summary['success']
-            summary['success_pct'] = summary['success'] / summary['total']
+            summary['success_pct'] = 100 * summary['success'] / summary['total']
             summary['unknown'] -= retry_summary['success']
-            summary['unknown_pct'] = summary['unknown'] / summary['total']
+            summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
 
         print('\nLoaded {total} CDX records:\n'
               '  {success:6} successes ({success_pct:.2f}%),\n'
