@@ -143,7 +143,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                     failure_queue.put(record)
             except Exception as error:
                 summary['unknown'] += 1
-                logger.info(f'  ({type(error)}) {error}; URL: {record.raw_url}')
+                logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
                 if failure_queue:
                     failure_queue.put(record)
 
