@@ -104,8 +104,10 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
 
     with ia.WaybackClient(session=session) as wayback:
         while True:
+            is_retry = False
             if retry_record:
                 record = retry_record
+                is_retry = True
                 retry_record = None
             else:
                 try:
@@ -147,7 +149,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
 
                 # EXPERIMENT: reset the session and retry if we just utterly
                 # failed to connect.
-                if ('failed to establish a new connection' in str(error).lower()):
+                if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
                     session = ia.WaybackSession(**session_options)
                     retry_record = record
                     continue
@@ -160,7 +162,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
 
                 # EXPERIMENT: reset the session and retry if we just utterly
                 # failed to connect.
-                if ('failed to establish a new connection' in str(error).lower()):
+                if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
                     session = ia.WaybackSession(**session_options)
                     retry_record = record
                     continue
