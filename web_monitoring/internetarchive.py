@@ -673,6 +673,7 @@ class WaybackClient(utils.DepthCountedContext):
             previous_was_memento = False
             orginal_url, original_date = memento_url_data(url)
             response = self.session.request('GET', url, allow_redirects=False)
+            protocol_and_www = re.compile(r'^https?://(www\d?\.)?')
             while True:
                 is_memento = 'Memento-Datetime' in response.headers
 
@@ -689,7 +690,13 @@ class WaybackClient(utils.DepthCountedContext):
                        (len(history) > 0 and (previous_was_memento or exact_redirects == False))):
                         current_url = original_url_for_memento(response.url)
                         target_url, target_date = memento_url_data(response.next.url)
-                        if current_url.casefold() == target_url.casefold() and abs(target_date - original_date).seconds <= target_window:
+                        # FIXME: this needs cleanup, but valid redirects can
+                        # point to other captures with the same SURT URL. The
+                        # regex here is totally not SURT, but makes an often-
+                        # successful dirty approximation. This needs cleanup.
+                        current_nice_url = protocol_and_www.sub('', current_url)
+                        target_nice_url = protocol_and_www.sub('', target_url)
+                        if current_nice_url.casefold() == target_nice_url.casefold() and abs(target_date - original_date).seconds <= target_window:
                             playable = True
 
                     if not playable:
