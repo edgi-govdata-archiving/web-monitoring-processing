@@ -38,11 +38,12 @@ def extract_title(content_bytes, encoding='utf-8'):
         title = lxml.html.parse(content_as_file).find(".//title")
     except Exception:
         return ''
-    if title is None:
+
+    if title is None or title.text is None:
         return ''
-    else:
-        # In HTML, all consecutive whitespace (including line breaks) collapses
-        return WHITESPACE_PATTERN.sub(' ', title.text.strip())
+
+    # In HTML, all consecutive whitespace (including line breaks) collapses
+    return WHITESPACE_PATTERN.sub(' ', title.text.strip())
 
 
 def hash_content(content_bytes):
