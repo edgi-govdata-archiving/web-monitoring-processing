@@ -100,14 +100,19 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
     session_options = session_options or dict(retries=3, backoff=2, timeout=(30.5, 2))
     session = ia.WaybackSession(**session_options)
     start_date = datetime.utcnow()
+    retry_record = None
 
     with ia.WaybackClient(session=session) as wayback:
         while True:
-            try:
-                record = next(records)
-                summary['total'] += 1
-            except StopIteration:
-                break
+            if retry_record:
+                record = retry_record
+                retry_record = None
+            else:
+                try:
+                    record = next(records)
+                    summary['total'] += 1
+                except StopIteration:
+                    break
 
             if unplaybackable is not None and record.raw_url in unplaybackable:
                 summary['playback'] += 1
@@ -139,11 +144,27 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
             except ia.WaybackRetryError as error:
                 summary['unknown'] += 1
                 logger.info(f'  {error}; URL: {record.raw_url}')
+
+                # EXPERIMENT: reset the session and retry if we just utterly
+                # failed to connect.
+                if ('failed to establish a new connection' in str(error).lower()):
+                    session = ia.WaybackSession(**session_options)
+                    retry_record = record
+                    continue
+
                 if failure_queue:
                     failure_queue.put(record)
             except Exception as error:
                 summary['unknown'] += 1
                 logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
+
+                # EXPERIMENT: reset the session and retry if we just utterly
+                # failed to connect.
+                if ('failed to establish a new connection' in str(error).lower()):
+                    session = ia.WaybackSession(**session_options)
+                    retry_record = record
+                    continue
+
                 if failure_queue:
                     failure_queue.put(record)
 
