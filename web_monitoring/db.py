@@ -166,9 +166,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     def list_pages(self, *, chunk=None, chunk_size=None,
                    tags=None, maintainers=None, url=None, title=None,
-                   include_versions=None, include_latest=None,
-                   source_type=None, hash=None,
-                   start_date=None, end_date=None):
+                   include_versions=None, include_earliest=None,
+                   include_latest=None, source_type=None, hash=None,
+                   start_date=None, end_date=None, active=None):
         """
         List all Pages, optionally filtered by search criteria.
 
@@ -183,6 +183,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         url : string, optional
         title : string, optional
         include_versions : boolean, optional
+        include_earliest : boolean, optional
         include_latest : boolean, optional
         source_type : string, optional
             such as 'versionista' or 'internet_archive'
@@ -190,6 +191,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             SHA256 hash of Version content
         start_date : datetime, optional
         end_date : datetime, optional
+        active : boolean, optional
 
         Returns
         -------
@@ -202,9 +204,12 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'url': url,
                   'title': title,
                   'include_versions': include_versions,
+                  'include_earliest': include_earliest,
+                  'include_latest': include_latest,
                   'source_type': source_type,
                   'hash': hash,
-                  'capture_time': _time_range_string(start_date, end_date)}
+                  'capture_time': _time_range_string(start_date, end_date),
+                  'active': active}
         url = f'{self._api_url}/pages'
         res = requests.get(url, auth=self._auth, params=params)
         _process_errors(res)
@@ -214,9 +219,20 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         for page in data:
             page['created_at'] = parse_timestamp(page['created_at'])
             page['updated_at'] = parse_timestamp(page['updated_at'])
+            if 'earliest' in page:
+                page['earliest']['capture_time'] = parse_timestamp(
+                    page['earliest']['capture_time'])
+                page['earliest']['created_at'] = parse_timestamp(
+                    page['earliest']['created_at'])
+                page['earliest']['updated_at'] = parse_timestamp(
+                    page['earliest']['updated_at'])
             if 'latest' in page:
                 page['latest']['capture_time'] = parse_timestamp(
                     page['latest']['capture_time'])
+                page['latest']['created_at'] = parse_timestamp(
+                    page['latest']['created_at'])
+                page['latest']['updated_at'] = parse_timestamp(
+                    page['latest']['updated_at'])
             if 'versions' in page:
                 for v in page['versions']:
                     v['created_at'] = parse_timestamp(v['created_at'])
