@@ -690,14 +690,32 @@ class WaybackClient(utils.DepthCountedContext):
                        (len(history) > 0 and (previous_was_memento or exact_redirects == False))):
                         current_url = original_url_for_memento(response.url)
                         target_url, target_date = memento_url_data(response.next.url)
-                        # FIXME: this needs cleanup, but valid redirects can
-                        # point to other captures with the same SURT URL. The
-                        # regex here is totally not SURT, but makes an often-
-                        # successful dirty approximation. This needs cleanup.
-                        current_nice_url = protocol_and_www.sub('', current_url)
-                        target_nice_url = protocol_and_www.sub('', target_url)
-                        if current_nice_url.casefold() == target_nice_url.casefold() and abs(target_date - original_date).seconds <= target_window:
-                            playable = True
+                        # A non-memento redirect is generally taking us to the
+                        # closest-in-time capture of the same URL. Note that is
+                        # NOT the next capture -- i.e. the one that would have
+                        # been produced by an earlier memento redirect -- it's
+                        # just the *closest* one. The first job here is to make
+                        # sure it fits within our target window.
+                        if abs(target_date - original_date).seconds <= target_window:
+                            # The redirect will point to the closest-in-time
+                            # SURT URL, which will often not be an exact URL
+                            # match. If we aren't looking for exact matches,
+                            # then just assume wherever we're redirecting to is
+                            # ok. Otherwise, try to sanity-check the URL.
+                            if exact_redirects:
+                                # FIXME: what should *really* happen here, if
+                                # we want exactness, is a CDX search for the
+                                # next-int-time capture of the exact URL we
+                                # redirected to. I'm not totally sure how
+                                # great that is (also it seems high overhead to
+                                # do a search in the middle of this series of
+                                # memento lookups), so just do a loose URL
+                                # check for now.
+                                current_nice_url = protocol_and_www.sub('', current_url).casefold()
+                                target_nice_url = protocol_and_www.sub('', target_url).casefold()
+                                playable = current_nice_url == target_nice_url
+                            else:
+                                playable = True
 
                     if not playable:
                         message = response.headers.get('X-Archive-Wayback-Runtime-Error')
