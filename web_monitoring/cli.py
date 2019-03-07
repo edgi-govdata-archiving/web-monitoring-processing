@@ -139,7 +139,11 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                 logger.info(f'  Missing memento: {record.raw_url}')
                 summary['missing'] += 1
             else:
+                # TODO: consider not logging this at a lower level, like debug
+                # unless failure_queue does not exist. Unsure how big a deal
+                # this error is to log if we are retrying.
                 logger.info(f'  (HTTPError) {error}')
+                # TODO: definitely don't count it if we are going to retry it
                 summary['unknown'] += 1
                 if failure_queue:
                     failure_queue.put(record)
@@ -153,6 +157,8 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                 retry_record = record
                 continue
 
+            # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
+            # is present and we are ultimately going to retry.
             summary['unknown'] += 1
             logger.info(f'  {error}; URL: {record.raw_url}')
 
@@ -168,6 +174,8 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
                 retry_record = record
                 continue
 
+            # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
+            # is present and we are ultimately going to retry.
             summary['unknown'] += 1
             logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
 
