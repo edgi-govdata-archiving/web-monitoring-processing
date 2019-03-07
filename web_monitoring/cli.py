@@ -386,9 +386,17 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
             except ia.BlockedByRobotsError as error:
                 logger.warn(str(error))
             except ValueError as error:
-                # TODO: there should probably be no exception in this case
+                # NOTE: this isn't really an exceptional case; list_versions()
+                # raises ValueError when Wayback has no matching records.
+                # TODO: there should probably be no exception in this case.
                 if 'does not have archived versions' not in str(error):
                     logger.warn(error)
+            except ia.WaybackException as error:
+                logger.error(f'Error getting CDX data for {url}: {error}')
+            except Exception:
+                # Need to handle the exception here to let iteration continue
+                # and allow other threads that might be running to be joined.
+                logger.exception(f'Error processing versions of {url}')
 
     if skipped > 0:
         logger.info('Skipped %s URLs that did not match filters', skipped)
