@@ -6,11 +6,13 @@ from datetime import datetime, timedelta
 from docopt import docopt
 import json
 import logging
+import os
 from os.path import splitext
 import pandas
 from pathlib import Path
 import re
 import requests
+import signal
 import toolz
 from tqdm import tqdm
 from urllib.parse import urlparse
@@ -21,6 +23,7 @@ from web_monitoring import utils
 import queue
 import asyncio
 import concurrent
+import threading
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +76,7 @@ MAX_QUERY_URLS_PER_DOMAIN = 20
 # better to use the underlying library code.
 
 
-def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
+def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None):
     cli = db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
     # TODO: create this on the main thread so we can update totals when we
@@ -83,7 +86,7 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True):
                                   skip_unchanged_versions=skip_unchanged_versions)
     print('Import jobs IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
-    errors = cli.monitor_import_statuses(import_ids)
+    errors = cli.monitor_import_statuses(import_ids, stop_event)
     if errors:
         print("Errors: {}".format(errors))
 
@@ -95,7 +98,7 @@ def _log_adds(versions):
         print(json.dumps(version))
 
 
-def load_wayback_records_worker(records, results_queue, maintainers, tags, failure_queue=None, session_options=None, unplaybackable=None):
+def load_wayback_records_worker(records, results_queue, maintainers, tags, stop_event, failure_queue=None, session_options=None, unplaybackable=None):
     summary = worker_summary()
     session_options = session_options or dict(retries=3, backoff=2, timeout=(30.5, 2))
     session = ia.WaybackSession(**session_options)
@@ -103,7 +106,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, failu
     retry_record = None
     wayback = ia.WaybackClient(session=session)
 
-    while True:
+    while not stop_event.is_set():
         is_retry = False
         if retry_record:
             record = retry_record
@@ -256,6 +259,24 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
     memento_options_intermediate = dict(retries=3, backoff=4, timeout=(30.5, 2))
     memento_options_final = dict(retries=7, backoff=4, timeout=60.5)
     final_retry_queue = queue.Queue()
+    stop_event = threading.Event()
+
+    def handle_interrupt(signal_type, frame):
+        if not stop_event.is_set():
+            print('Stopping loading new versions from Wayback and attempting '
+                  'to send versions encountered so far. Press crtl+c to stop '
+                  'immediately.')
+            # Everything else should resolve itself ASAP when the event is set,
+            # so no need to explicitly quit after.
+            stop_event.set()
+        else:
+            print('Stopping immediately and aborting imports!')
+            os._exit(100)
+
+    sigint_handler = signal.getsignal(signal.SIGINT)
+    sigterm_handler = signal.getsignal(signal.SIGTERM)
+    signal.signal(signal.SIGINT, handle_interrupt)
+    signal.signal(signal.SIGTERM, handle_interrupt)
 
     with ia.WaybackClient(session) as wayback:
         # wayback_records = utils.ThreadSafeIterator(
@@ -277,7 +298,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
         if dry_run:
             uploader = loop.run_in_executor(executor, _log_adds, versions)
         else:
-            uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
+            uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages, stop_event)
 
         # summary = worker_summary()
         summary = merge_worker_summaries([worker_summary()])
@@ -287,7 +308,8 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             to_date,
             skip_responses,
             version_filter,
-            client=wayback)
+            client=wayback,
+            stop=stop_event)
         for wayback_records in toolz.partition_all(2000, all_records):
             wayback_records = utils.ThreadSafeIterator(wayback_records)
 
@@ -297,7 +319,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             # parallel if there are more than 1000
             # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
             # loop = asyncio.get_event_loop()
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, retry_queue, None, unplaybackable)
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, stop_event, retry_queue, None, unplaybackable)
                        for i in range(worker_count)]
 
             # versions = utils.queue_iterator(versions_queue)
@@ -311,11 +333,11 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
             # If there are failures to retry, re-spawn the workers to run them
             # with more retries and higher timeouts.
-            if not retry_queue.empty():
+            if not retry_queue.empty() and not stop_event.is_set():
                 print(f'\nRetrying about {retry_queue.qsize()} failed records...')
                 retry_queue.put(None)
                 retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
-                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, final_retry_queue, memento_options_intermediate, unplaybackable)
+                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
                            for i in range(worker_count)]
 
                 # Update summary info
@@ -328,11 +350,11 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         # If there are failures to retry, re-spawn the workers to run them
         # with more retries and higher timeouts.
-        if not final_retry_queue.empty():
+        if not final_retry_queue.empty() and not stop_event.is_set():
             print(f'\nRetrying about {retry_queue.qsize()} failed records...')
             final_retry_queue.put(None)
             retries = utils.ThreadSafeIterator(utils.queue_iterator(final_retry_queue))
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, None, memento_options_final, unplaybackable)
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, None, memento_options_final, unplaybackable)
                        for i in range(worker_count)]
 
             # Update summary info
@@ -359,6 +381,11 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         await uploader
 
+    # Our signal handler is specific to the context of this function, so
+    # reinstate the previous handlers before leaving.
+    signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
 
 def _filter_unchanged_versions(versions):
     """
@@ -374,18 +401,23 @@ def _filter_unchanged_versions(versions):
 
 def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                                skip_repeats=True, version_filter=None,
-                               client=None):
+                               client=None, stop=None):
     version_filter = version_filter or _is_page
     skipped = 0
 
     with client or ia.WaybackClient() as client:
         for url in url_patterns:
+            if stop and stop.is_set():
+                break
+
             ia_versions = client.list_versions(url,
                                             from_date=from_date,
                                             to_date=to_date,
                                             skip_repeats=skip_repeats)
             try:
                 for version in ia_versions:
+                    if stop and stop.is_set():
+                        break
                     if version_filter(version):
                         yield version
                     else:
