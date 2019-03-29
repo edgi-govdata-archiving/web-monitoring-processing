@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Set the working directory to /app
 WORKDIR /app
+ARG WEB_MONITORING_DB_URL
+ARG WEB_MONITORING_DB_PASSWORD
+ARG WEB_MONITORING_DB_EMAIL
 
 # Copy the requirements.txt alone into the container at /app
 # so that they can be cached more aggressively than the rest of the source.
@@ -25,4 +28,4 @@ RUN pip install .
 EXPOSE 80
 
 # Run server on port 80 when the container launches.
-CMD ["wm-diffing-server", "80"]
+CMD ["ia_healthcheck"]
