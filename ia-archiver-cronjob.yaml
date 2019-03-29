@@ -1,0 +1,31 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: ia-import
+spec:
+  schedule: "30 3 * * * "
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ia-import
+            image: ibuys/wm_import:latest
+            env:
+                - name: WEB_MONITORING_DB_URL
+                  valueFrom:
+                      secretKeyRef:
+                        name: app-secrets
+                        key: web_monitoring_db_url
+                - name: WEB_MONITORING_DB_PASSWORD
+                  valueFrom:
+                      secretKeyRef:
+                        name: app-secrets
+                        key: web_monitoring_db_password
+                - name: WEB_MONITORING_DB_EMAIL
+                  valueFrom:
+                      secretKeyRef:
+                        name: app-secrets
+                        key: web_monitoring_db_email
+
+          restartPolicy: OnFailure
