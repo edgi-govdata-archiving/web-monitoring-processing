@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.64.g276f4d2 documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.64.g36152c6 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.64.g276f4d2
+                0+untagged.64.g36152c6
               </div>
             
           
@@ -186,7 +186,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b5ed9bb00f8&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2aeae28f0c50&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -283,18 +283,13 @@ Memento API. We implement a Python client that can speak both.</p>
 close the session it’s using (if you’ve passed in a custom session, make
 sure not to use the context manager functionality unless you want to live
 dangerously).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>session</strong> <span class="classifier-delimiter">:</span> <span class="classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests.Session</span></code>, optional</span></dt>
-<dd></dd>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>session</strong><span class="classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests.Session</span></code>, optional</span></dt><dd></dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.search">
 <code class="descname">search</code><span class="sig-paren">(</span><em>url</em>, <em>*</em>, <em>matchType=None</em>, <em>limit=None</em>, <em>offset=None</em>, <em>fastLatest=None</em>, <em>gzip=None</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>filter_field=None</em>, <em>collapse=None</em>, <em>showResumeKey=True</em>, <em>resumeKey=None</em>, <em>page=None</em>, <em>pageSize=None</em>, <em>resolveRevisits=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
@@ -306,98 +301,77 @@ the total count of found captures.</p>
 URLs. Search results are matched by url_key, which is a SURT-formatted,
 canonicalized URL:</p>
 <ul class="simple">
-<li>Does not differentiate between HTTP and HTTPS</li>
-<li>Is not case-sensitive</li>
-<li>Treats <code class="docutils literal notranslate"><span class="pre">www.</span></code> and <code class="docutils literal notranslate"><span class="pre">www*.</span></code> subdomains the same as no subdomain at
-all</li>
+<li><p>Does not differentiate between HTTP and HTTPS</p></li>
+<li><p>Is not case-sensitive</p></li>
+<li><p>Treats <code class="docutils literal notranslate"><span class="pre">www.</span></code> and <code class="docutils literal notranslate"><span class="pre">www*.</span></code> subdomains the same as no subdomain at
+all</p></li>
 </ul>
 <p>Note not all CDX API parameters are supported. In particular, this does
 not support: <cite>output</cite>, <cite>fl</cite>, <cite>showDupeCount</cite>, <cite>showSkipCount</cite>,
 <cite>lastSkipTimestamp</cite>, <cite>showNumPages</cite>, <cite>showPagedIndex</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd><p class="first last">The URL to query for captures of.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>url</strong><span class="classifier">str</span></dt><dd><p>The URL to query for captures of.</p>
 </dd>
-<dt><strong>matchType</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">Must be one of ‘exact’, ‘prefix’, ‘host’, or ‘domain’. The default
+<dt><strong>matchType</strong><span class="classifier">str, optional</span></dt><dd><p>Must be one of ‘exact’, ‘prefix’, ‘host’, or ‘domain’. The default
 value is calculated based on the format of <cite>url</cite>.</p>
 </dd>
-<dt><strong>limit</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">Maximum number of results per page (this iterator will continue to
+<dt><strong>limit</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum number of results per page (this iterator will continue to
 move through all pages unless <cite>showResumeKey=False</cite>, though).</p>
 </dd>
-<dt><strong>offset</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">Skip the first N results.</p>
+<dt><strong>offset</strong><span class="classifier">int, optional</span></dt><dd><p>Skip the first N results.</p>
 </dd>
-<dt><strong>fastLatest</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Get faster results when using a negative value for <cite>limit</cite>. It may
+<dt><strong>fastLatest</strong><span class="classifier">bool, optional</span></dt><dd><p>Get faster results when using a negative value for <cite>limit</cite>. It may
 return a variable number of results.</p>
 </dd>
-<dt><strong>gzip</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Whether output should be gzipped.</p>
+<dt><strong>gzip</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether output should be gzipped.</p>
 </dd>
-<dt><strong>from_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
-<dd><p class="first last">Only include captures after this date. Equivalent to the
+<dt><strong>from_date</strong><span class="classifier">datetime, optional</span></dt><dd><p>Only include captures after this date. Equivalent to the
 <cite>from</cite> argument in the CDX API.</p>
 </dd>
-<dt><strong>to_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">Only include captures before this date. Equivalent to the <cite>to</cite>
+<dt><strong>to_date</strong><span class="classifier">str, optional</span></dt><dd><p>Only include captures before this date. Equivalent to the <cite>to</cite>
 argument in the CDX API.</p>
 </dd>
-<dt><strong>filter_field</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">A filter for any field in the results. Equivalent to the <cite>filter</cite>
+<dt><strong>filter_field</strong><span class="classifier">str, optional</span></dt><dd><p>A filter for any field in the results. Equivalent to the <cite>filter</cite>
 argument in the CDX API. (format: <cite>[!]field:regex</cite>)</p>
 </dd>
-<dt><strong>collapse</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">Collapse consecutive results that match on a given field. (format:
+<dt><strong>collapse</strong><span class="classifier">str, optional</span></dt><dd><p>Collapse consecutive results that match on a given field. (format:
 <cite>fieldname</cite> or <cite>fieldname:N</cite> – N is the number of chars to match.)</p>
 </dd>
-<dt><strong>showResumeKey</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">If False, don’t continue to iterate through all pages of results.
+<dt><strong>showResumeKey</strong><span class="classifier">bool, optional</span></dt><dd><p>If False, don’t continue to iterate through all pages of results.
 The default value is True</p>
 </dd>
-<dt><strong>resumeKey</strong> <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first last">Start returning results from a specified resumption point/offset.
+<dt><strong>resumeKey</strong><span class="classifier">str, optional</span></dt><dd><p>Start returning results from a specified resumption point/offset.
 The value for this is supplied by the previous page of results when
 <cite>showResumeKey</cite> is True.</p>
 </dd>
-<dt><strong>page</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">If using paging start from this page number (note: paging, as
+<dt><strong>page</strong><span class="classifier">int, optional</span></dt><dd><p>If using paging start from this page number (note: paging, as
 opposed to the using <cite>resumeKey</cite> is somewhat complicated because
 of the interplay with indexes and index sizes).</p>
 </dd>
-<dt><strong>pageSize</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
-<dd><p class="first last">The number of index blocks to examine for each page of results.
+<dt><strong>pageSize</strong><span class="classifier">int, optional</span></dt><dd><p>The number of index blocks to examine for each page of results.
 Index blocks generally cover about 3,000 items, so setting
 <cite>pageSize=1</cite> might return anywhere from 0 to 3,000 results per page.</p>
 </dd>
-<dt><strong>resolveRevists</strong> <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd><p class="first last">Attempt to resolve <cite>warc/revisit</cite> records to their actual content
+<dt><strong>resolveRevists</strong><span class="classifier">bool, optional</span></dt><dd><p>Attempt to resolve <cite>warc/revisit</cite> records to their actual content
 type and response code. Not supported on all CDX servers. Defaults
 to True.</p>
 </dd>
-<dt><strong>**kwargs</strong></dt>
-<dd><p class="first last">Any additional CDX API options.</p>
+<dt><strong>**kwargs</strong></dt><dd><p>Any additional CDX API options.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>UnexpectedResponseFormat</strong></dt>
-<dd><p class="first last">If the CDX response was not parseable.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>UnexpectedResponseFormat</strong></dt><dd><p>If the CDX response was not parseable.</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <p class="rubric">References</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server">https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server</a></li>
+<li><p><a class="reference external" href="https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server">https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server</a></p></li>
 </ul>
 </dd></dl>
 
@@ -412,45 +386,34 @@ archive.org’s CDX API. For a more direct, low-level API, use
 URLs. Search results are matched by url_key, which is a SURT-formatted,
 canonicalized URL:</p>
 <ul class="simple">
-<li>Does not differentiate between HTTP and HTTPS</li>
-<li>Is not case-sensitive</li>
-<li>Treats <cite>www.</cite> and <cite>www*.</cite> subdomains the same as no subdomain at all</li>
+<li><p>Does not differentiate between HTTP and HTTPS</p></li>
+<li><p>Is not case-sensitive</p></li>
+<li><p>Treats <cite>www.</cite> and <cite>www*.</cite> subdomains the same as no subdomain at all</p></li>
 </ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
-<dd><p class="first last">The URL to list versions for. Can contain wildcards.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>url</strong><span class="classifier">string</span></dt><dd><p>The URL to list versions for. Can contain wildcards.</p>
 </dd>
-<dt><strong>from_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
-<dd><p class="first last">Get versions captured after this date.</p>
+<dt><strong>from_date</strong><span class="classifier">datetime, optional</span></dt><dd><p>Get versions captured after this date.</p>
 </dd>
-<dt><strong>to_date</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime, optional</span></dt>
-<dd><p class="first last">Get versions captured before this date.</p>
+<dt><strong>to_date</strong><span class="classifier">datetime, optional</span></dt><dd><p>Get versions captured before this date.</p>
 </dd>
-<dt><strong>skip_repeats</strong> <span class="classifier-delimiter">:</span> <span class="classifier">boolean, optional</span></dt>
-<dd><p class="first last">Don’t include consecutive captures of the same content (default: True).</p>
+<dt><strong>skip_repeats</strong><span class="classifier">boolean, optional</span></dt><dd><p>Don’t include consecutive captures of the same content (default: True).</p>
 </dd>
-<dt><strong>cdx_params</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict, optional</span></dt>
-<dd><p class="first last">Additional options to pass directly to the CDX API when querying.</p>
+<dt><strong>cdx_params</strong><span class="classifier">dict, optional</span></dt><dd><p>Additional options to pass directly to the CDX API when querying.</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>UnexpectedResponseFormat</strong></dt>
-<dd><p class="first last">If the CDX response was not parseable.</p>
 </dd>
-<dt><strong>ValueError</strong></dt>
-<dd><p class="first last">If there were no versions of the given URL.</p>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>UnexpectedResponseFormat</strong></dt><dd><p>If the CDX response was not parseable.</p>
+</dd>
+<dt><strong>ValueError</strong></dt><dd><p>If there were no versions of the given URL.</p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <p class="rubric">Examples</p>
 <p>Grab the datetime and URL of the first nasa.gov snapshot.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">WaybackClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
@@ -473,41 +436,30 @@ canonicalized URL:</p>
 <dt id="web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version">
 <code class="descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em>dt</em>, <em>uri</em>, <em>*</em>, <em>url</em>, <em>maintainers=None</em>, <em>tags=None</em>, <em>view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch version content and combine it with metadata to build a Version.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
-<dt><strong>dt</strong> <span class="classifier-delimiter">:</span> <span class="classifier">datetime.datetime</span></dt>
-<dd><p class="first last">capture time</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>dt</strong><span class="classifier">datetime.datetime</span></dt><dd><p>capture time</p>
 </dd>
-<dt><strong>uri</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
-<dd><p class="first last">URI of version</p>
+<dt><strong>uri</strong><span class="classifier">string</span></dt><dd><p>URI of version</p>
 </dd>
-<dt><strong>url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
-<dd><p class="first last">page URL</p>
+<dt><strong>url</strong><span class="classifier">string</span></dt><dd><p>page URL</p>
 </dd>
-<dt><strong>maintainers</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of string, optional</span></dt>
-<dd><p class="first last">Entities responsible for maintaining the page, as a list of strings</p>
+<dt><strong>maintainers</strong><span class="classifier">list of string, optional</span></dt><dd><p>Entities responsible for maintaining the page, as a list of strings</p>
 </dd>
-<dt><strong>tags</strong> <span class="classifier-delimiter">:</span> <span class="classifier">list of string, optional</span></dt>
-<dd><p class="first last">Any arbitrary “tags” to apply to the page for categorization</p>
+<dt><strong>tags</strong><span class="classifier">list of string, optional</span></dt><dd><p>Any arbitrary “tags” to apply to the page for categorization</p>
 </dd>
-<dt><strong>view_url</strong> <span class="classifier-delimiter">:</span> <span class="classifier">string, optional</span></dt>
-<dd><p class="first last">The archive.org URL for viewing the page (with rewritten links, etc.)</p>
+<dt><strong>view_url</strong><span class="classifier">string, optional</span></dt><dd><p>The archive.org URL for viewing the page (with rewritten links, etc.)</p>
 </dd>
 </dl>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
-<dt><strong>dict</strong> <span class="classifier-delimiter">:</span> <span class="classifier">Version</span></dt>
-<dd><p class="first last">suitable for passing to <code class="xref py py-class docutils literal notranslate"><span class="pre">Client.add_versions</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>dict</strong><span class="classifier">Version</span></dt><dd><p>suitable for passing to <code class="xref py py-class docutils literal notranslate"><span class="pre">Client.add_versions</span></code></p>
 </dd>
 </dl>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

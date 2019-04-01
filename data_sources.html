@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Overview of Sources of Archived Web Pages &mdash; web-monitoring-processing 0+untagged.64.g276f4d2 documentation</title>
+  <title>Overview of Sources of Archived Web Pages &mdash; web-monitoring-processing 0+untagged.64.g36152c6 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.64.g276f4d2
+                0+untagged.64.g36152c6
               </div>
             
           
@@ -162,9 +162,9 @@
 <h1>Overview of Sources of Archived Web Pages<a class="headerlink" href="#overview-of-sources-of-archived-web-pages" title="Permalink to this headline">¶</a></h1>
 <p>The EDGI Website Monitoring project currently ingests data from three sources:</p>
 <ul class="simple">
-<li>Internet Archive Wayback Machine</li>
-<li>Versionista (legacy)</li>
-<li>PageFreezer (deprecated, only partially documented)</li>
+<li><p>Internet Archive Wayback Machine</p></li>
+<li><p>Versionista (legacy)</p></li>
+<li><p>PageFreezer (deprecated, only partially documented)</p></li>
 </ul>
 <div class="section" id="internet-archive">
 <h2>Internet Archive<a class="headerlink" href="#internet-archive" title="Permalink to this headline">¶</a></h2>
@@ -189,94 +189,95 @@ We extract the useful information i.e. the date and uri from each memento.</p>
 <p><cite>source_metadata</cite> : PageFreezer gives the option of retrieving either the metadata(header/internal info) or the file itself.</p>
 <p>The file metadata is returned as a JSON blob which has the following fields:</p>
 <ul class="simple">
-<li><cite>archive</cite> : The Id of the archive where the version is stored. PageFreezer uses the timestamp as the archive Id.</li>
-<li><cite>cabinet</cite> : The Id of the cabinet in which this version is stored.</li>
-<li><cite>elapsed</cite> : Time elapsed during retrieval of the file details.</li>
-<li><cite>file</cite> : Another JSON blob with info about the file.<ul>
-<li><cite>ContentType</cite> : The type of the content in the file.</li>
-<li><cite>Data</cite>:</li>
-<li><cite>Depth</cite>:</li>
-<li><cite>ElapsedSec</cite>: Time elapsed during retrieval of the metadata contents.</li>
-<li><cite>Header</cite>: Details about the server it is hosted on, the file Id and hash on the server, timestamp, content length, and web security policies and mechanisms. This represents the meta tags in the HTML file.</li>
-<li><cite>Links</cite>: A list of the different components (theme, widget etc.) of a webpage in the form of dictionaries. Each dictionary contains details of the URL to a component of the webpage.</li>
-<li><cite>OnlyRedirect</cite> : Tells us whether the page only contains redirect information. <cite>True</cite> or <cite>False</cite></li>
-<li><cite>PageId</cite> : Id associated with the page.</li>
-<li><cite>StartedAt</cite> : The time at which the metadata retrieval was started.</li>
-<li><cite>Status</cite> : Retrieval request response status. Typicall <cite>200 OK</cite>.</li>
-<li><cite>StatusCode</cite> : Just the status code. Typically <cite>200</cite></li>
-<li><cite>TaskId</cite> :</li>
-<li><cite>Timestamp</cite> : The time at which the archive was loaded.</li>
-<li><cite>Url0</cite> : The URL of the page itself.</li>
-<li><cite>Url1</cite>:</li>
-<li><cite>UrlType</cite>:</li>
-<li><cite>Writeflag</cite>:</li>
+<li><p><cite>archive</cite> : The Id of the archive where the version is stored. PageFreezer uses the timestamp as the archive Id.</p></li>
+<li><p><cite>cabinet</cite> : The Id of the cabinet in which this version is stored.</p></li>
+<li><p><cite>elapsed</cite> : Time elapsed during retrieval of the file details.</p></li>
+<li><p><cite>file</cite> : Another JSON blob with info about the file.</p>
+<ul>
+<li><p><cite>ContentType</cite> : The type of the content in the file.</p></li>
+<li><p><cite>Data</cite>:</p></li>
+<li><p><cite>Depth</cite>:</p></li>
+<li><p><cite>ElapsedSec</cite>: Time elapsed during retrieval of the metadata contents.</p></li>
+<li><p><cite>Header</cite>: Details about the server it is hosted on, the file Id and hash on the server, timestamp, content length, and web security policies and mechanisms. This represents the meta tags in the HTML file.</p></li>
+<li><p><cite>Links</cite>: A list of the different components (theme, widget etc.) of a webpage in the form of dictionaries. Each dictionary contains details of the URL to a component of the webpage.</p></li>
+<li><p><cite>OnlyRedirect</cite> : Tells us whether the page only contains redirect information. <cite>True</cite> or <cite>False</cite></p></li>
+<li><p><cite>PageId</cite> : Id associated with the page.</p></li>
+<li><p><cite>StartedAt</cite> : The time at which the metadata retrieval was started.</p></li>
+<li><p><cite>Status</cite> : Retrieval request response status. Typicall <cite>200 OK</cite>.</p></li>
+<li><p><cite>StatusCode</cite> : Just the status code. Typically <cite>200</cite></p></li>
+<li><p><cite>TaskId</cite> :</p></li>
+<li><p><cite>Timestamp</cite> : The time at which the archive was loaded.</p></li>
+<li><p><cite>Url0</cite> : The URL of the page itself.</p></li>
+<li><p><cite>Url1</cite>:</p></li>
+<li><p><cite>UrlType</cite>:</p></li>
+<li><p><cite>Writeflag</cite>:</p></li>
 </ul>
 </li>
-<li><cite>key</cite>: Each file is associated with a key.</li>
-<li><cite>status</cite> : API call response status.</li>
+<li><p><cite>key</cite>: Each file is associated with a key.</p></li>
+<li><p><cite>status</cite> : API call response status.</p></li>
 </ul>
 </div>
 <div class="section" id="versionista">
 <h2>Versionista<a class="headerlink" href="#versionista" title="Permalink to this headline">¶</a></h2>
 <p>Versionista returns a JSON blob which contains the following fields:</p>
 <ul class="simple">
-<li><cite>account</cite> : The Versionista account we’re logging into to get the versions. We have two accounts - <cite>versionista1</cite> &amp; <cite>versionista2</cite></li>
-<li><cite>siteName</cite> : The website of the file.</li>
-<li><cite>agency</cite> : The name of the Government agency which owns the website.</li>
-<li><cite>versionistaSiteUrl</cite> : A link to a website as it is stored on Versionista.</li>
-<li><cite>versionistaPageUrl</cite> : A link to a webpage as it is stored on Versionista.</li>
-<li><cite>pageUrl</cite> : The page’s true URL.</li>
-<li><cite>pageTitle</cite> : The title of the page as defined in the <cite>title</cite> tag.</li>
-<li><cite>siteId</cite> : Id of the website in Versionista.</li>
-<li><cite>pageId</cite> : Id of a webpage in Versionista.</li>
-<li><cite>versionId</cite> : Id of a version in Versionista.</li>
-<li><cite>url</cite> : The full URL to view this version in Versionista. You’ll need to be logged into the appropriate Versionista account to make use of it.</li>
-<li><cite>date</cite> : The date and time when the version was captured.</li>
-<li><cite>hasContent</cite> : Indicates if Versionista has stored any content of the page or not. There is a limit on the size of the versions Versionista can store. <cite>True</cite> or <cite>False</cite></li>
-<li><cite>diffWithPreviousUrl</cite> : URL to diff view in Versionista (comparing with previous version).</li>
-<li><cite>diffWithPreviousDate</cite> : The capture date of the first ever captured version of the page.</li>
-<li><cite>diffWithFirstUrl</cite> : URL to diff view in Versionista (comparing with first version).</li>
-<li><cite>diffWithFirstDate</cite> : The capture date of the current version of the page.</li>
-<li><cite>textDiff</cite> : A dictionary with the URL to the text diff view in Versionista and its SHA 256 hash and length.</li>
-<li><cite>diff</cite>: A dictionary with the URL to the entire diff view in Verisionista and its SHA 256 hash and length.</li>
-<li><cite>filePath</cite> : Path to the diff file which is stored in our archive.</li>
-<li><cite>hash</cite> : The diff file’s SHA 256 hash.</li>
+<li><p><cite>account</cite> : The Versionista account we’re logging into to get the versions. We have two accounts - <cite>versionista1</cite> &amp; <cite>versionista2</cite></p></li>
+<li><p><cite>siteName</cite> : The website of the file.</p></li>
+<li><p><cite>agency</cite> : The name of the Government agency which owns the website.</p></li>
+<li><p><cite>versionistaSiteUrl</cite> : A link to a website as it is stored on Versionista.</p></li>
+<li><p><cite>versionistaPageUrl</cite> : A link to a webpage as it is stored on Versionista.</p></li>
+<li><p><cite>pageUrl</cite> : The page’s true URL.</p></li>
+<li><p><cite>pageTitle</cite> : The title of the page as defined in the <cite>title</cite> tag.</p></li>
+<li><p><cite>siteId</cite> : Id of the website in Versionista.</p></li>
+<li><p><cite>pageId</cite> : Id of a webpage in Versionista.</p></li>
+<li><p><cite>versionId</cite> : Id of a version in Versionista.</p></li>
+<li><p><cite>url</cite> : The full URL to view this version in Versionista. You’ll need to be logged into the appropriate Versionista account to make use of it.</p></li>
+<li><p><cite>date</cite> : The date and time when the version was captured.</p></li>
+<li><p><cite>hasContent</cite> : Indicates if Versionista has stored any content of the page or not. There is a limit on the size of the versions Versionista can store. <cite>True</cite> or <cite>False</cite></p></li>
+<li><p><cite>diffWithPreviousUrl</cite> : URL to diff view in Versionista (comparing with previous version).</p></li>
+<li><p><cite>diffWithPreviousDate</cite> : The capture date of the first ever captured version of the page.</p></li>
+<li><p><cite>diffWithFirstUrl</cite> : URL to diff view in Versionista (comparing with first version).</p></li>
+<li><p><cite>diffWithFirstDate</cite> : The capture date of the current version of the page.</p></li>
+<li><p><cite>textDiff</cite> : A dictionary with the URL to the text diff view in Versionista and its SHA 256 hash and length.</p></li>
+<li><p><cite>diff</cite>: A dictionary with the URL to the entire diff view in Verisionista and its SHA 256 hash and length.</p></li>
+<li><p><cite>filePath</cite> : Path to the diff file which is stored in our archive.</p></li>
+<li><p><cite>hash</cite> : The diff file’s SHA 256 hash.</p></li>
 </ul>
 <p><a class="reference external" href="https://s3-us-west-2.amazonaws.com/edgi-versionista-archive/versionista1/metadata-2017-06-20T00%3A00Z.json">Recent Versionista output file</a></p>
-<table border="1" class="docutils">
+<table class="docutils align-center">
 <colgroup>
-<col width="51%" />
-<col width="21%" />
-<col width="14%" />
-<col width="14%" />
+<col style="width: 51%" />
+<col style="width: 21%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Aspect</th>
-<th class="head">Internet Archive</th>
-<th class="head">PageFreezer</th>
-<th class="head">Versionista</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Aspect</p></th>
+<th class="head"><p>Internet Archive</p></th>
+<th class="head"><p>PageFreezer</p></th>
+<th class="head"><p>Versionista</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>Type</td>
-<td>Byte Sequence</td>
-<td>JSON</td>
-<td>JSON</td>
+<tbody>
+<tr class="row-even"><td><p>Type</p></td>
+<td><p>Byte Sequence</p></td>
+<td><p>JSON</p></td>
+<td><p>JSON</p></td>
 </tr>
-<tr class="row-odd"><td>Version/file can be directly accessed</td>
-<td>No</td>
-<td>Yes</td>
-<td>No</td>
+<tr class="row-odd"><td><p>Version/file can be directly accessed</p></td>
+<td><p>No</p></td>
+<td><p>Yes</p></td>
+<td><p>No</p></td>
 </tr>
-<tr class="row-even"><td>Elapsed time details</td>
-<td>Not present</td>
-<td>Present</td>
-<td>Not Present</td>
+<tr class="row-even"><td><p>Elapsed time details</p></td>
+<td><p>Not present</p></td>
+<td><p>Present</p></td>
+<td><p>Not Present</p></td>
 </tr>
-<tr class="row-odd"><td>Page meta tag data/ header</td>
-<td>Not present</td>
-<td>Present</td>
-<td>Not Present</td>
+<tr class="row-odd"><td><p>Page meta tag data/ header</p></td>
+<td><p>Not present</p></td>
+<td><p>Present</p></td>
+<td><p>Not Present</p></td>
 </tr>
 </tbody>
 </table>
