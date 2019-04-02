@@ -95,6 +95,14 @@ docker run -p 4000:80 processing
 
 Point your browser or ``curl`` at ``http://localhost:4000``.
 
+There are two additional Dockerfiles that build cron jobs. To build those run:
+
+```
+docker build -t ia-healthcheck -f Dockerfile.ia-healthcheck .
+docker build -t ia-archiver -f Dockerfile.ia-archiver .
+```
+
+
 ## Code of Conduct
 
 This repository falls under EDGI's [Code of Conduct](https://github.com/edgi-govdata-archiving/overview/blob/master/CONDUCT.md).
