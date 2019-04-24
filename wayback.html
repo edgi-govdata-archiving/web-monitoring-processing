@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.64.g6032ba0 documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.64.g180eae6 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.64.g6032ba0
+                0+untagged.64.g180eae6
               </div>
             
           
@@ -186,7 +186,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b44de2fa0f8&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b9e6c0a0eb8&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -292,7 +292,7 @@ dangerously).</p>
 </dl>
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.search">
-<code class="descname">search</code><span class="sig-paren">(</span><em>url</em>, <em>*</em>, <em>matchType=None</em>, <em>limit=None</em>, <em>offset=None</em>, <em>fastLatest=None</em>, <em>gzip=None</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>filter_field=None</em>, <em>collapse=None</em>, <em>showResumeKey=True</em>, <em>resumeKey=None</em>, <em>page=None</em>, <em>pageSize=None</em>, <em>resolveRevisits=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
+<code class="descname">search</code><span class="sig-paren">(</span><em>self</em>, <em>url</em>, <em>*</em>, <em>matchType=None</em>, <em>limit=None</em>, <em>offset=None</em>, <em>fastLatest=None</em>, <em>gzip=None</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>filter_field=None</em>, <em>collapse=None</em>, <em>showResumeKey=True</em>, <em>resumeKey=None</em>, <em>page=None</em>, <em>pageSize=None</em>, <em>resolveRevisits=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search archive.org’s CDX API for all captures of a given URL.</p>
 <p>This will automatically page through all results for a given search.</p>
 <p>Returns an iterator of CdxRecord objects. The StopIteration value is
@@ -364,7 +364,7 @@ to True.</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>UnexpectedResponseFormat</strong></dt><dd><p>If the CDX response was not parseable.</p>
+<dt>UnexpectedResponseFormat</dt><dd><p>If the CDX response was not parseable.</p>
 </dd>
 </dl>
 </dd>
@@ -377,7 +377,7 @@ to True.</p>
 
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.list_versions">
-<code class="descname">list_versions</code><span class="sig-paren">(</span><em>url</em>, <em>*</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>skip_repeats=True</em>, <em>cdx_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.list_versions" title="Permalink to this definition">¶</a></dt>
+<code class="descname">list_versions</code><span class="sig-paren">(</span><em>self</em>, <em>url</em>, <em>*</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>skip_repeats=True</em>, <em>cdx_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.list_versions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search archive.org for captures of a URL (optionally, within a time span).</p>
 <p>This function provides a convenient, use-case-specific interface to
 archive.org’s CDX API. For a more direct, low-level API, use
@@ -407,9 +407,9 @@ canonicalized URL:</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>UnexpectedResponseFormat</strong></dt><dd><p>If the CDX response was not parseable.</p>
+<dt>UnexpectedResponseFormat</dt><dd><p>If the CDX response was not parseable.</p>
 </dd>
-<dt><strong>ValueError</strong></dt><dd><p>If there were no versions of the given URL.</p>
+<dt>ValueError</dt><dd><p>If there were no versions of the given URL.</p>
 </dd>
 </dl>
 </dd>
@@ -434,7 +434,7 @@ canonicalized URL:</p>
 
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version">
-<code class="descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em>dt</em>, <em>uri</em>, <em>*</em>, <em>url</em>, <em>maintainers=None</em>, <em>tags=None</em>, <em>view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
+<code class="descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em>self</em>, <em>dt</em>, <em>uri</em>, <em>*</em>, <em>url</em>, <em>maintainers=None</em>, <em>tags=None</em>, <em>view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch version content and combine it with metadata to build a Version.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
