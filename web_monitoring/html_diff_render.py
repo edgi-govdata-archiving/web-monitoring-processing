@@ -191,7 +191,9 @@ MAX_SPACERS = 2500
 
 class Strict_url_rule:
     mode = False
-    REGEX_RULES = {'WBM': r"/web/\d{14}"}
+    REGEX_RULES = {'WBM': r"/web/\d{14}",
+                   'jsessionid': r";jsessionid[^;=]*=([^;]+)",
+                   'UKWA': r"https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}mp_/"}
 
 
 def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
