@@ -52,8 +52,8 @@ jobs:
       - checkout
       - run: |
           docker build -t envirodgi/processing:$CIRCLE_SHA1 .
-          docker build -t envirodgi/ia-healthcheck:latest -f Dockerfile.ia-healthcheck .
-          docker build -t envirodgi/ia-archiver:latest -f Dockerfile.ia-archiver .
+          docker build -t envirodgi/ia-healthcheck:$CIRCLE_SHA1 -f Dockerfile.ia-healthcheck .
+          docker build -t envirodgi/ia-etl:$CIRCLE_SHA1 -f Dockerfile.ia-etl .
       - run:
           name: Save Image
           command: |
