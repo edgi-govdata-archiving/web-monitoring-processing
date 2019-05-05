@@ -54,14 +54,12 @@ jobs:
           docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: |
           docker build -t envirodgi/processing:$CIRCLE_SHA1 .
-          docker build -t envirodgi/processing:latest .
-          docker build -t envirodgi/ia-healthcheck:latest -f Dockerfile.ia-healthcheck .
-          docker build -t envirodgi/ia-archiver:latest -f Dockerfile.ia-archiver .
+          docker build -t envirodgi/ia-healthcheck:$CIRCLE_SHA1 -f Dockerfile.ia-healthcheck .
+          docker build -t envirodgi/ia-etl:$CIRCLE_SHA1 -f Dockerfile.ia-etl .
       - run: |
           docker push envirodgi/processing:$CIRCLE_SHA1
-          docker push envirodgi/processing:latest
-          docker push envirodgi/ia-healthcheck:latest
-          docker push envirodgi/ia-archiver:latest
+          docker push envirodgi/ia-healthcheck:$CIRCLE_SHA1
+          docker push envirodgi/ia-etl:$CIRCLE_SHA1
 
 workflows:
   version: 2
