@@ -259,85 +259,85 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
     memento_options_intermediate = dict(retries=3, backoff=4, timeout=(30.5, 2))
     memento_options_final = dict(retries=7, backoff=4, timeout=60.5)
     final_retry_queue = queue.Queue()
-    stop_event = threading.Event()
 
-    def handle_interrupt(signal_type, frame):
-        if not stop_event.is_set():
-            print('Stopping loading new versions from Wayback and attempting '
-                  'to send versions encountered so far. Press crtl+c to stop '
-                  'immediately.')
-            # Everything else should resolve itself ASAP when the event is set,
-            # so no need to explicitly quit after.
-            stop_event.set()
-        else:
-            print('Stopping immediately and aborting imports!')
-            os._exit(100)
+    with utils.QuitSignal((signal.SIGINT, signal.SIGTERM)) as stop_event:
+        with ia.WaybackClient(session) as wayback:
+            # wayback_records = utils.ThreadSafeIterator(
+            #     _list_ia_versions_for_urls(
+            #         urls,
+            #         from_date,
+            #         to_date,
+            #         skip_responses,
+            #         version_filter,
+            #         client=wayback))
 
-    sigint_handler = signal.getsignal(signal.SIGINT)
-    sigterm_handler = signal.getsignal(signal.SIGTERM)
-    signal.signal(signal.SIGINT, handle_interrupt)
-    signal.signal(signal.SIGTERM, handle_interrupt)
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
+            loop = asyncio.get_event_loop()
+            versions_queue = queue.Queue()
+            versions = utils.queue_iterator(versions_queue)
+            if skip_unchanged == 'resolved-response':
+                versions = _filter_unchanged_versions(versions)
 
-    with ia.WaybackClient(session) as wayback:
-        # wayback_records = utils.ThreadSafeIterator(
-        #     _list_ia_versions_for_urls(
-        #         urls,
-        #         from_date,
-        #         to_date,
-        #         skip_responses,
-        #         version_filter,
-        #         client=wayback))
+            if dry_run:
+                uploader = loop.run_in_executor(executor, _log_adds, versions)
+            else:
+                uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages, stop_event)
 
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
-        loop = asyncio.get_event_loop()
-        versions_queue = queue.Queue()
-        versions = utils.queue_iterator(versions_queue)
-        if skip_unchanged == 'resolved-response':
-            versions = _filter_unchanged_versions(versions)
+            # summary = worker_summary()
+            summary = merge_worker_summaries([worker_summary()])
+            all_records = _list_ia_versions_for_urls(
+                urls,
+                from_date,
+                to_date,
+                skip_responses,
+                version_filter,
+                client=wayback,
+                stop=stop_event)
+            for wayback_records in toolz.partition_all(2000, all_records):
+                wayback_records = utils.ThreadSafeIterator(wayback_records)
 
-        if dry_run:
-            uploader = loop.run_in_executor(executor, _log_adds, versions)
-        else:
-            uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages, stop_event)
+                # versions_queue = queue.Queue()
+                retry_queue = queue.Queue()
+                # Add an extra thread for the DB uploader so it can collect results in
+                # parallel if there are more than 1000
+                # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
+                # loop = asyncio.get_event_loop()
+                workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, stop_event, retry_queue, None, unplaybackable)
+                           for i in range(worker_count)]
 
-        # summary = worker_summary()
-        summary = merge_worker_summaries([worker_summary()])
-        all_records = _list_ia_versions_for_urls(
-            urls,
-            from_date,
-            to_date,
-            skip_responses,
-            version_filter,
-            client=wayback,
-            stop=stop_event)
-        for wayback_records in toolz.partition_all(2000, all_records):
-            wayback_records = utils.ThreadSafeIterator(wayback_records)
+                # versions = utils.queue_iterator(versions_queue)
+                # if skip_unchanged == 'resolved-response':
+                #     versions = _filter_unchanged_versions(versions)
+                # uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
 
-            # versions_queue = queue.Queue()
-            retry_queue = queue.Queue()
-            # Add an extra thread for the DB uploader so it can collect results in
-            # parallel if there are more than 1000
-            # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
-            # loop = asyncio.get_event_loop()
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, stop_event, retry_queue, None, unplaybackable)
-                       for i in range(worker_count)]
+                results = await asyncio.gather(*workers)
+                # summary = merge_worker_summaries(results)
+                summary = merge_worker_summaries((summary, *results))
 
-            # versions = utils.queue_iterator(versions_queue)
-            # if skip_unchanged == 'resolved-response':
-            #     versions = _filter_unchanged_versions(versions)
-            # uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
+                # If there are failures to retry, re-spawn the workers to run them
+                # with more retries and higher timeouts.
+                if not retry_queue.empty() and not stop_event.is_set():
+                    print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+                    retry_queue.put(None)
+                    retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
+                    workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
+                               for i in range(worker_count)]
 
-            results = await asyncio.gather(*workers)
-            # summary = merge_worker_summaries(results)
-            summary = merge_worker_summaries((summary, *results))
+                    # Update summary info
+                    results = await asyncio.gather(*workers)
+                    retry_summary = merge_worker_summaries(results)
+                    summary['success'] += retry_summary['success']
+                    summary['success_pct'] = 100 * summary['success'] / summary['total']
+                    summary['unknown'] -= retry_summary['success']
+                    summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
 
             # If there are failures to retry, re-spawn the workers to run them
             # with more retries and higher timeouts.
-            if not retry_queue.empty() and not stop_event.is_set():
+            if not final_retry_queue.empty() and not stop_event.is_set():
                 print(f'\nRetrying about {retry_queue.qsize()} failed records...')
-                retry_queue.put(None)
-                retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
-                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
+                final_retry_queue.put(None)
+                retries = utils.ThreadSafeIterator(utils.queue_iterator(final_retry_queue))
+                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, None, memento_options_final, unplaybackable)
                            for i in range(worker_count)]
 
                 # Update summary info
@@ -348,43 +348,21 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 summary['unknown'] -= retry_summary['success']
                 summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
 
-        # If there are failures to retry, re-spawn the workers to run them
-        # with more retries and higher timeouts.
-        if not final_retry_queue.empty() and not stop_event.is_set():
-            print(f'\nRetrying about {retry_queue.qsize()} failed records...')
-            final_retry_queue.put(None)
-            retries = utils.ThreadSafeIterator(utils.queue_iterator(final_retry_queue))
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, None, memento_options_final, unplaybackable)
-                       for i in range(worker_count)]
+            print('\nLoaded {total} CDX records:\n'
+                  '  {success:6} successes ({success_pct:.2f}%),\n'
+                  '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
+                  '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
+                  '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
+                    **summary))
 
-            # Update summary info
-            results = await asyncio.gather(*workers)
-            retry_summary = merge_worker_summaries(results)
-            summary['success'] += retry_summary['success']
-            summary['success_pct'] = 100 * summary['success'] / summary['total']
-            summary['unknown'] -= retry_summary['success']
-            summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
+            # Signal that there will be nothing else on the queue so uploading can finish
+            versions_queue.put(None)
 
-        print('\nLoaded {total} CDX records:\n'
-              '  {success:6} successes ({success_pct:.2f}%),\n'
-              '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
-              '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
-              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
-                **summary))
+            if not dry_run:
+                print('Saving list of non-playbackable URLs...')
+                save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
-        # Signal that there will be nothing else on the queue so uploading can finish
-        versions_queue.put(None)
-
-        if not dry_run:
-            print('Saving list of non-playbackable URLs...')
-            save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
-
-        await uploader
-
-    # Our signal handler is specific to the context of this function, so
-    # reinstate the previous handlers before leaving.
-    signal.signal(signal.SIGINT, sigint_handler)
-    signal.signal(signal.SIGTERM, sigterm_handler)
+            await uploader
 
 
 def _filter_unchanged_versions(versions):
