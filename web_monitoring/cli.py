@@ -102,7 +102,6 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, stop_
     summary = worker_summary()
     session_options = session_options or dict(retries=3, backoff=2, timeout=(30.5, 2))
     session = ia.WaybackSession(**session_options)
-    start_date = datetime.utcnow()
     retry_record = None
     wayback = ia.WaybackClient(session=session)
 
@@ -135,7 +134,7 @@ def load_wayback_records_worker(records, results_queue, maintainers, tags, stop_
         except ia.MementoPlaybackError as error:
             summary['playback'] += 1
             if unplaybackable is not None:
-                unplaybackable[record.raw_url] = start_date
+                unplaybackable[record.raw_url] = datetime.utcnow()
             logger.info(f'  {error}')
         except requests.exceptions.HTTPError as error:
             if error.response.status_code == 404:
@@ -293,46 +292,50 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 version_filter,
                 client=wayback,
                 stop=stop_event)
-            for wayback_records in toolz.partition_all(2000, all_records):
-                wayback_records = utils.ThreadSafeIterator(wayback_records)
+            # for wayback_records in toolz.partition_all(2000, all_records):
+            wayback_records = utils.ThreadSafeIterator(all_records)
 
-                # versions_queue = queue.Queue()
-                retry_queue = queue.Queue()
-                # Add an extra thread for the DB uploader so it can collect results in
-                # parallel if there are more than 1000
-                # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
-                # loop = asyncio.get_event_loop()
-                workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, stop_event, retry_queue, None, unplaybackable)
-                           for i in range(worker_count)]
+            # versions_queue = queue.Queue()
+            retry_queue = queue.Queue()
+            # Add an extra thread for the DB uploader so it can collect results in
+            # parallel if there are more than 1000
+            # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
+            # loop = asyncio.get_event_loop()
+            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, stop_event, retry_queue, None, unplaybackable)
+                       for i in range(worker_count)]
 
-                # versions = utils.queue_iterator(versions_queue)
-                # if skip_unchanged == 'resolved-response':
-                #     versions = _filter_unchanged_versions(versions)
-                # uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
+            # versions = utils.queue_iterator(versions_queue)
+            # if skip_unchanged == 'resolved-response':
+            #     versions = _filter_unchanged_versions(versions)
+            # uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
 
-                results = await asyncio.gather(*workers)
-                # summary = merge_worker_summaries(results)
-                summary = merge_worker_summaries((summary, *results))
-
-                # If there are failures to retry, re-spawn the workers to run them
-                # with more retries and higher timeouts.
-                if not retry_queue.empty() and not stop_event.is_set():
-                    print(f'\nRetrying about {retry_queue.qsize()} failed records...')
-                    retry_queue.put(None)
-                    retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
-                    workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
-                               for i in range(worker_count)]
-
-                    # Update summary info
-                    results = await asyncio.gather(*workers)
-                    retry_summary = merge_worker_summaries(results)
-                    summary['success'] += retry_summary['success']
-                    summary['success_pct'] = 100 * summary['success'] / summary['total']
-                    summary['unknown'] -= retry_summary['success']
-                    summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
+            results = await asyncio.gather(*workers)
+            # summary = merge_worker_summaries(results)
+            summary = merge_worker_summaries((summary, *results))
 
             # If there are failures to retry, re-spawn the workers to run them
             # with more retries and higher timeouts.
+            if not retry_queue.empty() and not stop_event.is_set():
+                print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+                retry_queue.put(None)
+                retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
+                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
+                           for i in range(worker_count)]
+
+                # Update summary info
+                results = await asyncio.gather(*workers)
+                retry_summary = merge_worker_summaries(results)
+                summary['success'] += retry_summary['success']
+                summary['success_pct'] = 100 * summary['success'] / summary['total']
+                summary['unknown'] -= retry_summary['success']
+                summary['unknown_pct'] = 100 * summary['unknown'] / summary['total']
+
+            # If there are failures to retry, re-spawn the workers to run them
+            # with more retries and higher timeouts.
+            # TODO: If not batching things works out (see `toolz.partition_all`
+            # above) then try eliminating this second retry. It used to be
+            # outside the batching (while the first retry was inside), and so
+            # might not be especially relevant anymore.
             if not final_retry_queue.empty() and not stop_event.is_set():
                 print(f'\nRetrying about {retry_queue.qsize()} failed records...')
                 final_retry_queue.put(None)
