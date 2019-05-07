@@ -6,14 +6,12 @@ from datetime import datetime, timedelta
 from docopt import docopt
 import json
 import logging
-import os
 from os.path import splitext
 import pandas
 from pathlib import Path
 import re
 import requests
 import signal
-import toolz
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
@@ -23,7 +21,6 @@ from web_monitoring import utils
 import queue
 import asyncio
 import concurrent
-import threading
 
 
 logger = logging.getLogger(__name__)
