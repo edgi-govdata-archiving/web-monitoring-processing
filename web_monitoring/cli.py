@@ -13,6 +13,7 @@ import re
 import requests
 import signal
 import sys
+import threading
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
@@ -105,98 +106,147 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
 def _log_adds(versions):
     versions = _get_progress_meter(versions)
     for version in versions:
-        print('')  # Line break from tqdm output
-        print(json.dumps(version))
+        # print('')  # Line break from tqdm output
+        # print(json.dumps(version))
+        1 + 1
 
 
-def load_wayback_records_worker(records, results_queue, maintainers, tags, stop_event, failure_queue=None, session_options=None, unplaybackable=None):
-    summary = worker_summary()
-    session_options = session_options or dict(retries=3, backoff=2, timeout=(30.5, 2))
-    session = ia.WaybackSession(**session_options)
-    retry_record = None
-    wayback = ia.WaybackClient(session=session)
+class WaybackRecordsWorker(threading.Thread):
+    def __init__(self, records, results_queue, maintainers, tags, cancel,
+                 failure_queue=None, session_options=None,
+                 unplaybackable=None):
+        super().__init__()
+        self.summary = self.create_summary()
+        self.results_queue = results_queue
+        self.failure_queue = failure_queue
+        self.cancel = cancel
+        self.records = records
+        self.maintainers = maintainers
+        self.tags = tags
+        self.unplaybackable = unplaybackable
+        self.session_options = session_options or dict(retries=3, backoff=2,
+                                                       timeout=(30.5, 2))
+        self.session = None
+        self.wayback = None
 
-    while not stop_event.is_set():
-        is_retry = False
-        if retry_record:
-            record = retry_record
-            is_retry = True
-            retry_record = None
-        else:
+    def reset_client(self):
+        if self.session:
+            self.session.close()
+        self.session = ia.WaybackSession(**self.session_options)
+        self.wayback = ia.WaybackClient(session=self.session)
+
+    def is_active(self):
+        return not self.cancel.is_set()
+
+    def run(self):
+        self.reset_client()
+
+        while self.is_active():
             try:
-                record = next(records)
-                summary['total'] += 1
+                record = next(self.records)
+                self.summary['total'] += 1
             except StopIteration:
                 break
 
-        if unplaybackable is not None and record.raw_url in unplaybackable:
-            summary['playback'] += 1
-            continue
+            self.process_record(record, retry_connection_failures=True)
+
+        self.wayback.close()
+        return self.summary
+
+    def process_record(self, record, retry_connection_failures=False):
+        # Check for whether we already know this can't be played and bail out.
+        if self.unplaybackable is not None and record.raw_url in self.unplaybackable:
+            self.summary['playback'] += 1
+            return
 
         try:
-            version = wayback.timestamped_uri_to_version(record.date,
-                                                            record.raw_url,
-                                                            url=record.url,
-                                                            maintainers=maintainers,
-                                                            tags=tags,
-                                                            view_url=record.view_url)
-            results_queue.put(version)
-            summary['success'] += 1
+            version = self.wayback.timestamped_uri_to_version(record.date,
+                                                              record.raw_url,
+                                                              url=record.url,
+                                                              maintainers=self.maintainers,
+                                                              tags=self.tags,
+                                                              view_url=record.view_url)
+            self.results_queue.put(version)
+            self.summary['success'] += 1
         except ia.MementoPlaybackError as error:
-            summary['playback'] += 1
-            if unplaybackable is not None:
-                unplaybackable[record.raw_url] = datetime.utcnow()
+            self.summary['playback'] += 1
+            if self.unplaybackable is not None:
+                self.unplaybackable[record.raw_url] = datetime.utcnow()
             logger.info(f'  {error}')
         except requests.exceptions.HTTPError as error:
             if error.response.status_code == 404:
                 logger.info(f'  Missing memento: {record.raw_url}')
-                summary['missing'] += 1
+                self.summary['missing'] += 1
             else:
                 # TODO: consider not logging this at a lower level, like debug
                 # unless failure_queue does not exist. Unsure how big a deal
                 # this error is to log if we are retrying.
                 logger.info(f'  (HTTPError) {error}')
                 # TODO: definitely don't count it if we are going to retry it
-                summary['unknown'] += 1
-                if failure_queue:
-                    failure_queue.put(record)
+                self.summary['unknown'] += 1
+                if self.failure_queue:
+                    self.failure_queue.put(record)
         except ia.WaybackRetryError as error:
-            # EXPERIMENT: reset the session and retry if we just utterly
-            # failed to connect.
-            if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
-                session.close()
-                session = ia.WaybackSession(**session_options)
-                wayback = ia.WaybackClient(session=session)
-                retry_record = record
-                continue
+            # On connection failures, reset the session and try again. If we
+            # don't do this, the connection pool for this thread is pretty much
+            # dead. It's not clear to me whether there is a problem in urllib3
+            # or Wayback's servers that requires this.
+            # TODO: should we build this into the WaybackSession class?
+            if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
+                self.reset_client()
+                return self.process_record(record)
 
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
-            summary['unknown'] += 1
+            self.summary['unknown'] += 1
             logger.info(f'  {error}; URL: {record.raw_url}')
 
-            if failure_queue:
-                failure_queue.put(record)
+            if self.failure_queue:
+                self.failure_queue.put(record)
         except Exception as error:
-            # EXPERIMENT: reset the session and retry if we just utterly
-            # failed to connect.
-            if is_retry is False and ('failed to establish a new connection' in str(error).lower()):
-                session.close()
-                session = ia.WaybackSession(**session_options)
-                wayback = ia.WaybackClient(session=session)
-                retry_record = record
-                continue
+            # On connection failures, reset the session and try again. If we
+            # don't do this, the connection pool for this thread is pretty much
+            # dead. It's not clear to me whether there is a problem in urllib3
+            # or Wayback's servers that requires this.
+            if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
+                self.reset_client()
+                return self.process_record(record)
 
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
-            summary['unknown'] += 1
+            self.summary['unknown'] += 1
             logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
 
-            if failure_queue:
-                failure_queue.put(record)
+            if self.failure_queue:
+                self.failure_queue.put(record)
 
-    wayback.close()
-    return summary
+    @classmethod
+    def create_summary(cls):
+        return {'total': 0, 'success': 0, 'playback': 0, 'missing': 0,
+                'unknown': 0}
+
+    @classmethod
+    def summarize(cls, workers):
+        return cls.merge_summaries((w.summary for w in workers))
+
+    @classmethod
+    def merge_summaries(cls, summaries):
+        merged = cls.create_summary()
+        for summary in summaries:
+            for key in merged.keys():
+                merged[key] += summary[key]
+
+        # Add percentage calculations
+        if merged['total']:
+            merged.update({f'{k}_pct': 100 * v / merged['total']
+                           for k, v in merged.items()
+                           if k != 'total' and not k.endswith('_pct')})
+        else:
+            merged.update({f'{k}_pct': 0.0
+                           for k, v in merged.items()
+                           if k != 'total' and not k.endswith('_pct')})
+
+        return merged
 
 
 async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
@@ -227,28 +277,49 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         dry_run=dry_run)
 
 
-def worker_summary():
-    return {'total': 0, 'success': 0, 'playback': 0, 'missing': 0,
-            'unknown': 0}
+def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplaybackable, worker_count, tries=None):
+    if tries is None or len(tries) == 0:
+        tries = (None,)
 
+    summary = WaybackRecordsWorker.create_summary()
 
-def merge_worker_summaries(summaries):
-    merged = worker_summary()
-    for summary in summaries:
-        for key in merged.keys():
-            merged[key] += summary[key]
+    total_tries = len(tries)
+    retry_queue = None
+    for index, try_setting in enumerate(tries):
+        if retry_queue:
+            records = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
 
-    # Add percentage calculations
-    if merged['total']:
-        merged.update({f'{k}_pct': 100 * v / merged['total']
-                       for k, v in merged.items()
-                       if k != 'total' and not k.endswith('_pct')})
-    else:
-        merged.update({f'{k}_pct': 0.0
-                       for k, v in merged.items()
-                       if k != 'total' and not k.endswith('_pct')})
+        if index == total_tries - 1:
+            retry_queue = None
+        else:
+            retry_queue = queue.Queue()
 
-    return merged
+        workers = []
+        for i in range(worker_count):
+            worker = WaybackRecordsWorker(records, versions_queue,
+                                          maintainers, tags, cancel,
+                                          retry_queue, try_setting,
+                                          unplaybackable)
+            workers.append(worker)
+            worker.start()
+
+        for worker in workers:
+            worker.join()
+
+        try_summary = WaybackRecordsWorker.summarize(workers)
+        if index == 0:
+            summary = try_summary
+        else:
+            summary['success'] += try_summary['success']
+            summary['playback'] += try_summary['playback']
+            summary['missing'] += try_summary['missing']
+            summary['unknown'] -= (try_summary['success'] +
+                                   try_summary['playback'] +
+                                   try_summary['missing'])
+
+    # Recalculate percentages
+    summary = WaybackRecordsWorker.merge_summaries([summary])
+    return summary
 
 
 # TODO: this function probably be split apart so `dry_run` doesn't need to
@@ -265,10 +336,6 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
     # Use a custom session to make sure CDX calls are extra robust.
     session = ia.WaybackSession(retries=10, backoff=4)
-
-    memento_options_intermediate = dict(retries=3, backoff=4, timeout=(30.5, 2))
-    memento_options_final = dict(retries=7, backoff=4, timeout=60.5)
-    final_retry_queue = queue.Queue()
 
     with utils.QuitSignal((signal.SIGINT, signal.SIGTERM)) as stop_event:
         with ia.WaybackClient(session) as wayback:
@@ -293,8 +360,8 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             else:
                 uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages, stop_event)
 
-            # summary = worker_summary()
-            summary = merge_worker_summaries([worker_summary()])
+            # summary = merge_worker_summaries([worker_summary()])
+            summary = WaybackRecordsWorker.create_summary()
             all_records = _list_ia_versions_for_urls(
                 urls,
                 from_date,
@@ -306,69 +373,17 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             # for wayback_records in toolz.partition_all(2000, all_records):
             wayback_records = utils.ThreadSafeIterator(all_records)
 
-            # versions_queue = queue.Queue()
-            retry_queue = queue.Queue()
-            # Add an extra thread for the DB uploader so it can collect results in
-            # parallel if there are more than 1000
-            # executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
-            # loop = asyncio.get_event_loop()
-            workers = [loop.run_in_executor(executor, load_wayback_records_worker, wayback_records, versions_queue, maintainers, tags, stop_event, retry_queue, None, unplaybackable)
-                       for i in range(worker_count)]
-
-            # versions = utils.queue_iterator(versions_queue)
-            # if skip_unchanged == 'resolved-response':
-            #     versions = _filter_unchanged_versions(versions)
-            # uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages)
-
-            results = await asyncio.gather(*workers)
-            # summary = merge_worker_summaries(results)
-            summary = merge_worker_summaries((summary, *results))
-
-            # If there are failures to retry, re-spawn the workers to run them
-            # with more retries and higher timeouts.
-            if not retry_queue.empty() and not stop_event.is_set():
-                print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-                retry_queue.put(None)
-                retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
-                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
-                           for i in range(worker_count)]
-
-                # Update summary info
-                results = await asyncio.gather(*workers)
-                retry_summary = merge_worker_summaries(results)
-                summary['success'] += retry_summary['success']
-                summary['playback'] += retry_summary['playback']
-                summary['missing'] += retry_summary['missing']
-                summary['unknown'] -= (retry_summary['success'] +
-                                       retry_summary['playback'] +
-                                       retry_summary['missing'])
-                # Recalculate percentages
-                summary = merge_worker_summaries([summary])
-
-            # If there are failures to retry, re-spawn the workers to run them
-            # with more retries and higher timeouts.
-            # TODO: If not batching things works out (see `toolz.partition_all`
-            # above) then try eliminating this second retry. It used to be
-            # outside the batching (while the first retry was inside), and so
-            # might not be especially relevant anymore.
-            if not final_retry_queue.empty() and not stop_event.is_set():
-                print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-                final_retry_queue.put(None)
-                retries = utils.ThreadSafeIterator(utils.queue_iterator(final_retry_queue))
-                workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, None, memento_options_final, unplaybackable)
-                           for i in range(worker_count)]
-
-                # Update summary info
-                results = await asyncio.gather(*workers)
-                retry_summary = merge_worker_summaries(results)
-                summary['success'] += retry_summary['success']
-                summary['playback'] += retry_summary['playback']
-                summary['missing'] += retry_summary['missing']
-                summary['unknown'] -= (retry_summary['success'] +
-                                       retry_summary['playback'] +
-                                       retry_summary['missing'])
-                # Recalculate percentages
-                summary = merge_worker_summaries([summary])
+            retry_settings = (None,
+                              dict(retries=3, backoff=4, timeout=(30.5, 2)),
+                              dict(retries=7, backoff=4, timeout=60.5))
+            summary = load_from_wayback(wayback_records,
+                                        versions_queue,
+                                        maintainers,
+                                        tags,
+                                        stop_event,
+                                        unplaybackable,
+                                        worker_count,
+                                        retry_settings)
 
             print('\nLoaded {total} CDX records:\n'
                   '  {success:6} successes ({success_pct:.2f}%),\n'
