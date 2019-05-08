@@ -313,7 +313,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             # If there are failures to retry, re-spawn the workers to run them
             # with more retries and higher timeouts.
             if not retry_queue.empty() and not stop_event.is_set():
-                print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+                print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
                 retry_queue.put(None)
                 retries = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
                 workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, final_retry_queue, memento_options_intermediate, unplaybackable)
@@ -338,7 +338,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             # outside the batching (while the first retry was inside), and so
             # might not be especially relevant anymore.
             if not final_retry_queue.empty() and not stop_event.is_set():
-                print(f'\nRetrying about {retry_queue.qsize()} failed records...')
+                print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
                 final_retry_queue.put(None)
                 retries = utils.ThreadSafeIterator(utils.queue_iterator(final_retry_queue))
                 workers = [loop.run_in_executor(executor, load_wayback_records_worker, retries, versions_queue, maintainers, tags, stop_event, None, memento_options_final, unplaybackable)
