@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import requests
 import signal
+import sys
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
@@ -72,13 +73,26 @@ MAX_QUERY_URLS_PER_DOMAIN = 20
 # CLI. They also print. To access this functionality programmatically, it is
 # better to use the underlying library code.
 
+def _get_progress_meter(iterable):
+    # Use TQDM in all environments, but don't update very often if not a TTY.
+    # Basically, the idea here is to keep TQDM in our logs so we get stats, but
+    # not to waste a huge amount of space in the logs with it.
+    # NOTE: This is cribbed from TQDM's `disable=None` logic:
+    # https://github.com/tqdm/tqdm/blob/f2a60d1fb9e8a15baf926b4a67c02f90e0033eba/tqdm/_tqdm.py#L817-L830
+    file = sys.stderr
+    intervals = {}
+    if hasattr(file, "isatty") and not file.isatty():
+        intervals = dict(mininterval=10, maxinterval=60)
+
+    return tqdm(iterable, desc='importing', unit=' versions', **intervals)
+
 
 def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None):
     cli = db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
     # TODO: create this on the main thread so we can update totals when we
     # discover them in CDX, but update progress here as we import.
-    versions = tqdm(versions, desc='importing', unit=' versions')
+    versions = _get_progress_meter(versions)
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
     print('Import jobs IDs: {}'.format(import_ids))
@@ -89,7 +103,7 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
 
 
 def _log_adds(versions):
-    versions = tqdm(versions, desc='importing', unit=' versions')
+    versions = _get_progress_meter(versions)
     for version in versions:
         print('')  # Line break from tqdm output
         print(json.dumps(version))
