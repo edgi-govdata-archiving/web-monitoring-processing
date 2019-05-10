@@ -191,9 +191,9 @@ MAX_SPACERS = 2500
 
 class Strict_url_rule:
     mode = False
-    REGEX_RULES = {'WBM': r"/web/\d{14}",
-                   'jsessionid': r";jsessionid[^;=]*=([^;]+)",
-                   'UKWA': r"https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}mp_/"}
+    REGEX_RULES = {'WBM': re.compile(r"/web/\d{14}"),
+                   'jsessionid': re.compile(r";jsessionid[^;=]*=([^;]+)"),
+                   'UKWA': re.compile(r"https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}mp_/")}
 
 
 def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
@@ -581,7 +581,7 @@ class tag_token(DiffToken):
         # This equality check aims to apply specific rules to the contents
         # of the tag element solving false positive cases
         if Strict_url_rule.mode:
-            return clean_resource(self, other)
+            return clean_resource_url(self, other)
         return str.__eq__(self, other) or str.__eq__(self.lower(), other.lower())
 
     def __hash__(self):
@@ -608,7 +608,7 @@ class href_token(DiffToken):
         # This equality check aims to apply specific rules to the contents of
         # the href element solving false positive cases
         if Strict_url_rule.mode:
-            return clean_resource(self, other)
+            return clean_resource_url(self, other)
         return str.__eq__(self, other) or str.__eq__(self.lower(), other.lower())
 
     def __hash__(self):
@@ -729,12 +729,12 @@ def fixup_chunks(chunks):
     return result
 
 
-def clean_resource(element, other):
+def clean_resource_url(element, other):
     try:
-        match_element = re.search(Strict_url_rule.REGEX_RULES[Strict_url_rule.mode], element)
+        match_element = Strict_url_rule.REGEX_RULES[Strict_url_rule.mode].search(element)
         if match_element:
             element = element[match_element.end():]
-        match_other = re.search(Strict_url_rule.REGEX_RULES[Strict_url_rule.mode], other)
+        match_other = Strict_url_rule.REGEX_RULES[Strict_url_rule.mode].search(other)
         if match_other:
             other = other[match_other.end():]
         return str.__eq__(element, other) or str.__eq__(element.lower(), other.lower())
