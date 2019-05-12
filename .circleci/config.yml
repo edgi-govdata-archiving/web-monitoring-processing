@@ -56,10 +56,17 @@ jobs:
           docker build -t envirodgi/processing:$CIRCLE_SHA1 .
           docker build -t envirodgi/ia-healthcheck:$CIRCLE_SHA1 -f Dockerfile.ia-healthcheck .
           docker build -t envirodgi/ia-etl:$CIRCLE_SHA1 -f Dockerfile.ia-etl .
+          docker build -t envirodgi/processing:latest .
+          docker build -t envirodgi/ia-healthcheck:latest -f Dockerfile.ia-healthcheck .
+          docker build -t envirodgi/ia-etl:latest -f Dockerfile.ia-etl .
+
       - run: |
           docker push envirodgi/processing:$CIRCLE_SHA1
           docker push envirodgi/ia-healthcheck:$CIRCLE_SHA1
           docker push envirodgi/ia-etl:$CIRCLE_SHA1
+          docker push envirodgi/processing:latest
+          docker push envirodgi/ia-healthcheck:latest
+          docker push envirodgi/ia-etl:latest
 
 workflows:
   version: 2
