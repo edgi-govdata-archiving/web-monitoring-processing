@@ -191,24 +191,24 @@ MAX_SPACERS = 2500
 
 class WaybackUrlComparator:
     matcher = re.compile(r'web/\d{14}(im_)?/(https?://)?(www.)?')
+    url_schema_matcher = re.compile(r'(https?\:\/\/)?(www\.)?')
+
+    def strip_url_schema(self, url):
+        schema_match = self.url_schema_matcher.search(url)
+        if schema_match:
+            return url[schema_match.end():]
 
     def compare(self, url_a, url_b):
         match_a = self.matcher.search(url_a)
         match_b = self.matcher.search(url_b)
         if match_a and match_b:
-            return url_a[match_a.end():] == url_b[match_b.end():]
+            url_a = self.strip_url_schema(url_a[match_a.end():])
+            url_b = self.strip_url_schema(url_b[match_b.end():])
+            return url_a == url_b
         else:
-            temp_url_a_strict = url_a.strict_urls
-            temp_url_b_strict = url_b.strict_urls
             url_a.strict_urls = None
             url_b.strict_urls = None
-
-            compare_result = (url_a == url_b)
-
-            url_a.strict_urls = temp_url_a_strict
-            url_b.strict_urls = temp_url_b_strict
-
-            return compare_result
+            return url_a == url_b
 
 
 class WaybackUkUrlComparator(WaybackUrlComparator):
