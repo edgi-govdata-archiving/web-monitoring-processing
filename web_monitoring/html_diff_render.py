@@ -189,16 +189,59 @@ EMPTY_HTML = '''<html>
 MAX_SPACERS = 2500
 
 
-class Strict_url_rule:
-    mode = False
-    REGEX_RULES = {'WBM': re.compile(r"/web/\d{14}"),
-                   'jsessionid': re.compile(r";jsessionid[^;=]*=([^;]+)"),
-                   'UKWA': re.compile(r"https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}mp_/")}
+class WaybackUrlComparator:
+    matcher = re.compile(r'web/\d{14}(im_)?/(https?://)?(www.)?')
+
+    def compare(self, url_a, url_b):
+        match_a = self.matcher.search(url_a)
+        match_b = self.matcher.search(url_b)
+        if match_a and match_b:
+            return url_a[match_a.end():] == url_b[match_b.end():]
+        else:
+            temp_url_a_strict = url_a.strict_urls
+            temp_url_b_strict = url_b.strict_urls
+            url_a.strict_urls = None
+            url_b.strict_urls = None
+
+            compare_result = (url_a == url_b)
+
+            url_a.strict_urls = temp_url_a_strict
+            url_b.strict_urls = temp_url_b_strict
+
+            return compare_result
+
+
+class WaybackUkUrlComparator(WaybackUrlComparator):
+    matcher = re.compile(r'https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}mp_/')
+
+
+class ServletSessionUrlComparator:
+    matcher = re.compile(r';jsessionid=[^;]+')
+
+    def compare(self, url_a, url_b):
+        match_a = self.matcher.sub('', url_a)
+        match_b = self.matcher.sub('', url_b)
+        return match_a == match_b
+
+
+class StrictUrlRule:
+    mode = None
+    URL_RULE =re.compile(r'(https?\:\/\/)?(www\.)?')
+    REGEX_RULES = {'WBM': WaybackUrlComparator,
+                   'jsessionid': ServletSessionUrlComparator,
+                   'UKWA': WaybackUkUrlComparator}
+
+    def clean_resource_url(element, other, mode):
+        try:
+            comparator = StrictUrlRule.REGEX_RULES[mode]()
+            return comparator.compare(element, other)
+        except KeyError:
+            raise KeyError(f'{StrictUrlRule.mode} is an invalid strict URL rule.')
 
 
 def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
                      include='combined', content_type_options='normal',
-                     strict_urls=False):
+                     strict_urls=None):
     """
     HTML Diff for rendering. This is focused on visually highlighting portions
     of a page’s text that have been changed. It does not do much to show how
@@ -252,8 +295,8 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         - `nosniff` uses the `Content-Type` header but does not sniff.
         - `ignore` doesn’t do any checking at all.
     strict_urls : string
-        The value of the URL parameter that indicates if the tag elements and href
-        elements should use special rules when checking equality,
+        The value of this parameter indicates whether the tag elements and href
+        elements should use special rules when checking their equality.
 
     Example
     -------
@@ -267,8 +310,6 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         a_headers,
         b_headers,
         content_type_options)
-
-    Strict_url_rule.mode = strict_urls
 
     soup_old = html5_parser.parse(a_text.strip() or EMPTY_HTML,
                                   treebuilder='soup', return_root=False)
@@ -286,7 +327,7 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     soup_old = _cleanup_document_structure(soup_old)
     soup_new = _cleanup_document_structure(soup_new)
 
-    results, diff_bodies = diff_elements(soup_old.body, soup_new.body, include)
+    results, diff_bodies = diff_elements(soup_old.body, soup_new.body, strict_urls, include)
 
     for diff_type, diff_body in diff_bodies.items():
         soup = None
@@ -387,7 +428,7 @@ def _diff_title(old, new):
     return ''.join(map(_html_for_dmp_operation, diff))
 
 
-def diff_elements(old, new, include='all'):
+def diff_elements(old, new, strict_urls, include='all'):
     if not old:
         old = BeautifulSoup().new_tag('div')
     if not new:
@@ -402,6 +443,7 @@ def diff_elements(old, new, include='all'):
     results = {}
     metadata, raw_diffs = _htmldiff(_diffable_fragment(old),
                                     _diffable_fragment(new),
+                                    strict_urls,
                                     include)
 
     for diff_type, diff in raw_diffs.items():
@@ -411,33 +453,12 @@ def diff_elements(old, new, include='all'):
     return metadata, results
 
 
-def _diffable_fragment(element):
-    """
-    Convert a beautiful soup element into an HTML fragment string with just the
-    element's *contents* that is ready for diffing.
-    """
-    # FIXME: we have to remove <ins> and <del> tags because *we* use them to
-    # indicate changes that we find. We probably shouldn't do that:
-    # https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/69#issuecomment-321424897
-    for edit_tag in element.find_all(_is_ins_or_del):
-        edit_tag.unwrap()
-    # Create a fragment string of just the element's contents
-    return ''.join(map(str, element.children))
-
-
-def _is_ins_or_del(tag):
-    return tag.name == 'ins' or tag.name == 'del'
-
-
-# FIXME: this should take two BeautifulSoup elements to diff (since we've
-# already parsed and generated those), not two HTML fragment strings that have
-# to get parsed again.
-def _htmldiff(old, new, include='all'):
+def _htmldiff(old, new, strict_urls, include='all'):
     """
     A slightly customized version of htmldiff that uses different tokens.
     """
-    old_tokens = tokenize(old)
-    new_tokens = tokenize(new)
+    old_tokens = tokenize(old, strict_urls)
+    new_tokens = tokenize(new, strict_urls)
     # old_tokens = [_customize_token(token) for token in old_tokens]
     # new_tokens = [_customize_token(token) for token in new_tokens]
     old_tokens = _limit_spacers(_customize_tokens(old_tokens), MAX_SPACERS)
@@ -566,7 +587,7 @@ class tag_token(DiffToken):
     the <img> tag, which takes up visible space just like a word but
     is only represented in a document by a tag.  """
 
-    def __new__(cls, tag, data, html_repr, pre_tags=None,
+    def __new__(cls, tag, data, html_repr, strict_urls, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
         obj = DiffToken.__new__(cls, "%s: %s" % (type, data),
                             pre_tags=pre_tags,
@@ -575,17 +596,20 @@ class tag_token(DiffToken):
         obj.tag = tag
         obj.data = data
         obj.html_repr = html_repr
+        obj.strict_urls = strict_urls
         return obj
 
     def __eq__(self, other):
         # This equality check aims to apply specific rules to the contents
         # of the tag element solving false positive cases
-        if Strict_url_rule.mode:
-            return clean_resource_url(self, other)
-        return str.__eq__(self, other) or str.__eq__(self.lower(), other.lower())
+        if not isinstance(other, tag_token):
+            return False
+        if self.strict_urls:
+            return StrictUrlRule.clean_resource_url(self, other, self.strict_urls)
+        return super().__eq__(other)
 
     def __hash__(self):
-        return hash(self.lower())
+        return super.__hash__(self)
 
     def __repr__(self):
         return 'tag_token(%s, %s, html_repr=%s, post_tags=%r, pre_tags=%r, trailing_whitespace=%r)' % (
@@ -604,15 +628,26 @@ class href_token(DiffToken):
 
     hide_when_equal = True
 
+    def __new__(cls, href, strict_urls, pre_tags=None,
+                post_tags=None, trailing_whitespace=""):
+        obj = DiffToken.__new__(cls, text=href,
+                                pre_tags=pre_tags,
+                                post_tags=post_tags,
+                                trailing_whitespace=trailing_whitespace)
+        obj.strict_urls = strict_urls
+        return obj
+
     def __eq__(self, other):
         # This equality check aims to apply specific rules to the contents of
         # the href element solving false positive cases
-        if Strict_url_rule.mode:
-            return clean_resource_url(self, other)
-        return str.__eq__(self, other) or str.__eq__(self.lower(), other.lower())
+        if not isinstance(other, href_token):
+            return False
+        if self.strict_urls:
+            return StrictUrlRule.clean_resource_url(self, other, self.strict_urls)
+        return super().__eq__(other)
 
     def __hash__(self):
-        return hash(self.lower())
+        return super.__hash__(self)
 
     def html(self):
         return ' Link: %s' % self
@@ -625,7 +660,7 @@ class UndiffableContentToken(DiffToken):
 # FIXME: this should be adapted to work off a BeautifulSoup element instead of
 # an etree/lxml element, since we already have that and could avoid re-parsing
 # the whole document a second time.
-def tokenize(html, include_hrefs=True):
+def tokenize(html, strict_urls, include_hrefs=True):
     """
     Parse the given HTML and returns token objects (words with attached tags).
 
@@ -647,7 +682,7 @@ def tokenize(html, include_hrefs=True):
     # Then we split the document into text chunks for each tag, word, and end tag:
     chunks = flatten_el(body_el, skip_tag=True, include_hrefs=include_hrefs)
     # Finally re-joining them into token objects:
-    return fixup_chunks(chunks)
+    return fixup_chunks(chunks, strict_urls)
 
 def parse_html(html):
     """
@@ -672,7 +707,7 @@ class TokenType(Enum):
     img = 5
 
 
-def fixup_chunks(chunks):
+def fixup_chunks(chunks, strict_urls):
     """
     This function takes a list of chunks and produces a list of tokens.
     """
@@ -684,7 +719,7 @@ def fixup_chunks(chunks):
         if current_token == TokenType.img:
             src = chunk[1]
             tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
-            cur_word = tag_token('img', src, html_repr=tag,
+            cur_word = tag_token('img', src, html_repr=tag, strict_urls=strict_urls,
                                  pre_tags=tag_accum,
                                  trailing_whitespace=trailing_whitespace)
             tag_accum = []
@@ -692,7 +727,7 @@ def fixup_chunks(chunks):
 
         elif current_token == TokenType.href:
             href = chunk[1]
-            cur_word = href_token(href, pre_tags=tag_accum, trailing_whitespace=" ")
+            cur_word = href_token(href, strict_urls=strict_urls, pre_tags=tag_accum, trailing_whitespace=" ")
             tag_accum = []
             result.append(cur_word)
 
@@ -727,20 +762,6 @@ def fixup_chunks(chunks):
         result[-1].post_tags.extend(tag_accum)
 
     return result
-
-
-def clean_resource_url(element, other):
-    try:
-        match_element = Strict_url_rule.REGEX_RULES[Strict_url_rule.mode].search(element)
-        if match_element:
-            element = element[match_element.end():]
-        match_other = Strict_url_rule.REGEX_RULES[Strict_url_rule.mode].search(other)
-        if match_other:
-            other = other[match_other.end():]
-        return str.__eq__(element, other) or str.__eq__(element.lower(), other.lower())
-    except KeyError:
-        raise KeyError("{} is an invalid strict URL rule."
-                       "".format(Strict_url_rule.mode))
 
 
 def flatten_el(el, include_hrefs, skip_tag=False):
@@ -864,7 +885,7 @@ class SpacerToken(DiffToken):
 # I had some weird concern that I needed to make this token a single word with
 # no spaces, but now that I know this differ more deeply, this is pointless.
 class ImgTagToken(tag_token):
-    def __new__(cls, tag, data, html_repr, pre_tags=None,
+    def __new__(cls, tag, data, html_repr, strict_urls, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
         obj = DiffToken.__new__(cls, "\n\nImg:%s\n\n" % data,
                             pre_tags=pre_tags,
@@ -873,6 +894,7 @@ class ImgTagToken(tag_token):
         obj.tag = tag
         obj.data = data
         obj.html_repr = html_repr
+        obj.strict_urls = strict_urls
         return obj
 
 
@@ -1083,6 +1105,7 @@ def _customize_token(token):
     if isinstance(token, href_token):
         return MinimalHrefToken(
             str(token),
+            strict_urls=token.strict_urls,
             pre_tags=token.pre_tags,
             post_tags=token.post_tags,
             trailing_whitespace=token.trailing_whitespace)
@@ -1092,6 +1115,7 @@ def _customize_token(token):
             'img',
             data=token.data,
             html_repr=token.html_repr,
+            strict_urls=token.strict_urls,
             pre_tags=token.pre_tags,
             post_tags=token.post_tags,
             trailing_whitespace=token.trailing_whitespace)
