@@ -371,8 +371,8 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         - `nosniff` uses the `Content-Type` header but does not sniff.
         - `ignore` doesn’t do any checking at all.
     strict_urls : string
-        The value of the URL parameter that indicates if the tag elements and href
-        elements should use special rules when checking equality,
+        The value of this parameter indicates whether the tag elements and href
+        elements should use special rules when checking their equality.
 
     Example
     -------
@@ -386,8 +386,6 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         a_headers,
         b_headers,
         content_type_options)
-
-    Strict_url_rule.mode = strict_urls
 
     soup_old = html5_parser.parse(a_text.strip() or EMPTY_HTML,
                                   treebuilder='soup', return_root=False)
@@ -678,16 +676,6 @@ class tag_token(DiffToken):
         obj.html_repr = html_repr
         obj.comparator = comparator
         return obj
-
-    def __eq__(self, other):
-        # This equality check aims to apply specific rules to the contents
-        # of the tag element solving false positive cases
-        if Strict_url_rule.mode:
-            return clean_resource(self, other)
-        return str.__eq__(self, other) or str.__eq__(self.lower(), other.lower())
-
-    def __hash__(self):
-        return hash(self.lower())
 
     def __repr__(self):
         return 'tag_token(%s, %s, html_repr=%s, post_tags=%r, pre_tags=%r, trailing_whitespace=%r)' % (
