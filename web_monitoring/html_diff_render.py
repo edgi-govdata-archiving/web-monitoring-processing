@@ -225,15 +225,27 @@ class ServletSessionUrlComparator:
 
 
 class StrictUrlRule:
+    """
+    The StrictUrlRule class contains the mapping between the various Comparator
+    classes and the keywords used to match them. This mapping is done inside
+    the CLASS_RULES dictionary.
+    `WBM` stands for the Wayback Machine,
+    `UKWA` for the UK Web Archive.
+    These rules apply when comparing Wayback mementos or UK Web Archives where
+    links have been rewritten to point to another memento in Wayback instead
+    of the original URL.
+    The `jsessionid` rule serves to not take into account session IDs that are
+    kept in the URL instead of cookies.
+    """
     mode = None
-    URL_RULE =re.compile(r'(https?\:\/\/)?(www\.)?')
-    REGEX_RULES = {'WBM': WaybackUrlComparator,
+    URL_RULE = re.compile(r'(https?\:\/\/)?(www\.)?')
+    CLASS_RULES = {'WBM': WaybackUrlComparator,
                    'jsessionid': ServletSessionUrlComparator,
                    'UKWA': WaybackUkUrlComparator}
 
     def clean_resource_url(element, other, mode):
         try:
-            comparator = StrictUrlRule.REGEX_RULES[mode]()
+            comparator = StrictUrlRule.CLASS_RULES[mode]()
             return comparator.compare(element, other)
         except KeyError:
             raise KeyError(f'{StrictUrlRule.mode} is an invalid strict URL rule.')
@@ -296,7 +308,16 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         - `ignore` doesn’t do any checking at all.
     strict_urls : string
         The value of this parameter indicates whether the tag elements and href
-        elements should use special rules when checking their equality.
+        elements should use special rules when checking their equality. The
+        values of this parameter have to be defined in the CLASS_RULES
+        dictionary of the StrictUrlRule class and be matched with a Comparator
+        class. Options can be:
+        - `WMB` which matches to the WaybackUrlComparator class and handles
+        comparisons as defined in its compare function.
+        - `UKWA` which matches to the WaybackUkUrlComparator class and handles
+        comparisons as defined in its compare function.
+        - `jsessionid` which matches to the ServletSessionUrlComparator class
+        and handles comparisons as defined in its compare function.
 
     Example
     -------
@@ -690,6 +711,7 @@ def parse_html(html):
     will be wrapped in a <div> tag that was not in the original document.
     """
     return html5_parser.parse(html, treebuilder='lxml')
+
 
 def split_trailing_whitespace(word):
     """
