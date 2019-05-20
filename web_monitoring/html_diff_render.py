@@ -1455,11 +1455,15 @@ def merge_change_groups(change_chunks, doc, tag_type=None):
 TagInfo = namedtuple('TagInfo', ('name', 'open', 'source'))
 
 @lru_cache(maxsize=1024)
-def tag_info(token):
-    if not token.startswith('<'):
+def tag_info(tag_text):
+    """
+    Read text like `<span>` and return a `TagInfo` named tuple or None if not
+    a tag.
+    """
+    if not tag_text.startswith('<'):
         return None
-    name = token.split()[0].strip('<>/')
-    return TagInfo(name, not token.startswith('</'), token)
+    name = tag_text.split()[0].strip('<>/')
+    return TagInfo(name, not tag_text.startswith('</'), tag_text)
 
 # TODO: rewrite this in a way that doesn't mutate the input?
 def reconcile_change_groups(insert_groups, delete_groups, document):
