@@ -20,6 +20,7 @@ import copy
 import difflib
 from web_monitoring.utils import get_color_palette
 import html
+import html5_parser
 import logging
 import re
 from .content_type import raise_if_not_diffable_html
@@ -255,8 +256,10 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         b_headers,
         content_type_options)
 
-    soup_old = BeautifulSoup(a_text.strip() or EMPTY_HTML, 'lxml')
-    soup_new = BeautifulSoup(b_text.strip() or EMPTY_HTML, 'lxml')
+    soup_old = html5_parser.parse(a_text.strip() or EMPTY_HTML,
+                                  treebuilder='soup', return_root=False)
+    soup_new = html5_parser.parse(b_text.strip() or EMPTY_HTML,
+                                  treebuilder='soup', return_root=False)
 
     # Remove comment nodes since they generally don't affect display.
     # NOTE: This could affect display if the removed are conditional comments,
@@ -284,6 +287,9 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
                 'meta',
                 content=_diff_title(soup_old, soup_new))
             title_meta.attrs['name'] = 'wm-diff-title'
+            if not soup.head:
+                head = soup.new_tag('head')
+                soup.insert(0, head)
             soup.head.append(title_meta)
 
             old_head = soup.new_tag('template', id='wm-diff-old-head')
@@ -313,7 +319,8 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         # results in a non-navigable soup. So we serialize and re-parse :(
         # (Note we use no formatter for this because proper encoding escapes
         # the tags our differ generated.)
-        soup = BeautifulSoup(soup.prettify(formatter=None), 'lxml')
+        soup = html5_parser.parse(soup.prettify(formatter=None),
+                                  treebuilder='soup', return_root=False)
         runtime_scripts = soup.new_tag('script', id='wm-diff-script')
         runtime_scripts.string = UPDATE_CONTRAST_SCRIPT
         soup.body.append(runtime_scripts)

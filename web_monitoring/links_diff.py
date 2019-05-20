@@ -6,6 +6,7 @@ from difflib import SequenceMatcher
 from .html_diff_render import (get_title, _html_for_dmp_operation,
                                undiffable_content_tags)
 import re
+import html5_parser
 
 
 def links_diff(a_text, b_text, a_headers=None, b_headers=None,
@@ -29,8 +30,8 @@ def links_diff(a_text, b_text, a_headers=None, b_headers=None,
         b_headers,
         content_type_options)
 
-    a_soup = BeautifulSoup(a_text, 'lxml')
-    b_soup = BeautifulSoup(b_text, 'lxml')
+    a_soup = html5_parser.parse(a_text, treebuilder='soup', return_root=False)
+    b_soup = html5_parser.parse(b_text, treebuilder='soup', return_root=False)
 
     a_links = sorted(
         set([Link.from_element(element) for element in _find_outgoing_links(a_soup)]),
