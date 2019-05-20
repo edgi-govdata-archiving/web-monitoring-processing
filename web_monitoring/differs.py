@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup, Comment
+from bs4 import Comment
 from diff_match_patch import diff, diff_bytes
 from web_monitoring.utils import get_color_palette
 from htmldiffer.diff import HTMLDiffer
@@ -30,7 +30,7 @@ def identical_bytes(a_body, b_body):
 
 def _get_text(html):
     "Extract textual content from HTML."
-    soup = html5_parser.parse(html,  treebuilder='soup', return_root=False)
+    soup = html5_parser.parse(html, treebuilder='soup', return_root=False)
     [element.extract() for element in
      soup.find_all(string=lambda text: isinstance(text, Comment))]
     return soup.find_all(text=True)
