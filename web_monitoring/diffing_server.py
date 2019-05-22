@@ -367,7 +367,7 @@ def _extract_encoding(headers, content):
 
 
 def _decode_body(response, name, raise_if_binary=True):
-    encoding = _extract_encoding(response.headers, response.body) or 'UTF-8'
+    encoding = _extract_encoding(response.headers, response.body)
     text = response.body.decode(encoding, errors='replace')
     text_length = len(text)
     if text_length == 0:
