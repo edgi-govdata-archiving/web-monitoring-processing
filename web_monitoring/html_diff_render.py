@@ -287,9 +287,6 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
                 'meta',
                 content=_diff_title(soup_old, soup_new))
             title_meta.attrs['name'] = 'wm-diff-title'
-            if not soup.head:
-                head = soup.new_tag('head')
-                soup.insert(0, head)
             soup.head.append(title_meta)
 
             old_head = soup.new_tag('template', id='wm-diff-old-head')
