@@ -250,7 +250,7 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         headers = {'Content-Type': 'text/xhtml;CHARSET=iso-8859-5 '}
         assert df._extract_encoding(headers, b'') == 'iso-8859-5'
         headers = {'Content-Type': '\x94Invalid\x0b'}
-        assert df._extract_encoding(headers, b'') == 'ascii'
+        assert df._extract_encoding(headers, b'') == 'utf-8'
 
     def test_extract_encoding_from_body(self):
         # Polish content without any content-type headers or meta tag.
