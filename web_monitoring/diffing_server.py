@@ -1,3 +1,4 @@
+import codecs
 import concurrent.futures
 from docopt import docopt
 import hashlib
@@ -343,17 +344,17 @@ def _extract_encoding(headers, content):
     # mistake: https://encoding.spec.whatwg.org/#names-and-labels
     if encoding == 'iso-8859-1' and 'html' in content_type:
         encoding = 'windows-1252'
+    # Check if the selected encoding is known. If not, fallback to default.
+    try:
+        codecs.lookup(encoding)
+    except (LookupError, ValueError, TypeError):
+        encoding = 'ascii'
     return encoding
 
 
 def _decode_body(response, name, raise_if_binary=True):
     encoding = _extract_encoding(response.headers, response.body) or 'UTF-8'
-    try:
-        text = response.body.decode(encoding, errors='replace')
-    except LookupError:
-        # If the encoding we found isn't known, fall back to ascii
-        text = response.body.decode('ascii', errors='replace')
-
+    text = response.body.decode(encoding, errors='replace')
     text_length = len(text)
     if text_length == 0:
         return text
