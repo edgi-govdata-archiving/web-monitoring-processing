@@ -326,7 +326,7 @@ class DiffHandler(BaseHandler):
 
 def _extract_encoding(headers, content):
     encoding = None
-    content_type = headers.get('Content-Type', '')
+    content_type = headers.get('Content-Type', '').lower()
     if 'charset=' in content_type:
         encoding = content_type.split('charset=')[-1]
     if not encoding:
@@ -337,6 +337,8 @@ def _extract_encoding(headers, content):
         prolog_match = XML_PROLOG_PATTERN.search(content, endpos=2048)
         if prolog_match:
             encoding = prolog_match.group(1).decode('ascii', errors='ignore')
+    if encoding:
+        encoding = encoding.strip()
     # Handle common mistakes and errors in encoding names
     if encoding == 'iso-8559-1':
         encoding = 'iso-8859-1'
