@@ -5,7 +5,7 @@ import hashlib
 import inspect
 import functools
 import os
-import re
+import cchardet
 import sentry_sdk
 import tornado.gen
 import tornado.httpclient
@@ -53,19 +53,6 @@ DIFF_ROUTES = {
     "html_tree_diff": web_monitoring.differs.html_tree_diff,
     "html_differ": web_monitoring.differs.html_differ,
 }
-
-# Matches a <meta> tag in HTML used to specify the character encoding:
-# <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-# <meta charset="utf-8" />
-META_TAG_PATTERN = re.compile(
-    b'<meta[^>]+charset\\s*=\\s*[\'"]?([^>]*?)[ /;\'">]',
-    re.IGNORECASE)
-
-# Matches an XML prolog that specifies character encoding:
-# <?xml version="1.0" encoding="ISO-8859-1"?>
-XML_PROLOG_PATTERN = re.compile(
-    b'<?xml\\s[^>]*encoding=[\'"]([^\'"]+)[\'"].*\?>',
-    re.IGNORECASE)
 
 client = tornado.httpclient.AsyncHTTPClient()
 
@@ -329,16 +316,19 @@ def _extract_encoding(headers, content):
     content_type = headers.get('Content-Type', '').lower()
     if 'charset=' in content_type:
         encoding = content_type.split('charset=')[-1]
-    if not encoding:
-        meta_tag_match = META_TAG_PATTERN.search(content, endpos=2048)
-        if meta_tag_match:
-            encoding = meta_tag_match.group(1).decode('ascii', errors='ignore')
-    if not encoding:
-        prolog_match = XML_PROLOG_PATTERN.search(content, endpos=2048)
-        if prolog_match:
-            encoding = prolog_match.group(1).decode('ascii', errors='ignore')
-    if encoding:
-        encoding = encoding.strip()
+        if encoding:
+            encoding = encoding.strip()
+    if not encoding and content:
+        # try to identify encoding using cchardet. Use up to 18kb of the
+        # content for detection. Its not necessary to use the full content
+        # as it could be huge. Also, if you use too little, detection is not
+        # accurate.
+        detected = cchardet.detect(content[:18432])
+        if detected:
+            detected_encoding = detected.get('encoding')
+            if detected_encoding:
+                encoding = detected_encoding.lower()
+
     # Handle common mistakes and errors in encoding names
     if encoding == 'iso-8559-1':
         encoding = 'iso-8859-1'
