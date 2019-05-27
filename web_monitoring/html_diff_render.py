@@ -206,8 +206,10 @@ class WaybackUrlComparator:
             url_b = self.strip_url_schema(url_b[match_b.end():])
             return url_a == url_b
         else:
-            url_a.strict_urls = None
-            url_b.strict_urls = None
+            if hasattr(url_a, 'strict_urls'):
+                url_a.strict_urls = None
+            if hasattr(url_b, 'strict_urls'):
+                url_b.strict_urls = None
             return url_a == url_b
 
 
@@ -243,6 +245,7 @@ class StrictUrlRule:
                    'jsessionid': ServletSessionUrlComparator,
                    'UKWA': WaybackUkUrlComparator}
 
+    @staticmethod
     def clean_resource_url(element, other, mode):
         try:
             comparator = StrictUrlRule.CLASS_RULES[mode]()
@@ -640,8 +643,10 @@ class tag_token(DiffToken):
             self.pre_tags,
             self.post_tags,
             self.trailing_whitespace)
+
     def html(self):
         return self.html_repr
+
 
 class href_token(DiffToken):
     """ Represents the href in an anchor tag.  Unlike other words, we only
@@ -907,9 +912,34 @@ class SpacerToken(DiffToken):
 # I had some weird concern that I needed to make this token a single word with
 # no spaces, but now that I know this differ more deeply, this is pointless.
 class ImgTagToken(tag_token):
+
+    regex = re.compile(r"(src|srcset)=('|\")(.*?)('|\")")
+
+    def are_any_urls_equal(self, other):
+        strict_urls = self.strict_urls
+        self_array = self[7:-3]
+        self_array = self_array.split(',')
+        other_array = other[7:-3]
+        other_array = other_array.split(',')
+        for url_a in self_array:
+            for url_b in other_array:
+                if strict_urls:
+                    return StrictUrlRule.clean_resource_url(url_a[1:-1], url_b[1:-1], strict_urls)
+                elif url_a == url_b:
+                    return True
+        return False
+
     def __new__(cls, tag, data, html_repr, strict_urls, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
-        obj = DiffToken.__new__(cls, "\n\nImg:%s\n\n" % data,
+        found_urls = ImgTagToken.regex.findall(html_repr)
+        urls = []
+        for url in found_urls:
+            if url[0] == 'srcset':
+                if ' ' in url[2]:
+                    urls.append(url[2].split(' ')[0])
+                    continue
+            urls.append(url[2])
+        obj = DiffToken.__new__(cls, "\n\nImg:%s\n\n" % str(urls),
                             pre_tags=pre_tags,
                             post_tags=post_tags,
                             trailing_whitespace=trailing_whitespace)
@@ -918,6 +948,14 @@ class ImgTagToken(tag_token):
         obj.html_repr = html_repr
         obj.strict_urls = strict_urls
         return obj
+
+    def __eq__(self, other):
+        if isinstance(other, ImgTagToken):
+            return self.are_any_urls_equal(other)
+        return False
+
+    def __hash__(self):
+        return super.__hash__(self)
 
 
 def _customize_tokens(tokens):
