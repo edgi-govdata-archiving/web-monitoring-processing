@@ -191,26 +191,15 @@ MAX_SPACERS = 2500
 
 class WaybackUrlComparator:
     matcher = re.compile(r'web/\d{14}(im_)?/(https?://)?(www.)?')
-    url_schema_matcher = re.compile(r'(https?\:\/\/)?(www\.)?')
-
-    def strip_url_schema(self, url):
-        schema_match = self.url_schema_matcher.search(url)
-        if schema_match:
-            return url[schema_match.end():]
 
     def compare(self, url_a, url_b):
         match_a = self.matcher.search(url_a)
         match_b = self.matcher.search(url_b)
         if match_a and match_b:
-            url_a = self.strip_url_schema(url_a[match_a.end():])
-            url_b = self.strip_url_schema(url_b[match_b.end():])
+            url_a = url_a[match_a.end():]
+            url_b = url_b[match_b.end():]
             return url_a == url_b
-        else:
-            if hasattr(url_a, 'strict_urls'):
-                url_a.strict_urls = None
-            if hasattr(url_b, 'strict_urls'):
-                url_b.strict_urls = None
-            return url_a == url_b
+        return url_a == url_b
 
 
 class WaybackUkUrlComparator(WaybackUrlComparator):
@@ -239,19 +228,31 @@ class StrictUrlRule:
     The `jsessionid` rule serves to not take into account session IDs that are
     kept in the URL instead of cookies.
     """
-    mode = None
-    URL_RULE = re.compile(r'(https?\:\/\/)?(www\.)?')
     CLASS_RULES = {'WBM': WaybackUrlComparator,
                    'jsessionid': ServletSessionUrlComparator,
                    'UKWA': WaybackUkUrlComparator}
 
-    @staticmethod
-    def clean_resource_url(element, other, mode):
+    @classmethod
+    def compare_all_img_urls(cls, element, other, comparator):
+        element_array = element[7:-3]
+        element_array = element_array.split(',')
+        other_array = other[7:-3]
+        other_array = other_array.split(',')
+        for url_a in element_array:
+            for url_b in other_array:
+                if comparator:
+                    if comparator.compare(url_a[1:-1], url_b[1:-1]):
+                        return True
+                elif url_a == url_b:
+                    return True
+        return False
+
+    @classmethod
+    def get_comparator(cls, mode):
         try:
-            comparator = StrictUrlRule.CLASS_RULES[mode]()
-            return comparator.compare(element, other)
+            return cls.CLASS_RULES[mode]()
         except KeyError:
-            raise KeyError(f'{StrictUrlRule.mode} is an invalid strict URL rule.')
+            raise KeyError(f'{mode} is an invalid strict URL rule.')
 
 
 def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
@@ -351,7 +352,9 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     soup_old = _cleanup_document_structure(soup_old)
     soup_new = _cleanup_document_structure(soup_new)
 
-    results, diff_bodies = diff_elements(soup_old.body, soup_new.body, strict_urls, include)
+    comparator = StrictUrlRule.get_comparator(strict_urls)
+
+    results, diff_bodies = diff_elements(soup_old.body, soup_new.body, comparator, include)
 
     for diff_type, diff_body in diff_bodies.items():
         soup = None
@@ -452,7 +455,7 @@ def _diff_title(old, new):
     return ''.join(map(_html_for_dmp_operation, diff))
 
 
-def diff_elements(old, new, strict_urls, include='all'):
+def diff_elements(old, new, comparator, include='all'):
     if not old:
         old = BeautifulSoup().new_tag('div')
     if not new:
@@ -467,7 +470,7 @@ def diff_elements(old, new, strict_urls, include='all'):
     results = {}
     metadata, raw_diffs = _htmldiff(_diffable_fragment(old),
                                     _diffable_fragment(new),
-                                    strict_urls,
+                                    comparator,
                                     include)
 
     for diff_type, diff in raw_diffs.items():
@@ -477,12 +480,12 @@ def diff_elements(old, new, strict_urls, include='all'):
     return metadata, results
 
 
-def _htmldiff(old, new, strict_urls, include='all'):
+def _htmldiff(old, new, comparator, include='all'):
     """
     A slightly customized version of htmldiff that uses different tokens.
     """
-    old_tokens = tokenize(old, strict_urls)
-    new_tokens = tokenize(new, strict_urls)
+    old_tokens = tokenize(old, comparator)
+    new_tokens = tokenize(new, comparator)
     # old_tokens = [_customize_token(token) for token in old_tokens]
     # new_tokens = [_customize_token(token) for token in new_tokens]
     old_tokens = _limit_spacers(_customize_tokens(old_tokens), MAX_SPACERS)
@@ -611,7 +614,7 @@ class tag_token(DiffToken):
     the <img> tag, which takes up visible space just like a word but
     is only represented in a document by a tag.  """
 
-    def __new__(cls, tag, data, html_repr, strict_urls, pre_tags=None,
+    def __new__(cls, tag, data, html_repr, comparator, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
         obj = DiffToken.__new__(cls, "%s: %s" % (type, data),
                             pre_tags=pre_tags,
@@ -620,20 +623,8 @@ class tag_token(DiffToken):
         obj.tag = tag
         obj.data = data
         obj.html_repr = html_repr
-        obj.strict_urls = strict_urls
+        obj.comparator = comparator
         return obj
-
-    def __eq__(self, other):
-        # This equality check aims to apply specific rules to the contents
-        # of the tag element solving false positive cases
-        if not isinstance(other, tag_token):
-            return False
-        if self.strict_urls:
-            return StrictUrlRule.clean_resource_url(self, other, self.strict_urls)
-        return super().__eq__(other)
-
-    def __hash__(self):
-        return super.__hash__(self)
 
     def __repr__(self):
         return 'tag_token(%s, %s, html_repr=%s, post_tags=%r, pre_tags=%r, trailing_whitespace=%r)' % (
@@ -654,13 +645,13 @@ class href_token(DiffToken):
 
     hide_when_equal = True
 
-    def __new__(cls, href, strict_urls, pre_tags=None,
+    def __new__(cls, href, comparator, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
         obj = DiffToken.__new__(cls, text=href,
                                 pre_tags=pre_tags,
                                 post_tags=post_tags,
                                 trailing_whitespace=trailing_whitespace)
-        obj.strict_urls = strict_urls
+        obj.comparator = comparator
         return obj
 
     def __eq__(self, other):
@@ -668,8 +659,8 @@ class href_token(DiffToken):
         # the href element solving false positive cases
         if not isinstance(other, href_token):
             return False
-        if self.strict_urls:
-            return StrictUrlRule.clean_resource_url(self, other, self.strict_urls)
+        if self.comparator:
+            return self.comparator.compare(str(self), str(other))
         return super().__eq__(other)
 
     def __hash__(self):
@@ -686,7 +677,7 @@ class UndiffableContentToken(DiffToken):
 # FIXME: this should be adapted to work off a BeautifulSoup element instead of
 # an etree/lxml element, since we already have that and could avoid re-parsing
 # the whole document a second time.
-def tokenize(html, strict_urls, include_hrefs=True):
+def tokenize(html, comparator, include_hrefs=True):
     """
     Parse the given HTML and returns token objects (words with attached tags).
 
@@ -708,7 +699,7 @@ def tokenize(html, strict_urls, include_hrefs=True):
     # Then we split the document into text chunks for each tag, word, and end tag:
     chunks = flatten_el(body_el, skip_tag=True, include_hrefs=include_hrefs)
     # Finally re-joining them into token objects:
-    return fixup_chunks(chunks, strict_urls)
+    return fixup_chunks(chunks, comparator)
 
 def parse_html(html):
     """
@@ -734,7 +725,7 @@ class TokenType(Enum):
     img = 5
 
 
-def fixup_chunks(chunks, strict_urls):
+def fixup_chunks(chunks, comparator):
     """
     This function takes a list of chunks and produces a list of tokens.
     """
@@ -746,7 +737,7 @@ def fixup_chunks(chunks, strict_urls):
         if current_token == TokenType.img:
             src = chunk[1]
             tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
-            cur_word = tag_token('img', src, html_repr=tag, strict_urls=strict_urls,
+            cur_word = tag_token('img', src, html_repr=tag, comparator=comparator,
                                  pre_tags=tag_accum,
                                  trailing_whitespace=trailing_whitespace)
             tag_accum = []
@@ -754,7 +745,7 @@ def fixup_chunks(chunks, strict_urls):
 
         elif current_token == TokenType.href:
             href = chunk[1]
-            cur_word = href_token(href, strict_urls=strict_urls, pre_tags=tag_accum, trailing_whitespace=" ")
+            cur_word = href_token(href, comparator=comparator, pre_tags=tag_accum, trailing_whitespace=" ")
             tag_accum = []
             result.append(cur_word)
 
@@ -915,21 +906,7 @@ class ImgTagToken(tag_token):
 
     regex = re.compile(r"(src|srcset)=('|\")(.*?)('|\")")
 
-    def are_any_urls_equal(self, other):
-        strict_urls = self.strict_urls
-        self_array = self[7:-3]
-        self_array = self_array.split(',')
-        other_array = other[7:-3]
-        other_array = other_array.split(',')
-        for url_a in self_array:
-            for url_b in other_array:
-                if strict_urls:
-                    return StrictUrlRule.clean_resource_url(url_a[1:-1], url_b[1:-1], strict_urls)
-                elif url_a == url_b:
-                    return True
-        return False
-
-    def __new__(cls, tag, data, html_repr, strict_urls, pre_tags=None,
+    def __new__(cls, tag, data, html_repr, comparator, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
         found_urls = ImgTagToken.regex.findall(html_repr)
         urls = []
@@ -946,12 +923,12 @@ class ImgTagToken(tag_token):
         obj.tag = tag
         obj.data = data
         obj.html_repr = html_repr
-        obj.strict_urls = strict_urls
+        obj.comparator = comparator
         return obj
 
     def __eq__(self, other):
         if isinstance(other, ImgTagToken):
-            return self.are_any_urls_equal(other)
+            return StrictUrlRule.compare_all_img_urls(str(self), str(other), self.comparator)
         return False
 
     def __hash__(self):
@@ -1165,7 +1142,7 @@ def _customize_token(token):
     if isinstance(token, href_token):
         return MinimalHrefToken(
             str(token),
-            strict_urls=token.strict_urls,
+            comparator=token.comparator,
             pre_tags=token.pre_tags,
             post_tags=token.post_tags,
             trailing_whitespace=token.trailing_whitespace)
@@ -1175,7 +1152,7 @@ def _customize_token(token):
             'img',
             data=token.data,
             html_repr=token.html_repr,
-            strict_urls=token.strict_urls,
+            comparator=token.comparator,
             pre_tags=token.pre_tags,
             post_tags=token.post_tags,
             trailing_whitespace=token.trailing_whitespace)
