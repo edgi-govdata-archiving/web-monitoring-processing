@@ -2,7 +2,6 @@
 # a given diffing algorithm
 
 import re
-from .diff_errors import UndiffableContentError
 
 
 # Content Types that we know represent HTML
