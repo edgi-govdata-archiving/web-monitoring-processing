@@ -42,6 +42,30 @@ UNKNOWN_CONTENT_TYPE_PATTERN = re.compile(r'^(%s)$' % '|'.join((
 )))
 
 
+def detect_binary_type(data):
+    """Detect binary types from well known first bytes values.
+    Supports: JPEG, PDF, Postscript, GIF, PNG. Return None if no binary type
+    is detected.
+    """
+    if len(data) == 0:
+        return None
+    b0 = data[0:1]
+    if b0 == b'\xFF':
+        if data[1:2] == b'\xD8':
+            return "image/jpeg"
+    elif b0 == b'%':
+        if data[1:5] == b'PDF-':
+            return "application/pdf"
+        elif data[1:5] == b'!PS-':
+            return "application/postscript"
+    elif b0 == b'G':
+        if data[1:4] == b'IF8':
+            return "image/gif"
+    elif b0 == b'\x89':
+        if data[1:4] == b'PNG':
+            return "image/png"
+
+
 def is_not_html(text, headers=None, check_options='normal'):
     """
     Determine whether a string is not HTML. In general, this errs on the side
