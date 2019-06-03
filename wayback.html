@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.63.gf759a4e documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.63.ge3c4789 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.63.gf759a4e
+                0+untagged.63.ge3c4789
               </div>
             
           
@@ -186,7 +186,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b9ab2acf780&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b16365a1620&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -277,7 +277,7 @@ implementing two different standards for archival data, the CDX API and the
 Memento API. We implement a Python client that can speak both.</p>
 <dl class="class">
 <dt id="web_monitoring.internetarchive.WaybackClient">
-<em class="property">class </em><code class="descclassname">web_monitoring.internetarchive.</code><code class="descname">WaybackClient</code><span class="sig-paren">(</span><em>session=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">web_monitoring.internetarchive.</code><code class="sig-name descname">WaybackClient</code><span class="sig-paren">(</span><em class="sig-param">session=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient" title="Permalink to this definition">¶</a></dt>
 <dd><p>A client for retrieving data from the Internet Archive’s Wayback Machine.</p>
 <p>You can use a WaybackClient as a context manager. When exiting, it will
 close the session it’s using (if you’ve passed in a custom session, make
@@ -292,7 +292,7 @@ dangerously).</p>
 </dl>
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.search">
-<code class="descname">search</code><span class="sig-paren">(</span><em>self</em>, <em>url</em>, <em>*</em>, <em>matchType=None</em>, <em>limit=None</em>, <em>offset=None</em>, <em>fastLatest=None</em>, <em>gzip=None</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>filter_field=None</em>, <em>collapse=None</em>, <em>showResumeKey=True</em>, <em>resumeKey=None</em>, <em>page=None</em>, <em>pageSize=None</em>, <em>resolveRevisits=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">search</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">url</em>, <em class="sig-param">*</em>, <em class="sig-param">matchType=None</em>, <em class="sig-param">limit=None</em>, <em class="sig-param">offset=None</em>, <em class="sig-param">fastLatest=None</em>, <em class="sig-param">gzip=None</em>, <em class="sig-param">from_date=None</em>, <em class="sig-param">to_date=None</em>, <em class="sig-param">filter_field=None</em>, <em class="sig-param">collapse=None</em>, <em class="sig-param">showResumeKey=True</em>, <em class="sig-param">resumeKey=None</em>, <em class="sig-param">page=None</em>, <em class="sig-param">pageSize=None</em>, <em class="sig-param">resolveRevisits=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search archive.org’s CDX API for all captures of a given URL.</p>
 <p>This will automatically page through all results for a given search.</p>
 <p>Returns an iterator of CdxRecord objects. The StopIteration value is
@@ -377,7 +377,7 @@ to True.</p>
 
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.list_versions">
-<code class="descname">list_versions</code><span class="sig-paren">(</span><em>self</em>, <em>url</em>, <em>*</em>, <em>from_date=None</em>, <em>to_date=None</em>, <em>skip_repeats=True</em>, <em>cdx_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.list_versions" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">list_versions</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">url</em>, <em class="sig-param">*</em>, <em class="sig-param">from_date=None</em>, <em class="sig-param">to_date=None</em>, <em class="sig-param">skip_repeats=True</em>, <em class="sig-param">cdx_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.list_versions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search archive.org for captures of a URL (optionally, within a time span).</p>
 <p>This function provides a convenient, use-case-specific interface to
 archive.org’s CDX API. For a more direct, low-level API, use
@@ -434,7 +434,7 @@ canonicalized URL:</p>
 
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version">
-<code class="descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em>self</em>, <em>dt</em>, <em>uri</em>, <em>*</em>, <em>url</em>, <em>maintainers=None</em>, <em>tags=None</em>, <em>view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">dt</em>, <em class="sig-param">uri</em>, <em class="sig-param">*</em>, <em class="sig-param">url</em>, <em class="sig-param">maintainers=None</em>, <em class="sig-param">tags=None</em>, <em class="sig-param">view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch version content and combine it with metadata to build a Version.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
