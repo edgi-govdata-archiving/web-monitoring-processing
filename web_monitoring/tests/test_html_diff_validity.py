@@ -5,13 +5,14 @@ markup. Unlike the tests in `test_html_diff.py`, these tests can actually fail
 in the sense that the diff is “wrong” as opposed to just testing that the diff
 doesn’t break or throw exceptions.
 """
-
+from unittest.mock import Mock
 from pathlib import Path
 from pkg_resources import resource_filename
 import pytest
 import re
 from web_monitoring.diff_errors import UndiffableContentError
 from web_monitoring.html_diff_render import html_diff_render
+from web_monitoring.diffing_server import _decode_body
 
 
 # TODO: extend these to other html differs via parameterization, a la
@@ -94,19 +95,21 @@ def test_html_diff_render_should_not_break_with_empty_content():
 
 def test_html_diff_render_should_raise_for_non_html_content():
     pdf_file = resource_filename('web_monitoring', 'example_data/empty.pdf')
-    pdf_content = Path(pdf_file).read_text(errors='ignore')
-
+    pdf_raw = Path(pdf_file).read_bytes()
+    a = Mock(body=pdf_raw, headers={})
+    b = Mock(body=b'<p>Just a little HTML</p>')
     with pytest.raises(UndiffableContentError):
-        html_diff_render(
-            '<p>Just a little HTML</p>',
-            pdf_content)
+        html_diff_render(_decode_body(a, name='a'),
+                         _decode_body(b, name='b'))
 
 
 def test_html_diff_render_should_check_content_type_header():
+    a = Mock(body=b'<p>Just a little HTML</p>', headers={'Content-Type': 'text/html'})
+    b = Mock(body=b'Some other text', headers={'Content-Type': 'image/jpeg'})
     with pytest.raises(UndiffableContentError):
         html_diff_render(
-            '<p>Just a little HTML</p>',
-            'Some other text',
+            _decode_body(a, name='a'),
+            _decode_body(b, name='b'),
             a_headers={'Content-Type': 'text/html'},
             b_headers={'Content-Type': 'image/jpeg'})
 

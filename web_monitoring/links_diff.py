@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from .content_type import raise_if_not_diffable_html
 from .differs import compute_dmp_diff
 from web_monitoring.utils import get_color_palette
 from difflib import SequenceMatcher
@@ -22,13 +21,6 @@ def links_diff(a_text, b_text, a_headers=None, b_headers=None,
     as an internal link, but not:
         <a href="http://this.domain.com/this/page#anchor-in-this-page">Text</a>
     """
-    raise_if_not_diffable_html(
-        a_text,
-        b_text,
-        a_headers,
-        b_headers,
-        content_type_options)
-
     a_soup = BeautifulSoup(a_text, 'lxml')
     b_soup = BeautifulSoup(b_text, 'lxml')
 

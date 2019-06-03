@@ -1,8 +1,10 @@
+from unittest.mock import Mock
 from pathlib import Path
 from pkg_resources import resource_filename
 import pytest
 from web_monitoring.diff_errors import UndiffableContentError
 from web_monitoring.links_diff import links_diff, links_diff_html
+from web_monitoring.diffing_server import _decode_body
 
 
 def test_links_diff_only_includes_links():
@@ -52,19 +54,22 @@ def test_links_diff_should_show_the_alt_text_for_images():
 
 def test_links_diff_should_raise_for_non_html_content():
     pdf_file = resource_filename('web_monitoring', 'example_data/empty.pdf')
-    pdf_content = Path(pdf_file).read_text(errors='ignore')
+    pdf_raw = Path(pdf_file).read_bytes()
+    a = Mock(body=pdf_raw, headers={})
+    b = Mock(body=b'<p>Just a little HTML</p>', headers={})
 
     with pytest.raises(UndiffableContentError):
-        links_diff(
-            '<p>Just a little HTML</p>',
-            pdf_content)
+        links_diff(_decode_body(a, name='a'),
+                   _decode_body(b, name='b'))
 
 
 def test_links_diff_should_check_content_type_header():
+    a = Mock(body=b'<p>Just a little HTML</p>', headers={'Content-Type': 'text/html'})
+    b = Mock(body=b'Some other text', headers={'Content-Type': 'image/jpeg'})
     with pytest.raises(UndiffableContentError):
         links_diff(
-            '<p>Just a little HTML</p>',
-            'Some other text',
+            _decode_body(a, name='a'),
+            _decode_body(b, name='b'),
             a_headers={'Content-Type': 'text/html'},
             b_headers={'Content-Type': 'image/jpeg'})
 

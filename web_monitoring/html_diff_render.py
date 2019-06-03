@@ -23,7 +23,6 @@ from web_monitoring.utils import get_color_palette
 import html
 import logging
 import re
-from .content_type import raise_if_not_diffable_html
 from .differs import compute_dmp_diff
 
 # Imports only used in forked tokenization code; may be ripe for removal:
@@ -249,13 +248,6 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     text2 = '<!DOCTYPE html><html><head></head><body><h1>Header</h1></body></html>'
     test_diff_render = html_diff_render(text1,text2)
     """
-    raise_if_not_diffable_html(
-        a_text,
-        b_text,
-        a_headers,
-        b_headers,
-        content_type_options)
-
     soup_old = BeautifulSoup(a_text.strip() or EMPTY_HTML, 'lxml')
     soup_new = BeautifulSoup(b_text.strip() or EMPTY_HTML, 'lxml')
 
