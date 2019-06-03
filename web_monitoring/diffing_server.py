@@ -18,6 +18,7 @@ import web_monitoring.differs
 from web_monitoring.diff_errors import UndiffableContentError, UndecodableContentError
 import web_monitoring.html_diff_render
 import web_monitoring.links_diff
+from web_monitoring.content_type import detect_binary_type
 
 # Track errors with Sentry.io. It will automatically detect the `SENTRY_DSN`
 # environment variable. If not set, all its methods will operate conveniently
@@ -367,6 +368,14 @@ def _extract_encoding(headers, content):
 
 
 def _decode_body(response, name, raise_if_binary=True):
+    """Check if the response is binary. If not, continue and detect encoding.
+    Try to define if a significantly large part of the body was undecodable
+    before returning decoded body.
+    """
+    ctype = detect_binary_type(response.body)
+    if ctype:
+        raise UndiffableContentError(f'{name} is not an HTML document but {ctype}')
+
     encoding = _extract_encoding(response.headers, response.body)
     text = response.body.decode(encoding, errors='replace')
     text_length = len(text)
