@@ -190,7 +190,30 @@ MAX_SPACERS = 2500
 
 
 class WaybackUrlComparator:
-    matcher = re.compile(r'web/\d{14}(im_)?/(https?://)?(www.)?')
+    """
+    This class implements the comparator that correctly compares URLs of
+    Wayback mementos' links. Those links have been rewritten to point to
+    another memento in Wayback instead of the original URL so, it ignores the
+    information added to the URL and compares the original URLs.
+
+    Attributes
+    ----------
+    matcher : pattern
+        The regular expression that cleans up the URL resource.
+
+    Methods
+    -------
+    compare(url_a, url_b)
+        Returns a boolean value indicating if url_a is equal to url_b
+        considering that the two URLs for the Internet Archive’s Wayback
+        Machine are the same as long as they refer to the same original URL,
+        even if they refer to captures at different points in time. For
+        example, these URLs would be considered the same:
+          http://web.archive.org/web/20190525141538/https://www.noaa.gov/
+          http://web.archive.org/web/20181231224558/https://www.noaa.gov/
+        Because they both refer to captures of `https://www.noaa.gov/`.
+    """
+    matcher = re.compile(r'web/\d{14}(im_|js_|cs_)?/(https?://)?(www.)?')
 
     def compare(self, url_a, url_b):
         match_a = self.matcher.search(url_a)
@@ -203,10 +226,54 @@ class WaybackUrlComparator:
 
 
 class WaybackUkUrlComparator(WaybackUrlComparator):
-    matcher = re.compile(r'https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}mp_/')
+    """
+    This class implements the comparator that correctly compares URLs of
+    UK Web Archive mementos' links. Those links have been rewritten to point to
+    another memento in Wayback instead of the original URL, so it ignores the
+    information added to the URL and compares the original URLs.
+
+    Attributes
+    ----------
+    matcher : pattern
+        The regular expression that cleans up the URL resource.
+
+    Methods
+    -------
+    compare(url_a, url_b)
+        This inherited method from WaybackUrlComparator returns a boolean
+        value indicating if url_a is equal to url_b considering that the two
+        URLs for the UK Web Archive are the same as long as they refer to the
+        same original URL, even if they refer to captures at different points
+        in time. For example, these URLs would be considered the same:
+          https://www.webarchive.org.uk/wayback/en/archive/20190525141538/https://www.example.gov/
+          https://www.webarchive.org.uk/wayback/en/archive/20181231224558/https://www.example.gov/
+        Because they both refer to captures of `https://www.example.gov/`.
+    """
+    matcher = re.compile(r'https://www\.webarchive\.org\.uk/wayback/en/archive/\d{14}(mp_|im_)?/(https?://)?(www.)?')
 
 
 class ServletSessionUrlComparator:
+    """
+    This class implements the comparator that ignores the Servlet session IDs
+    that are kept in the URL instead of cookies.
+
+    Attributes
+    ----------
+    matcher : pattern
+        The regular expression that cleans up the URL resource.
+
+    Methods
+    -------
+    compare(url_a, url_b)
+        Returns a boolean value indicating if url_a is equal to url_b
+        considering that the two URLs might contain a jsession id in any
+        position inside them and they are the same as long as they refer to
+        the same original URL, even if they have different jsession ids. For
+        example, these URLs would be considered the same:
+          https://www.ncdc.noaa.gov/homr/api;jsessionid=A2DECB66D2648BFED11FC721FC3043A1
+          https://www.ncdc.noaa.gov/homr/api;jsessionid=B3EFDC88E3759CGFE22GD832GD4154B2
+        Because they both refer to `https://www.ncdc.noaa.gov/homr/api`.
+    """
     matcher = re.compile(r';jsessionid=[^;]+')
 
     def compare(self, url_a, url_b):
@@ -217,20 +284,13 @@ class ServletSessionUrlComparator:
 
 class StrictUrlRule:
     """
-    The StrictUrlRule class contains the mapping between the various Comparator
-    classes and the keywords used to match them. This mapping is done inside
-    the CLASS_RULES dictionary.
-    `WBM` stands for the Wayback Machine,
-    `UKWA` for the UK Web Archive.
-    These rules apply when comparing Wayback mementos or UK Web Archives where
-    links have been rewritten to point to another memento in Wayback instead
-    of the original URL.
-    The `jsessionid` rule serves to not take into account session IDs that are
-    kept in the URL instead of cookies.
+    The StrictUrlRule class represents the the mapping between the
+    various Comparator classes and the keywords used to match them. This
+    mapping is done inside the CLASS_RULES dictionary.
     """
     CLASS_RULES = {'WBM': WaybackUrlComparator,
                    'jsessionid': ServletSessionUrlComparator,
-                   'UKWA': WaybackUkUrlComparator}
+                   'UK_WBM': WaybackUkUrlComparator}
 
     @classmethod
     def compare_all_img_urls(cls, element, other, comparator):
@@ -312,14 +372,12 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         - `ignore` doesn’t do any checking at all.
     strict_urls : string
         The value of this parameter indicates whether the tag elements and href
-        elements should use special rules when checking their equality. The
-        values of this parameter have to be defined in the CLASS_RULES
-        dictionary of the StrictUrlRule class and be matched with a Comparator
-        class. Options can be:
+        elements should use special rules when checking their equality.
+        Options can be:
         - `WMB` which matches to the WaybackUrlComparator class and handles
         comparisons as defined in its compare function.
-        - `UKWA` which matches to the WaybackUkUrlComparator class and handles
-        comparisons as defined in its compare function.
+        - `UK_WBM` which matches to the WaybackUkUrlComparator class and
+        handles comparisons as defined in its compare function.
         - `jsessionid` which matches to the ServletSessionUrlComparator class
         and handles comparisons as defined in its compare function.
 
@@ -664,7 +722,7 @@ class href_token(DiffToken):
         return super().__eq__(other)
 
     def __hash__(self):
-        return super.__hash__(self)
+        return super().__hash__()
 
     def html(self):
         return ' Link: %s' % self
@@ -904,11 +962,11 @@ class SpacerToken(DiffToken):
 # no spaces, but now that I know this differ more deeply, this is pointless.
 class ImgTagToken(tag_token):
 
-    regex = re.compile(r"(src|srcset)=('|\")(.*?)('|\")")
+    get_all_urls = re.compile(r"(src|srcset)=('|\")(.*?)('|\")")
 
     def __new__(cls, tag, data, html_repr, comparator, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
-        found_urls = ImgTagToken.regex.findall(html_repr)
+        found_urls = ImgTagToken.get_all_urls.findall(html_repr)
         urls = []
         for url in found_urls:
             if url[0] == 'srcset':
@@ -932,7 +990,7 @@ class ImgTagToken(tag_token):
         return False
 
     def __hash__(self):
-        return super.__hash__(self)
+        return super().__hash__()
 
 
 def _customize_tokens(tokens):
