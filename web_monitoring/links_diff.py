@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+import html5_parser
 from .content_type import raise_if_not_diffable_html
 from .differs import compute_dmp_diff
 from web_monitoring.utils import get_color_palette
@@ -388,7 +388,7 @@ def _create_empty_soup(title=''):
     title : string
         The new document's title.
     """
-    return BeautifulSoup(f"""<!doctype html>
+    return html5_parser.parse(f"""<!doctype html>
         <html>
             <head>
                 <meta charset="utf-8">
@@ -397,7 +397,7 @@ def _create_empty_soup(title=''):
             <body>
             </body>
         </html>
-        """, 'lxml')
+        """, treebuilder='soup', return_root=False)
 
 
 def not_deleted(diff_item):
