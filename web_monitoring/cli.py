@@ -261,7 +261,8 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
     www_subdomain = re.compile(r'^https?://www\d*\.')
     urls = set((www_subdomain.sub('http://', url) for url in urls))
 
-    _print_domain_list(urls)
+    logger.info(f'Found {len(urls)} CDX-queryable URLs')
+    logger.debug('\n  '.join(urls))
 
     return await import_ia_urls(
         urls=urls,
@@ -494,14 +495,13 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
         json.dump(mementos, file)
 
 
+# XXX: This is no longer really listing domains. Should we find a way to make
+# it do that again, or simply remove this functionality?
 def list_domains(url_pattern=None):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     domains, version_filter = _get_db_page_url_info(client, url_pattern)
-    _print_domain_list(domains)
 
-
-def _print_domain_list(domains):
     text = '\n  '.join(domains)
     print(f'Found {len(domains)} matching domains:\n  {text}')
 
