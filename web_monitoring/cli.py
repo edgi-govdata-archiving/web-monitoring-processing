@@ -139,6 +139,11 @@ class WaybackRecordsWorker(threading.Thread):
         return not self.cancel.is_set()
 
     def run(self):
+        """
+        Work through the queue of CDX records to load them from Wayback,
+        transform them to Web Monitoring DB import entries, and queue them for
+        importing.
+        """
         self.reset_client()
 
         while self.is_active():
@@ -148,24 +153,22 @@ class WaybackRecordsWorker(threading.Thread):
             except StopIteration:
                 break
 
-            self.process_record(record, retry_connection_failures=True)
+            self.handle_record(record, retry_connection_failures=True)
 
         self.wayback.close()
         return self.summary
 
-    def process_record(self, record, retry_connection_failures=False):
+    def handle_record(self, record, retry_connection_failures=False):
+        """
+        Handle a single CDX record.
+        """
         # Check for whether we already know this can't be played and bail out.
         if self.unplaybackable is not None and record.raw_url in self.unplaybackable:
             self.summary['playback'] += 1
             return
 
         try:
-            version = self.wayback.timestamped_uri_to_version(record.date,
-                                                              record.raw_url,
-                                                              url=record.url,
-                                                              maintainers=self.maintainers,
-                                                              tags=self.tags,
-                                                              view_url=record.view_url)
+            version = self.process_record(record, retry_connection_failures=True)
             self.results_queue.put(version)
             self.summary['success'] += 1
         except ia.MementoPlaybackError as error:
@@ -187,15 +190,6 @@ class WaybackRecordsWorker(threading.Thread):
                 if self.failure_queue:
                     self.failure_queue.put(record)
         except ia.WaybackRetryError as error:
-            # On connection failures, reset the session and try again. If we
-            # don't do this, the connection pool for this thread is pretty much
-            # dead. It's not clear to me whether there is a problem in urllib3
-            # or Wayback's servers that requires this.
-            # TODO: should we build this into the WaybackSession class?
-            if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
-                self.reset_client()
-                return self.process_record(record)
-
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
             self.summary['unknown'] += 1
@@ -204,14 +198,6 @@ class WaybackRecordsWorker(threading.Thread):
             if self.failure_queue:
                 self.failure_queue.put(record)
         except Exception as error:
-            # On connection failures, reset the session and try again. If we
-            # don't do this, the connection pool for this thread is pretty much
-            # dead. It's not clear to me whether there is a problem in urllib3
-            # or Wayback's servers that requires this.
-            if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
-                self.reset_client()
-                return self.process_record(record)
-
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
             self.summary['unknown'] += 1
@@ -219,6 +205,32 @@ class WaybackRecordsWorker(threading.Thread):
 
             if self.failure_queue:
                 self.failure_queue.put(record)
+
+    def process_record(self, record, retry_connection_failures=False):
+        """
+        Load the actual Wayback memento for a CDX record and transform it to
+        a Web Monitoring DB import record.
+        """
+        try:
+            return self.wayback.timestamped_uri_to_version(record.date,
+                                                           record.raw_url,
+                                                           url=record.url,
+                                                           maintainers=self.maintainers,
+                                                           tags=self.tags,
+                                                           view_url=record.view_url)
+        except Exception as error:
+            # On connection failures, reset the session and try again. If we
+            # don't do this, the connection pool for this thread is pretty much
+            # dead. It's not clear to me whether there is a problem in urllib3
+            # or Wayback's servers that requires this.
+            # This unfortunately requires string checking because the error can
+            # get wrapped up into multiple kinds of higher-level errors :(
+            if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
+                self.reset_client()
+                return self.process_record(record)
+
+            # Otherwise, re-raise the error.
+            raise error
 
     @classmethod
     def create_summary(cls):
@@ -287,7 +299,9 @@ def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplay
     total_tries = len(tries)
     retry_queue = None
     for index, try_setting in enumerate(tries):
-        if retry_queue:
+        if retry_queue and not retry_queue.empty():
+            print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
+            retry_queue.put(None)
             records = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
 
         if index == total_tries - 1:
