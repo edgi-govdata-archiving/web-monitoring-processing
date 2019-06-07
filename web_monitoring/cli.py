@@ -555,17 +555,6 @@ def _get_db_page_url_info(client, url_pattern=None):
         else:
             url_list.extend(data['urls'])
 
-    ###### DEBUG
-    # print(f'Total domains: {len(domains)}')
-    # if len(domains) > 2:
-    #     # domains = set(['www.phmsa.dot.gov', 'www.noaa.inel.gov'] + list(domains)[0:2])
-    #     domains = set(list(domains)[0:2])
-    # # domains = domains - {'www.w3.org'}
-    # # domains = {'mrcc.illinois.edu'}
-    # # domains = {'www.doe.gov'}
-    # domains = {'www.epa.gov'}
-    ###### DEBUG
-
     return url_list, filterer
 
 
