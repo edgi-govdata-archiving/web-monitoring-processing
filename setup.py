@@ -1,6 +1,7 @@
 from distutils.core import setup
 import glob
 import os
+import re
 from pathlib import Path
 import setuptools
 import sys
@@ -19,9 +20,21 @@ def read(fname):
     return result
 
 
+RE_DELIM = re.compile(r';|--')
+
+
+def cleanup(line):
+    match = RE_DELIM.search(line)
+    if match:
+        return line[:match.start()].strip()
+    return line
+
+
 # Requirements not on PyPI can't be installed through `install_requires`.
 # They have to be installed manually or with `pip install -r requirements.txt`.
-requirements = [r for r in read('requirements.txt').splitlines()
+# Also, look for ; or -- on the line and, if present, remove that string and
+# everything after it.
+requirements = [cleanup(r) for r in read('requirements.txt').splitlines()
                 if not r.startswith('git+https://')]
 
 
