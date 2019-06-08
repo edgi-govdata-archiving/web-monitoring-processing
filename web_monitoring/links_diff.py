@@ -6,7 +6,6 @@ from difflib import SequenceMatcher
 from .html_diff_render import (get_title, _html_for_dmp_operation,
                                undiffable_content_tags)
 import re
-import html5_parser
 
 
 def links_diff(a_text, b_text, a_headers=None, b_headers=None,
