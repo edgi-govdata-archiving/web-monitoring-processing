@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.59.g95965b1 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.58.gbcf70fc documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.59.g95965b1
+                0+untagged.58.gbcf70fc
               </div>
             
           
@@ -425,7 +425,9 @@
 <div class="viewcode-block" id="Client.list_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_versions.html#web_monitoring.db.Client.list_versions">[docs]</a>    <span class="k">def</span> <span class="nf">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                      <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">different</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">include_change_from_previous</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">include_change_from_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List Versions, optionally filtered by serach criteria, including Page.</span>
 
@@ -448,7 +450,17 @@
 
 <span class="sd">            * ``{&#39;version_id&#39;: 12345678}``</span>
 <span class="sd">            * ``{&#39;account&#39;: &#39;versionista1&#39;, &#39;has_content&#39;: True}``</span>
-
+<span class="sd">        different : boolean, optional</span>
+<span class="sd">            If False, include versions that aren&#39;t actually different from the</span>
+<span class="sd">            previous version of the same page in the response.</span>
+<span class="sd">        include_change_from_previous : boolean, optional</span>
+<span class="sd">            If True, include a `change_from_previous` field in each version</span>
+<span class="sd">            that represents a change object between it and the previous version</span>
+<span class="sd">            of the same page.</span>
+<span class="sd">        include_change_from_earliest : boolean, optional</span>
+<span class="sd">            If True, include a `change_from_earliest` field in each version</span>
+<span class="sd">            that represents a change object between it and the earliest version</span>
+<span class="sd">            of the same page.</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
@@ -457,7 +469,10 @@
                   <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
                   <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
                   <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
-                  <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">}</span>
+                  <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
+                  <span class="s1">&#39;different&#39;</span><span class="p">:</span> <span class="n">different</span><span class="p">,</span>
+                  <span class="s1">&#39;include_change_from_previous&#39;</span><span class="p">:</span> <span class="n">include_change_from_previous</span><span class="p">,</span>
+                  <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">source_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">source_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">params</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;source_metadata[</span><span class="si">{k}</span><span class="s1">]&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
@@ -475,20 +490,31 @@
             <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="Client.get_version"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_version.html#web_monitoring.db.Client.get_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version_id</span><span class="p">):</span>
+<div class="viewcode-block" id="Client.get_version"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_version.html#web_monitoring.db.Client.get_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version_id</span><span class="p">,</span> <span class="n">include_change_from_previous</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">include_change_from_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Lookup a specific Version by ID.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        version_id : string</span>
+<span class="sd">        include_change_from_previous : boolean, optional</span>
+<span class="sd">            If True, include a `change_from_previous` field in that represents</span>
+<span class="sd">            a change object between this and the previous version of the same</span>
+<span class="sd">            page.</span>
+<span class="sd">        include_change_from_earliest : boolean, optional</span>
+<span class="sd">            If True, include a `change_from_earliest` field in that represents</span>
+<span class="sd">            a change object between this and the earliest version of the same</span>
+<span class="sd">            page.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/versions/</span><span class="si">{version_id}</span><span class="s1">&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;include_change_from_previous&#39;</span><span class="p">:</span> <span class="n">include_change_from_previous</span><span class="p">,</span>
+                  <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">}</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>

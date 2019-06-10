@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.get_version &mdash; web-monitoring-processing 0+untagged.59.g95965b1 documentation</title>
+  <title>web_monitoring.db.Client.get_version &mdash; web-monitoring-processing 0+untagged.58.gbcf70fc documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.59.g95965b1
+                0+untagged.58.gbcf70fc
               </div>
             
           
@@ -179,12 +179,20 @@
 <h1>web_monitoring.db.Client.get_version<a class="headerlink" href="#web-monitoring-db-client-get-version" title="Permalink to this headline">¶</a></h1>
 <dl class="method">
 <dt id="web_monitoring.db.Client.get_version">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">get_version</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">version_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.get_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.get_version" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">get_version</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">version_id</em>, <em class="sig-param">include_change_from_previous=None</em>, <em class="sig-param">include_change_from_earliest=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.get_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.get_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lookup a specific Version by ID.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>version_id</strong><span class="classifier">string</span></dt><dd></dd>
+<dt><strong>include_change_from_previous</strong><span class="classifier">boolean, optional</span></dt><dd><p>If True, include a <cite>change_from_previous</cite> field in that represents
+a change object between this and the previous version of the same
+page.</p>
+</dd>
+<dt><strong>include_change_from_earliest</strong><span class="classifier">boolean, optional</span></dt><dd><p>If True, include a <cite>change_from_earliest</cite> field in that represents
+a change object between this and the earliest version of the same
+page.</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
