@@ -20,20 +20,22 @@ def read(fname):
     return result
 
 
-RE_DELIM = re.compile(r';|--')
+# Delimits a setup.py-compatible requirement name/version from the extras that
+# only pip supports (environment info, CLI options, etc.).
+# https://pip.pypa.io/en/stable/reference/pip_install/#requirements-file-format
+REQUIREMENT_DELIMITER = re.compile(r';|--')
 
 
 def cleanup(line):
-    match = RE_DELIM.search(line)
-    if match:
-        return line[:match.start()].strip()
-    return line
+    '''
+    Convert a pip requirements file line into an install_requires-style line.
+    '''
+    return REQUIREMENT_DELIMITER.split(line, 1)[0]
 
 
-# Requirements not on PyPI can't be installed through `install_requires`.
-# They have to be installed manually or with `pip install -r requirements.txt`.
-# Also, look for ; or -- on the line and, if present, remove that string and
-# everything after it.
+# Requirements not on PyPI or that use special pip features can't be installed
+# through `install_requires`. They have to be installed manually or with
+# `pip install -r requirements.txt`.
 requirements = [cleanup(r) for r in read('requirements.txt').splitlines()
                 if not r.startswith('git+https://')]
 
