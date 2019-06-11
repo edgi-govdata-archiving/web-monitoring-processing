@@ -67,7 +67,7 @@ NEVER_QUERY_DOMAINS = (
 )
 # Query an entire domain for snapshots if we are interested in more than this
 # many URLs in the domain (NEVER_QUERY_DOMAINS above overrides this).
-MAX_QUERY_URLS_PER_DOMAIN = 20
+MAX_QUERY_URLS_PER_DOMAIN = 30
 
 
 # These functions lump together library code into monolithic operations for the
