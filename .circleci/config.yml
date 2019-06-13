@@ -46,6 +46,34 @@ jobs:
             . venv/bin/activate
             cd docs && make html
 
+  build_docker:
+    machine: true
+    steps:
+      - checkout
+      - run: |
+          docker build -t envirodgi/processing:$CIRCLE_SHA1 .
+      - run:
+          name: Save Image
+          command: |
+            mkdir /tmp/workspace
+            docker save --output /tmp/workspace/docker-image envirodgi/processing:$CIRCLE_SHA1
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - docker-image
+
+  use_built_docker:
+    machine: true
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load Image
+          command: docker load /tmp/workspace/docker-image
+      - run:
+          name: Re-tag Image
+          command: docker image tag envirodgi/processing:$CIRCLE_SHA1 envirodgi/processing:latest
+
   publish_docker:
     machine: true
     steps:
@@ -67,6 +95,13 @@ workflows:
           filters:
             branches:
               ignore: release
+      - build_docker:
+          filters:
+            branches:
+              ignore: release
+      - use_built_docker:
+          requires:
+            - build_docker
 
   build-and-publish:
     jobs:
