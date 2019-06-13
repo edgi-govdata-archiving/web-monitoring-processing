@@ -106,9 +106,7 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
 def _log_adds(versions):
     versions = _get_progress_meter(versions)
     for version in versions:
-        # print('')  # Line break from tqdm output
-        # print(json.dumps(version))
-        1 + 1
+        print(json.dumps(version))
 
 
 class WaybackRecordsWorker(threading.Thread):
