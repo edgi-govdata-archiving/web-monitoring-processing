@@ -69,7 +69,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load Image
-          command: docker load /tmp/workspace/docker-image
+          command: docker load --input /tmp/workspace/docker-image
       - run:
           name: Re-tag Image
           command: docker image tag envirodgi/processing:$CIRCLE_SHA1 envirodgi/processing:latest
