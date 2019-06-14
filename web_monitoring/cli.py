@@ -259,6 +259,12 @@ class WaybackRecordsWorker(threading.Thread):
         return merged
 
 
+def iterate_into_queue(iterable, queue):
+    for item in iterable:
+        queue.put(item)
+    queue.put(None)
+
+
 async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                             tags=None, skip_unchanged='resolved-response',
                             url_pattern=None, worker_count=0,
@@ -291,6 +297,8 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
 def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplaybackable, worker_count, tries=None):
     if tries is None or len(tries) == 0:
         tries = (None,)
+    if isinstance(records, queue.Queue):
+        records = utils.ThreadSafeIterator(utils.queue_iterator(records))
 
     summary = WaybackRecordsWorker.create_summary()
 
@@ -384,7 +392,9 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 client=wayback,
                 stop=stop_event)
             # for wayback_records in toolz.partition_all(2000, all_records):
-            wayback_records = utils.ThreadSafeIterator(all_records)
+            # wayback_records = utils.ThreadSafeIterator(all_records)
+            wayback_records = queue.Queue()
+            cdx_task = loop.run_in_executor(executor, iterate_into_queue, all_records, wayback_records)
 
             retry_settings = (None,
                               dict(retries=3, backoff=4, timeout=(30.5, 2)),
@@ -412,6 +422,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 print('Saving list of non-playbackable URLs...')
                 save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
+            await cdx_task
             await uploader
 
 
