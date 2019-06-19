@@ -293,15 +293,11 @@ class StrictUrlRule:
                    'UK_WBM': WaybackUkUrlComparator}
 
     @classmethod
-    def compare_all_img_urls(cls, element, other, comparator):
-        element_array = element[7:-3]
-        element_array = element_array.split(',')
-        other_array = other[7:-3]
-        other_array = other_array.split(',')
+    def compare_array(cls, element_array, other_array, comparator):
         for url_a in element_array:
             for url_b in other_array:
                 if comparator:
-                    if comparator.compare(url_a[1:-1], url_b[1:-1]):
+                    if comparator.compare(url_a, url_b):
                         return True
                 elif url_a == url_b:
                     return True
@@ -403,7 +399,9 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     soup_old = _cleanup_document_structure(soup_old)
     soup_new = _cleanup_document_structure(soup_new)
 
-    comparator = StrictUrlRule.get_comparator(strict_urls)
+    comparator = None
+    if strict_urls is not None:
+        comparator = StrictUrlRule.get_comparator(strict_urls)
 
     results, diff_bodies = diff_elements(soup_old.body, soup_new.body, comparator, include)
 
@@ -788,9 +786,9 @@ def fixup_chunks(chunks, comparator):
         if current_token == TokenType.img:
             src = chunk[1]
             tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
-            cur_word = tag_token('img', src, html_repr=tag, comparator=comparator,
-                                 pre_tags=tag_accum,
-                                 trailing_whitespace=trailing_whitespace)
+            cur_word = ImgTagToken('img', data=src, html_repr=tag,
+                                   comparator=comparator, pre_tags=tag_accum,
+                                   trailing_whitespace=trailing_whitespace)
             tag_accum = []
             result.append(cur_word)
 
@@ -842,7 +840,13 @@ def flatten_el(el, include_hrefs, skip_tag=False):
     not returned (just its contents)."""
     if not skip_tag:
         if el.tag == 'img':
-            yield (TokenType.img, el.get('src'), start_tag(el))
+            src_array = [el.get('src')]
+            srcset = el.get('srcset')
+            if srcset is not None:
+                srcset_array = srcset.split(',')
+                for src in srcset_array:
+                    src_array.append(src.split(' ')[0])
+            yield (TokenType.img, src_array, start_tag(el))
         elif el.tag in undiffable_content_tags:
             element_source = etree.tostring(el, encoding=str, method='html')
             yield (TokenType.undiffable, element_source)
@@ -955,19 +959,9 @@ class SpacerToken(DiffToken):
 # no spaces, but now that I know this differ more deeply, this is pointless.
 class ImgTagToken(tag_token):
 
-    get_all_urls = re.compile(r"(src|srcset)=('|\")(.*?)('|\")")
-
     def __new__(cls, tag, data, html_repr, comparator, pre_tags=None,
                 post_tags=None, trailing_whitespace=""):
-        found_urls = ImgTagToken.get_all_urls.findall(html_repr)
-        urls = []
-        for url in found_urls:
-            if url[0] == 'srcset':
-                if ' ' in url[2]:
-                    urls.append(url[2].split(' ')[0])
-                    continue
-            urls.append(url[2])
-        obj = DiffToken.__new__(cls, "\n\nImg:%s\n\n" % str(urls),
+        obj = DiffToken.__new__(cls, "\n\nImg:%s\n\n" % str(data),
                             pre_tags=pre_tags,
                             post_tags=post_tags,
                             trailing_whitespace=trailing_whitespace)
@@ -979,7 +973,7 @@ class ImgTagToken(tag_token):
 
     def __eq__(self, other):
         if isinstance(other, ImgTagToken):
-            return StrictUrlRule.compare_all_img_urls(str(self), str(other), self.comparator)
+            return StrictUrlRule.compare_array(self.data, other.data, self.comparator)
         return False
 
     def __hash__(self):
@@ -1193,16 +1187,6 @@ def _customize_token(token):
     if isinstance(token, href_token):
         return MinimalHrefToken(
             str(token),
-            comparator=token.comparator,
-            pre_tags=token.pre_tags,
-            post_tags=token.post_tags,
-            trailing_whitespace=token.trailing_whitespace)
-    elif isinstance(token, tag_token) and token.tag == 'img':
-        # logger.debug('TAG TOKEN: %s' % token)
-        return ImgTagToken(
-            'img',
-            data=token.data,
-            html_repr=token.html_repr,
             comparator=token.comparator,
             pre_tags=token.pre_tags,
             post_tags=token.post_tags,
