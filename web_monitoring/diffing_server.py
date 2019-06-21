@@ -6,6 +6,7 @@ import inspect
 import functools
 import os
 import re
+from urllib.parse import quote
 import cchardet
 import sentry_sdk
 import tornado.gen
@@ -160,19 +161,25 @@ class DiffHandler(BaseHandler):
                                    f'supported differs from '
                                    f'the `/` endpoint.')
             return
-
         query_params = self.decode_query_params()
         # The logic here is a bit tortured in order to allow one or both URLs
         # to be local files, while still optimizing the common case of two
         # remote URLs that we want to fetch in parallel.
         try:
-            urls = {param: query_params.pop(param) for param in ('a', 'b')}
+            urls = {param: quote(query_params.pop(param), safe=';/?:@&=+$,%')
+                    for param in ('a', 'b')}
         except KeyError:
             self.send_error(
                 400,
                 reason='Malformed request. '
                        'You must provide a URL as the value '
                        'for both `a` and `b` query parameters.')
+            return
+        except ValueError:
+            self.send_error(
+                400,
+                reason='Malformed request. '
+                       'Invalid  URL format for `a` or `b` query parameters.')
             return
         # Special case for local files, for dev/testing.
         responses = {}
