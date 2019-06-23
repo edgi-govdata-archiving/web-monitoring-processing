@@ -840,7 +840,10 @@ def flatten_el(el, include_hrefs, skip_tag=False):
     not returned (just its contents)."""
     if not skip_tag:
         if el.tag == 'img':
-            src_array = [el.get('src')]
+            src_array = []
+            el_src = el.get('src')
+            if el_src is not None:
+                src_array.append(el_src)
             srcset = el.get('srcset')
             if srcset is not None:
                 srcset_array = srcset.split(',')
