@@ -318,6 +318,10 @@ class DiffHandler(BaseHandler):
                     self.send_error(
                         504,
                         reason=f'Timed out while fetching "{url}"')
+                elif isinstance(response.error, ValueError):
+                    self.send_error(
+                        400,
+                        reason=str(response.error))
                 else:
                     self.send_error(
                         502,

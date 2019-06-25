@@ -128,14 +128,14 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         response = self.fetch('/html_token?format=json&include=all&'
                               'a=example.org&b=https://example.org')
         self.json_check(response)
-        self.assertEqual(response.code, 502)
+        self.assertEqual(response.code, 400)
         self.assertFalse(response.headers.get('Etag'))
 
     def test_invalid_url_b_format(self):
         response = self.fetch('/html_token?format=json&include=all&'
                               'a=https://example.org&b=example.org')
         self.json_check(response)
-        self.assertEqual(response.code, 502)
+        self.assertEqual(response.code, 400)
         self.assertFalse(response.headers.get('Etag'))
 
     def test_invalid_diffing_method(self):
