@@ -4,11 +4,9 @@ import os
 from pathlib import Path
 from pkg_resources import resource_filename
 import pytest
-import html5_parser
 from web_monitoring.db import Client
 from web_monitoring.differs import html_tree_diff, html_differ
-from web_monitoring.html_diff_render import (html_diff_render,
-                                             _deactivate_deleted_active_elements)
+from web_monitoring.html_diff_render import html_diff_render
 
 def lookup_pair(fn):
     """Read example data named {fn}.before and {fn}.after"""
@@ -89,45 +87,6 @@ def test_contrived_examples_htmldiffer(fn):
     print(TEMPLATE.format(before, after, d))
     return d
 
-
-def test_deactivate_deleted_active_elements():
-    html = """
-<html>
-  <head></head>
-  <body>
-    <del>
-      <script src="script1.js"></script>
-    </del>
-    <p>test</p>
-    <del>
-      <script src="script2.js"></script>
-    </del>
-  </body>
-</html>"""
-    final_html = """<html>
- <head>
- </head>
- <body>
-  <del>
-   <template class="wm-diff-deleted-inert">
-    <script src="script1.js">
-    </script>
-   </template>
-  </del>
-  <p>
-   test
-  </p>
-  <del>
-   <template class="wm-diff-deleted-inert">
-    <script src="script2.js">
-    </script>
-   </template>
-  </del>
- </body>
-</html>"""
-    soup = html5_parser.parse(html, treebuilder='soup', return_root=False)
-    soup = _deactivate_deleted_active_elements(soup)
-    assert soup.prettify(formatter=None) == final_html
 
 ### TESTS ON MORE COMPLEX, REAL CASES
 
