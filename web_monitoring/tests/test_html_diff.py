@@ -8,6 +8,7 @@ from web_monitoring.db import Client
 from web_monitoring.differs import html_tree_diff, html_differ
 from web_monitoring.html_diff_render import html_diff_render
 
+
 def lookup_pair(fn):
     """Read example data named {fn}.before and {fn}.after"""
     fn1 = 'example_data/{}.before'.format(fn)
