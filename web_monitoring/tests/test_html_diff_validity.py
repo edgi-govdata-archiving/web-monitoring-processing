@@ -88,7 +88,7 @@ def test_deactivate_deleted_active_elements():
     b = '''<body><p>test2</p></body>'''
     result = html_diff_render(a, b)['combined']
     soup = html5_parser.parse(result, treebuilder='soup', return_root=False)
-    elements = soup.select('del.wm-diff > template.wm-diff-deleted-inert > script')
+    elements = soup.select('template.wm-diff-deleted-inert')
     assert len(elements) == 2
 
 
