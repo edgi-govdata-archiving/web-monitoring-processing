@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.51.g94eeb8a documentation</title>
+  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.51.g897f864 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.51.g94eeb8a
+                0+untagged.51.g897f864
               </div>
             
           
@@ -418,6 +418,11 @@
         <span class="n">response</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">retryable_request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">CDX_SEARCH_URL</span><span class="p">,</span>
                                            <span class="n">params</span><span class="o">=</span><span class="n">final_query</span><span class="p">,</span>
                                            <span class="n">session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">WaybackException</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+
         <span class="n">lines</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">()</span>
         <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
 
