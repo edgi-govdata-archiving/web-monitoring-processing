@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.51.g6751cec documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.51.g8f2030e documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.51.g6751cec
+                0+untagged.51.g8f2030e
               </div>
             
           
@@ -186,7 +186,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b4e00d92b48&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x2b9fceb39468&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -248,18 +248,16 @@ the visible text.</p>
 </div>
 <p>To get a quick sense of the difference between <code class="docutils literal notranslate"><span class="pre">content</span></code> and <code class="docutils literal notranslate"><span class="pre">visible</span></code>
 let’s look at the first 80 characters of each.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [14]: </span><span class="k">print</span><span class="p">(</span><span class="n">content</span><span class="p">[:</span><span class="mi">80</span><span class="p">])</span>
-<span class="go">&lt;HTML&gt;</span>
-<span class="go">&lt;HEAD&gt;</span>
-<span class="go">  &lt;META NAME=&quot;GENERATOR&quot; CONTENT=&quot;Adobe PageMill 2.0 Mac&quot;&gt;</span>
-<span class="go">  &lt;META</span>
+<pre class="literal-block">In [14]: print(content[:80])
+&lt;HTML&gt;
+&lt;HEAD&gt;
+  &lt;META NAME=&quot;GENERATOR&quot; CONTENT=&quot;Adobe PageMill 2.0 Mac&quot;&gt;
+  &lt;META
 
-<span class="gp">In [15]: </span><span class="k">print</span><span class="p">(</span><span class="n">visible</span><span class="p">[:</span><span class="mi">80</span><span class="p">])</span>
-<span class="go">                                                                                 Welcome to  NASA  and the  Mars Pathfinder Mission !</span>
+In [15]: print(visible[:80])
+Welcome to  NASA  and the  Mars Pathfinder Mission !
 
-<span class="go">This is a substitute for t</span>
-</pre></div>
-</div>
+This is a substitute for t</pre>
 <p>And now let’s do the word count on just the visible content.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [16]: </span><span class="n">visible</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;mars&#39;</span><span class="p">)</span>
 <span class="gh">Out[16]: </span><span class="go">19</span>
