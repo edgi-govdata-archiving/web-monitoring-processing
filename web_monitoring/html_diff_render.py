@@ -670,7 +670,7 @@ def fixup_chunks(chunks):
             else:
                 assert cur_word, (
                     "Weird state, cur_word=%r, result=%r, chunks=%r of %r"
-                    % (cur_word, result, chunk[1], chunks))
+                    % (cur_word, result, chunk, chunks))
                 cur_word.post_tags.append(chunk[1])
         else:
             assert(0)
