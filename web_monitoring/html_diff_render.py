@@ -644,7 +644,8 @@ def fixup_chunks(chunks):
     cur_word = None
     result = []
     for chunk in chunks:
-        if chunk[0] == TokenType.img:
+        current_token = chunk[0]
+        if current_token == TokenType.img:
             src = chunk[1]
             tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
             cur_word = tag_token('img', src, html_repr=tag,
@@ -653,27 +654,27 @@ def fixup_chunks(chunks):
             tag_accum = []
             result.append(cur_word)
 
-        elif chunk[0] == TokenType.href:
+        elif current_token == TokenType.href:
             href = chunk[1]
             cur_word = href_token(href, pre_tags=tag_accum, trailing_whitespace=" ")
             tag_accum = []
             result.append(cur_word)
 
-        elif chunk[0] == TokenType.undiffable:
+        elif current_token == TokenType.undiffable:
             cur_word = UndiffableContentToken(chunk[1], pre_tags=tag_accum)
             tag_accum = []
             result.append(cur_word)
 
-        elif chunk[0] == TokenType.word:
+        elif current_token == TokenType.word:
             chunk, trailing_whitespace = split_trailing_whitespace(chunk[1])
             cur_word = DiffToken(chunk, pre_tags=tag_accum, trailing_whitespace=trailing_whitespace)
             tag_accum = []
             result.append(cur_word)
 
-        elif chunk[0] == TokenType.start_tag:
+        elif current_token == TokenType.start_tag:
             tag_accum.append(chunk[1])
 
-        elif chunk[0] == TokenType.end_tag:
+        elif current_token == TokenType.end_tag:
             if tag_accum:
                 tag_accum.append(chunk[1])
             else:
