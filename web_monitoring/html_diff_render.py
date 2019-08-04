@@ -639,8 +639,8 @@ def fixup_chunks(chunks):
             src = chunk[1]
             tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
             cur_word = tag_token('img', src, html_repr=tag,
-                                    pre_tags=tag_accum,
-                                    trailing_whitespace=trailing_whitespace)
+                                 pre_tags=tag_accum,
+                                 trailing_whitespace=trailing_whitespace)
             tag_accum = []
             result.append(cur_word)
 
