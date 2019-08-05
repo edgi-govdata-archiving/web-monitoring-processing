@@ -89,6 +89,9 @@ DEBUG_MODE = os.environ.get('DIFFING_SERVER_DEBUG', 'False').strip().lower() == 
 VALIDATE_TARGET_CERTIFICATES = \
     os.environ.get('VALIDATE_TARGET_CERTIFICATES', 'False').strip().lower() == 'true'
 
+ACCEPT_ONLY_STATUS_200 = \
+    os.environ.get('ACCEPT_ONLY_STATUS_200', 'True').strip().lower() == 'true'
+
 access_control_allow_origin_header = \
     os.environ.get('ACCESS_CONTROL_ALLOW_ORIGIN_HEADER')
 
@@ -226,7 +229,8 @@ class DiffHandler(BaseHandler):
 
             try:
                 response = yield client.fetch(url, headers=headers,
-                                              validate_cert=VALIDATE_TARGET_CERTIFICATES)
+                                              validate_cert=VALIDATE_TARGET_CERTIFICATES,
+                                              raise_error=ACCEPT_ONLY_STATUS_200)
             except ValueError as error:
                 self.send_error(400, reason=str(error))
             except OSError as error:
