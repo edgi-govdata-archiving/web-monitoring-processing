@@ -226,7 +226,14 @@ class DiffHandler(BaseHandler):
 
             try:
                 response = yield client.fetch(url, headers=headers,
-                                              validate_cert=VALIDATE_TARGET_CERTIFICATES)
+                                              validate_cert=VALIDATE_TARGET_CERTIFICATES,
+                                              raise_error=False)
+                # Accept response with HTTP status >= 300 only if its coming
+                # from a web archive. HTTP header `Memento-Datetime` is an
+                # indication about that.
+                if response.code >= 300 and \
+                        response.headers.get('Memento-Datetime') is None:
+                    response.rethrow()
             except ValueError as error:
                 self.send_error(400, reason=str(error))
             except OSError as error:
