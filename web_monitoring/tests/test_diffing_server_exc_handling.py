@@ -188,17 +188,22 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         self.assertFalse(response.headers.get('Etag'))
         self.json_check(response)
 
-    def test_web_archive_404(self):
+    def test_accepts_errors_from_web_archives(self):
         """
         If a page has HTTP status != 2xx but comes from a web archive,
         we proceed with diffing.
         """
-        response = self.fetch('/html_token?format=json&include=all'
-                              '&a=http://web.archive.org/web/20180925033850/http://httpstat.us/404'
-                              '&b=https://example.org')
-        # The error is upstream, but the message should indicate it was a 404.
-        self.assertEqual(response.code, 200)
-        assert 'change_count' in json.loads(response.body)
+        mock = MockAsyncHttpClient()
+        with patch.object(df, 'client', wraps=mock):
+            mock.respond_to(r'/error$', code=404, headers={'Memento-Datetime': 'Tue Sep 25 2018 03:38:50'})
+            mock.respond_to(r'/success$')
+
+            response = self.fetch('/html_token?format=json&include=all'
+                                  '&a=https://archive.org/20180925033850/http://httpstat.us/error'
+                                  '&b=https://example.org/success')
+
+            self.assertEqual(response.code, 200)
+            assert 'change_count' in json.loads(response.body)
 
     @patch('web_monitoring.diffing_server.access_control_allow_origin_header', '*')
     def test_check_cors_headers(self):
