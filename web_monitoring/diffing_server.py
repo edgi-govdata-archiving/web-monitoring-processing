@@ -229,7 +229,7 @@ class DiffHandler(BaseHandler):
                                               validate_cert=VALIDATE_TARGET_CERTIFICATES)
             except ValueError as error:
                 self.send_error(400, reason=str(error))
-            except OSError as error:
+            except (OSError, TypeError) as error:
                 self.send_error(502, reason=f'Could not fetch {url}: {error}')
             except tornado.simple_httpclient.HTTPTimeoutError:
                 self.send_error(504, reason=f'Timed out while fetching "{url}"')
