@@ -1,18 +1,12 @@
 # Use an official Python runtime as a parent image
-FROM python:3.6-slim
+FROM python:3.7-slim
 MAINTAINER enviroDGI@gmail.com
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git gcc g++
+    git gcc g++ pkg-config libxml2-dev libxslt-dev libz-dev
 
 # Set the working directory to /app
 WORKDIR /app
-ENV WEB_MONITORING_DB_URL
-ENV WEB_MONITORING_DB_PASSWORD
-ENV WEB_MONITORING_DB_EMAIL
-ENV WEB_MONITORING_FROM
-ENV WEB_MONITORING_PARALLEL
-
 
 # Copy the requirements.txt alone into the container at /app
 # so that they can be cached more aggressively than the rest of the source.
