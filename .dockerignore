@@ -1,2 +1,7 @@
 .env
 .git/
+docs
+
+# Temporary generated files
+diff_output*
+archives
