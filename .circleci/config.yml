@@ -58,11 +58,14 @@ jobs:
           name: Save Image
           command: |
             mkdir /tmp/workspace
-            docker save --output /tmp/workspace/docker-image envirodgi/processing:$CIRCLE_SHA1
+            docker save --output /tmp/workspace/docker-images \
+                envirodgi/processing:$CIRCLE_SHA1 \
+                envirodgi/ia-healthcheck:$CIRCLE_SHA1 \
+                envirodgi/ia-etl:$CIRCLE_SHA1
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
-            - docker-image
+            - docker-images
 
   publish_docker:
     machine: true
@@ -71,16 +74,23 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load Built Docker Image
-          command: docker load --input /tmp/workspace/docker-image
+          command: docker load --input /tmp/workspace/docker-images
       - run:
           name: Re-tag Image
-          command: docker image tag envirodgi/processing:$CIRCLE_SHA1 envirodgi/processing:latest
+          command: |
+            docker image tag envirodgi/processing:$CIRCLE_SHA1 envirodgi/processing:latest
+            docker image tag envirodgi/ia-healthcheck:$CIRCLE_SHA1 envirodgi/ia-healthcheck:latest
+            docker image tag envirodgi/ia-etl:$CIRCLE_SHA1 envirodgi/ia-etl:latest
       - run:
           name: Publish to Docker Hub
           command: |
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             docker push envirodgi/processing:$CIRCLE_SHA1
             docker push envirodgi/processing:latest
+            docker push envirodgi/ia-healthcheck:$CIRCLE_SHA1
+            docker push envirodgi/ia-healthcheck:latest
+            docker push envirodgi/ia-etl:$CIRCLE_SHA1
+            docker push envirodgi/ia-etl:latest
 
 workflows:
   version: 2
