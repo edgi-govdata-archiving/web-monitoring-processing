@@ -188,28 +188,28 @@ class WaybackRecordsWorker(threading.Thread):
                 # unless failure_queue does not exist. Unsure how big a deal
                 # this error is to log if we are retrying.
                 logger.info(f'  (HTTPError) {error}')
-                # TODO: definitely don't count it if we are going to retry it
-                self.summary['unknown'] += 1
                 if self.failure_queue:
                     self.failure_queue.put(record)
+                else:
+                    self.summary['unknown'] += 1
         except ia.WaybackRetryError as error:
-            # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
-            # is present and we are ultimately going to retry.
-            self.summary['unknown'] += 1
             logger.info(f'  {error}; URL: {record.raw_url}')
 
             if self.failure_queue:
                 self.failure_queue.put(record)
+            else:
+                self.summary['unknown'] += 1
         except Exception as error:
             # FIXME: getting read timed out connection errors here...
             # requests.exceptions.ConnectionError: HTTPConnectionPool(host='web.archive.org', port=80): Read timed out.
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
-            self.summary['unknown'] += 1
             logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
 
             if self.failure_queue:
                 self.failure_queue.put(record)
+            else:
+                self.summary['unknown'] += 1
 
     def process_record(self, record, retry_connection_failures=False):
         """
@@ -243,15 +243,16 @@ class WaybackRecordsWorker(threading.Thread):
                 'unknown': 0}
 
     @classmethod
-    def summarize(cls, workers):
-        return cls.merge_summaries((w.summary for w in workers))
+    def summarize(cls, workers, initial=None):
+        return cls.merge_summaries((w.summary for w in workers), initial)
 
     @classmethod
-    def merge_summaries(cls, summaries):
-        merged = cls.create_summary()
+    def merge_summaries(cls, summaries, intial=None):
+        merged = intial or cls.create_summary()
         for summary in summaries:
             for key in merged.keys():
-                merged[key] += summary[key]
+                if key in summary:
+                    merged[key] += summary[key]
 
         # Add percentage calculations
         if merged['total']:
@@ -334,16 +335,7 @@ def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplay
         for worker in workers:
             worker.join()
 
-        try_summary = WaybackRecordsWorker.summarize(workers)
-        if index == 0:
-            summary = try_summary
-        else:
-            summary['success'] += try_summary['success']
-            summary['playback'] += try_summary['playback']
-            summary['missing'] += try_summary['missing']
-            summary['unknown'] -= (try_summary['success'] +
-                                   try_summary['playback'] +
-                                   try_summary['missing'])
+        summary = WaybackRecordsWorker.summarize(workers, summary)
 
     # Recalculate percentages
     summary = WaybackRecordsWorker.merge_summaries([summary])
