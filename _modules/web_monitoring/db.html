@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g73ea798 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.50.g73ea798
+                0+untagged.50.g0ec31e4
               </div>
             
           
@@ -317,7 +317,7 @@
 
     <span class="c1">### PAGES ###</span>
 
-<div class="viewcode-block" id="Client.list_pages"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_pages.html#web_monitoring.db.Client.list_pages">[docs]</a>    <span class="k">def</span> <span class="nf">list_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="Client.list_pages"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_pages.html#web_monitoring.db.Client.list_pages">[docs]</a>    <span class="k">def</span> <span class="nf">list_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -331,6 +331,8 @@
 <span class="sd">            pagination parameter</span>
 <span class="sd">        chunk_size : integer, optional</span>
 <span class="sd">            number of items per chunk</span>
+<span class="sd">        sort : list of string, optional</span>
+<span class="sd">            fields to sort by in `{field}:{order}` format, e.g. `title:asc`</span>
 <span class="sd">        tags : list of string, optional</span>
 <span class="sd">        maintainers : list of string, optional</span>
 <span class="sd">        url : string, optional</span>
@@ -352,6 +354,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
                   <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
+                  <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="n">sort</span> <span class="ow">and</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="s1">&#39;tags[]&#39;</span><span class="p">:</span> <span class="n">tags</span><span class="p">,</span>
                   <span class="s1">&#39;maintainers[]&#39;</span><span class="p">:</span> <span class="n">maintainers</span><span class="p">,</span>
                   <span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
@@ -423,7 +426,7 @@
     <span class="c1">### VERSIONS ###</span>
 
 <div class="viewcode-block" id="Client.list_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_versions.html#web_monitoring.db.Client.list_versions">[docs]</a>    <span class="k">def</span> <span class="nf">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">different</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">include_change_from_previous</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -439,6 +442,9 @@
 <span class="sd">            pagination parameter</span>
 <span class="sd">        chunk_size : integer, optional</span>
 <span class="sd">            number of items per chunk</span>
+<span class="sd">        sort : list of string, optional</span>
+<span class="sd">            fields to sort by in `{field}:{order}` format,</span>
+<span class="sd">            e.g. `capture_time:asc`</span>
 <span class="sd">        start_date : datetime, optional</span>
 <span class="sd">        end_date : datetime, optional</span>
 <span class="sd">        source_type : string, optional</span>
@@ -467,6 +473,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
                   <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
+                  <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="n">sort</span> <span class="ow">and</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
                   <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
                   <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
@@ -569,7 +576,8 @@
         <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Client.add_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_versions.html#web_monitoring.db.Client.add_versions">[docs]</a>    <span class="k">def</span> <span class="nf">add_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">versions</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+<div class="viewcode-block" id="Client.add_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_versions.html#web_monitoring.db.Client.add_versions">[docs]</a>    <span class="k">def</span> <span class="nf">add_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">versions</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="n">create_pages</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">skip_unchanged_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Submit versions in bulk for importing into web-monitoring-db.</span>
 
@@ -591,6 +599,12 @@
 <span class="sd">                * ``&#39;merge&#39;`` -- Similar to `replace`, but merges the values in</span>
 <span class="sd">                  ``source_metadata``</span>
 
+<span class="sd">        create_pages : bool, optional</span>
+<span class="sd">            If True, create new pages for any URLs in the import set that don&#39;t</span>
+<span class="sd">            already exist.</span>
+<span class="sd">        skip_unchanged_versions : bool, optional</span>
+<span class="sd">            If true, don&#39;t import versions of a page that have the same hash as</span>
+<span class="sd">            the version captured immediately before them.</span>
 <span class="sd">        batch_size : integer, optional</span>
 <span class="sd">            Default batch size is 50000 Versions.</span>
 
@@ -605,10 +619,15 @@
             <span class="c1"># versions might be a generator. This comprehension will pull on it</span>
             <span class="n">validated_versions</span> <span class="o">=</span> <span class="p">[</span><span class="n">_build_importable_version</span><span class="p">(</span><span class="o">**</span><span class="n">v</span><span class="p">)</span>
                                   <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+
+            <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;update&#39;</span><span class="p">:</span> <span class="n">update</span><span class="p">,</span> <span class="s1">&#39;create_pages&#39;</span><span class="p">:</span> <span class="n">create_pages</span><span class="p">,</span>
+                      <span class="s1">&#39;skip_unchanged_versions&#39;</span><span class="p">:</span> <span class="n">skip_unchanged_versions</span><span class="p">}</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                      <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
             <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
                 <span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
                 <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/x-json-stream&#39;</span><span class="p">},</span>
-                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;update&#39;</span><span class="p">:</span> <span class="n">update</span><span class="p">},</span>
+                <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
                 <span class="n">data</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">,</span> <span class="n">validated_versions</span><span class="p">)))</span>
             <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
             <span class="n">import_id</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>

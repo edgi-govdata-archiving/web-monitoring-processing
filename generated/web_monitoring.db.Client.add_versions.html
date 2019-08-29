@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.add_versions &mdash; web-monitoring-processing 0+untagged.50.g73ea798 documentation</title>
+  <title>web_monitoring.db.Client.add_versions &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g73ea798
+                0+untagged.50.g0ec31e4
               </div>
             
           
@@ -179,7 +179,7 @@
 <h1>web_monitoring.db.Client.add_versions<a class="headerlink" href="#web-monitoring-db-client-add-versions" title="Permalink to this headline">¶</a></h1>
 <dl class="method">
 <dt id="web_monitoring.db.Client.add_versions">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">add_versions</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">versions</em>, <em class="sig-param">*</em>, <em class="sig-param">update='skip'</em>, <em class="sig-param">batch_size=1000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.add_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.add_versions" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">add_versions</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">versions</em>, <em class="sig-param">*</em>, <em class="sig-param">update='skip'</em>, <em class="sig-param">create_pages=None</em>, <em class="sig-param">skip_unchanged_versions=None</em>, <em class="sig-param">batch_size=1000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.add_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.add_versions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Submit versions in bulk for importing into web-monitoring-db.</p>
 <p>Chunk the versions into batches of at most the given size.</p>
 <dl class="field-list">
@@ -200,6 +200,12 @@ imported one</p></li>
 <code class="docutils literal notranslate"><span class="pre">source_metadata</span></code></p></li>
 </ul>
 </div></blockquote>
+</dd>
+<dt><strong>create_pages</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, create new pages for any URLs in the import set that don’t
+already exist.</p>
+</dd>
+<dt><strong>skip_unchanged_versions</strong><span class="classifier">bool, optional</span></dt><dd><p>If true, don’t import versions of a page that have the same hash as
+the version captured immediately before them.</p>
 </dd>
 <dt><strong>batch_size</strong><span class="classifier">integer, optional</span></dt><dd><p>Default batch size is 50000 Versions.</p>
 </dd>
