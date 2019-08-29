@@ -20,7 +20,6 @@ from web_monitoring import db
 from web_monitoring import internetarchive as ia
 from web_monitoring import utils
 
-import queue
 import asyncio
 import concurrent
 
@@ -270,7 +269,7 @@ class WaybackRecordsWorker(threading.Thread):
 def iterate_into_queue(iterable, queue):
     for item in iterable:
         queue.put(item)
-    queue.put(None)
+    queue.end()
 
 
 async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
@@ -305,8 +304,6 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
 def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplaybackable, worker_count, tries=None):
     if tries is None or len(tries) == 0:
         tries = (None,)
-    if isinstance(records, queue.Queue):
-        records = utils.ThreadSafeIterator(utils.queue_iterator(records))
 
     summary = WaybackRecordsWorker.create_summary()
 
@@ -315,13 +312,13 @@ def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplay
     for index, try_setting in enumerate(tries):
         if retry_queue and not retry_queue.empty():
             print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-            retry_queue.put(None)
-            records = utils.ThreadSafeIterator(utils.queue_iterator(retry_queue))
+            retry_queue.end()
+            records = retry_queue
 
         if index == total_tries - 1:
             retry_queue = None
         else:
-            retry_queue = queue.Queue()
+            retry_queue = utils.FiniteQueue()
 
         workers = []
         for i in range(worker_count):
@@ -370,15 +367,15 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
 
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
             loop = asyncio.get_event_loop()
-            versions_queue = queue.Queue()
-            versions = utils.queue_iterator(versions_queue)
+            versions_queue = utils.FiniteQueue()
+            uploadable_versions = versions_queue
             if skip_unchanged == 'resolved-response':
-                versions = _filter_unchanged_versions(versions)
+                uploadable_versions = _filter_unchanged_versions(versions_queue)
 
             if dry_run:
-                uploader = loop.run_in_executor(executor, _log_adds, versions)
+                uploader = loop.run_in_executor(executor, _log_adds, uploadable_versions)
             else:
-                uploader = loop.run_in_executor(executor, _add_and_monitor, versions, create_pages, stop_event)
+                uploader = loop.run_in_executor(executor, _add_and_monitor, uploadable_versions, create_pages, stop_event)
 
             # summary = merge_worker_summaries([worker_summary()])
             summary = WaybackRecordsWorker.create_summary()
@@ -392,7 +389,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 stop=stop_event)
             # for wayback_records in toolz.partition_all(2000, all_records):
             # wayback_records = utils.ThreadSafeIterator(all_records)
-            wayback_records = queue.Queue()
+            wayback_records = utils.FiniteQueue()
             cdx_task = loop.run_in_executor(executor, iterate_into_queue, all_records, wayback_records)
 
             retry_settings = (None,
@@ -415,7 +412,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                     **summary))
 
             # Signal that there will be nothing else on the queue so uploading can finish
-            versions_queue.put(None)
+            versions_queue.end()
 
             if not dry_run:
                 print('Saving list of non-playbackable URLs...')

@@ -7,6 +7,7 @@ import itertools
 import logging
 import lxml.html
 import os
+import queue
 import re
 import requests
 import requests.adapters
@@ -135,6 +136,7 @@ def queue_iterator(queue, auto_done=True):
         this queue feature, set it to false so you can manually call
         `queue.task_done()` at the appropriate time.
     """
+    auto_done = auto_done and hasattr(queue, 'task_done')
     while True:
         value = queue.get()
         if auto_done:
@@ -143,6 +145,52 @@ def queue_iterator(queue, auto_done=True):
             yield value
         else:
             return
+
+
+class FiniteQueue(queue.SimpleQueue):
+    """
+    A queue that is iterable, with a defined end.
+
+    The end of the queue is indicated by the `FiniteQueue.QUEUE_END` object.
+    If you are using the iterator interface, you won't ever encounter it, but
+    if reading the queue with `queue.get`, you will receive
+    `FiniteQueue.QUEUE_END` if you’ve reached the end.
+    """
+
+    # Use a class instad of `object()` for more readable names for debugging.
+    class QUEUE_END:
+        ...
+
+    def __init__(self):
+        super().__init__()
+        self._ended = False
+        # The Queue documentation suggests that put/get calls can be
+        # re-entrant, so we need to use RLock here.
+        self._lock = threading.RLock()
+
+    def end(self):
+        self.put(self.QUEUE_END)
+
+    def get(self, *args, **kwargs):
+        with self._lock:
+            if self._ended:
+                return self.QUEUE_END
+            else:
+                value = super().get(*args, **kwargs)
+                if value is self.QUEUE_END:
+                    self._ended = True
+
+                return value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        item = self.get()
+        if item is self.QUEUE_END:
+            raise StopIteration
+
+        return item
 
 
 class DepthCountedContext:
