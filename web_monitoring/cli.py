@@ -266,7 +266,7 @@ class WaybackRecordsWorker(threading.Thread):
         return merged
 
 
-def iterate_into_queue(iterable, queue):
+def iterate_into_queue(queue, iterable):
     for item in iterable:
         queue.put(item)
     queue.end()
@@ -334,6 +334,7 @@ def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplay
 
         summary = WaybackRecordsWorker.summarize(workers, summary)
 
+    versions_queue.end()
     # Recalculate percentages
     summary = WaybackRecordsWorker.merge_summaries([summary])
     return summary
@@ -351,75 +352,61 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
-    # Use a custom session to make sure CDX calls are extra robust.
-    session = ia.WaybackSession(retries=10, backoff=4)
-
     with utils.QuitSignal((signal.SIGINT, signal.SIGTERM)) as stop_event:
-        with ia.WaybackClient(session) as wayback:
-            # wayback_records = utils.ThreadSafeIterator(
-            #     _list_ia_versions_for_urls(
-            #         urls,
-            #         from_date,
-            #         to_date,
-            #         skip_responses,
-            #         version_filter,
-            #         client=wayback))
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+        loop = asyncio.get_event_loop()
 
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=worker_count + 1)
-            loop = asyncio.get_event_loop()
-            versions_queue = utils.FiniteQueue()
-            uploadable_versions = versions_queue
-            if skip_unchanged == 'resolved-response':
-                uploadable_versions = _filter_unchanged_versions(versions_queue)
-
-            if dry_run:
-                uploader = loop.run_in_executor(executor, _log_adds, uploadable_versions)
-            else:
-                uploader = loop.run_in_executor(executor, _add_and_monitor, uploadable_versions, create_pages, stop_event)
-
-            # summary = merge_worker_summaries([worker_summary()])
-            summary = WaybackRecordsWorker.create_summary()
-            all_records = _list_ia_versions_for_urls(
+        cdx_records = utils.FiniteQueue()
+        cdx_task = loop.run_in_executor(executor, lambda: iterate_into_queue(
+            cdx_records,
+            _list_ia_versions_for_urls(
                 urls,
                 from_date,
                 to_date,
                 skip_responses,
                 version_filter,
-                client=wayback,
-                stop=stop_event)
-            # for wayback_records in toolz.partition_all(2000, all_records):
-            # wayback_records = utils.ThreadSafeIterator(all_records)
-            wayback_records = utils.FiniteQueue()
-            cdx_task = loop.run_in_executor(executor, iterate_into_queue, all_records, wayback_records)
+                # Use a custom session to make sure CDX calls are extra robust.
+                client=ia.WaybackClient(ia.WaybackSession(retries=10, backoff=4)),
+                stop=stop_event)))
 
-            retry_settings = (None,
-                              dict(retries=3, backoff=4, timeout=(30.5, 2)),
-                              dict(retries=7, backoff=4, timeout=60.5))
-            summary = load_from_wayback(wayback_records,
-                                        versions_queue,
-                                        maintainers,
-                                        tags,
-                                        stop_event,
-                                        unplaybackable,
-                                        worker_count,
-                                        retry_settings)
+        versions_queue = utils.FiniteQueue()
+        memento_task = loop.run_in_executor(
+            executor,
+            load_from_wayback,
+            cdx_records,
+            versions_queue,
+            maintainers,
+            tags,
+            stop_event,
+            unplaybackable,
+            worker_count,
+            (None,
+                dict(retries=3, backoff=4, timeout=(30.5, 2)),
+                dict(retries=7, backoff=4, timeout=60.5)))
 
-            print('\nLoaded {total} CDX records:\n'
-                  '  {success:6} successes ({success_pct:.2f}%),\n'
-                  '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
-                  '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
-                  '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
-                    **summary))
+        uploadable_versions = versions_queue
+        if skip_unchanged == 'resolved-response':
+            uploadable_versions = _filter_unchanged_versions(versions_queue)
+        if dry_run:
+            uploader = loop.run_in_executor(executor, _log_adds, uploadable_versions)
+        else:
+            uploader = loop.run_in_executor(executor, _add_and_monitor, uploadable_versions, create_pages, stop_event)
 
-            # Signal that there will be nothing else on the queue so uploading can finish
-            versions_queue.end()
+        await cdx_task
+        summary = await memento_task
 
-            if not dry_run:
-                print('Saving list of non-playbackable URLs...')
-                save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
+        print('\nLoaded {total} CDX records:\n'
+              '  {success:6} successes ({success_pct:.2f}%),\n'
+              '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
+              '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
+              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
+                **summary))
 
-            await cdx_task
-            await uploader
+        await uploader
+
+        if not dry_run:
+            print('Saving list of non-playbackable URLs...')
+            save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
 
 def _filter_unchanged_versions(versions):
