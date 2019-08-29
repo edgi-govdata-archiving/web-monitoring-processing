@@ -20,9 +20,6 @@ from web_monitoring import db
 from web_monitoring import internetarchive as ia
 from web_monitoring import utils
 
-import asyncio
-import concurrent
-
 
 logger = logging.getLogger(__name__)
 
@@ -272,10 +269,10 @@ def iterate_into_queue(queue, iterable):
     queue.end()
 
 
-async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
-                            tags=None, skip_unchanged='resolved-response',
-                            url_pattern=None, worker_count=0,
-                            unplaybackable_path=None, dry_run=False):
+def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
+                      tags=None, skip_unchanged='resolved-response',
+                      url_pattern=None, worker_count=0,
+                      unplaybackable_path=None, dry_run=False):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     urls, version_filter = _get_db_page_url_info(client, url_pattern)
@@ -287,7 +284,7 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
     logger.info(f'Found {len(urls)} CDX-queryable URLs')
     logger.debug('\n  '.join(urls))
 
-    return await import_ia_urls(
+    return import_ia_urls(
         urls=urls,
         from_date=from_date,
         to_date=to_date,
@@ -301,11 +298,12 @@ async def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         dry_run=dry_run)
 
 
-def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplaybackable, worker_count, tries=None):
+def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplaybackable, worker_count, summary, tries=None):
     if tries is None or len(tries) == 0:
         tries = (None,)
 
-    summary = WaybackRecordsWorker.create_summary()
+    # Initialize the summary (we have to keep a reference so other threads can read)
+    summary.update(WaybackRecordsWorker.create_summary())
 
     total_tries = len(tries)
     retry_queue = None
@@ -332,32 +330,29 @@ def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplay
         for worker in workers:
             worker.join()
 
-        summary = WaybackRecordsWorker.summarize(workers, summary)
+        summary.update(WaybackRecordsWorker.summarize(workers, summary))
 
     versions_queue.end()
     # Recalculate percentages
-    summary = WaybackRecordsWorker.merge_summaries([summary])
+    summary.update(WaybackRecordsWorker.merge_summaries([summary]))
     return summary
 
 
 # TODO: this function probably be split apart so `dry_run` doesn't need to
 # exist as an argument.
-async def import_ia_urls(urls, *, from_date=None, to_date=None,
-                         maintainers=None, tags=None,
-                         skip_unchanged='resolved-response',
-                         version_filter=None, worker_count=0,
-                         create_pages=True, unplaybackable_path=None,
-                         dry_run=False):
+def import_ia_urls(urls, *, from_date=None, to_date=None,
+                   maintainers=None, tags=None,
+                   skip_unchanged='resolved-response',
+                   version_filter=None, worker_count=0,
+                   create_pages=True, unplaybackable_path=None,
+                   dry_run=False):
     skip_responses = skip_unchanged == 'response'
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
     with utils.QuitSignal((signal.SIGINT, signal.SIGTERM)) as stop_event:
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
-        loop = asyncio.get_event_loop()
-
         cdx_records = utils.FiniteQueue()
-        cdx_task = loop.run_in_executor(executor, lambda: iterate_into_queue(
+        cdx_thread = threading.Thread(target=lambda: iterate_into_queue(
             cdx_records,
             _list_ia_versions_for_urls(
                 urls,
@@ -368,11 +363,11 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
                 # Use a custom session to make sure CDX calls are extra robust.
                 client=ia.WaybackClient(ia.WaybackSession(retries=10, backoff=4)),
                 stop=stop_event)))
+        cdx_thread.start()
 
+        summary = {}
         versions_queue = utils.FiniteQueue()
-        memento_task = loop.run_in_executor(
-            executor,
-            load_from_wayback,
+        memento_thread = threading.Thread(target=lambda: load_from_wayback(
             cdx_records,
             versions_queue,
             maintainers,
@@ -380,20 +375,23 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
             stop_event,
             unplaybackable,
             worker_count,
-            (None,
-                dict(retries=3, backoff=4, timeout=(30.5, 2)),
-                dict(retries=7, backoff=4, timeout=60.5)))
+            summary,
+            tries=(None,
+                   dict(retries=3, backoff=4, timeout=(30.5, 2)),
+                   dict(retries=7, backoff=4, timeout=60.5))))
+        memento_thread.start()
 
         uploadable_versions = versions_queue
         if skip_unchanged == 'resolved-response':
             uploadable_versions = _filter_unchanged_versions(versions_queue)
         if dry_run:
-            uploader = loop.run_in_executor(executor, _log_adds, uploadable_versions)
+            uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
-            uploader = loop.run_in_executor(executor, _add_and_monitor, uploadable_versions, create_pages, stop_event)
+            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, stop_event))
+        uploader.start()
 
-        await cdx_task
-        summary = await memento_task
+        cdx_thread.join()
+        memento_thread.join()
 
         print('\nLoaded {total} CDX records:\n'
               '  {success:6} successes ({success_pct:.2f}%),\n'
@@ -402,7 +400,7 @@ async def import_ia_urls(urls, *, from_date=None, to_date=None,
               '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
                 **summary))
 
-        await uploader
+        uploader.join()
 
         if not dry_run:
             print('Saving list of non-playbackable URLs...')
@@ -663,7 +661,7 @@ Options:
             return
 
         if arguments['ia']:
-            command = import_ia_urls(
+            import_ia_urls(
                 urls=[arguments['<url>']],
                 maintainers=arguments.get('--maintainer'),
                 tags=arguments.get('--tag'),
@@ -673,7 +671,7 @@ Options:
                 unplaybackable_path=arguments.get('--unplaybackable'),
                 dry_run=arguments.get('--dry-run'))
         elif arguments['ia-known-pages']:
-            command = import_ia_db_urls(
+            import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 maintainers=arguments.get('--maintainer'),
@@ -683,15 +681,9 @@ Options:
                 worker_count=int(arguments.get('--parallel')),
                 unplaybackable_path=arguments.get('--unplaybackable'),
                 dry_run=arguments.get('--dry-run'))
-
     elif arguments['db']:
         if arguments['list-domains']:
             list_domains(url_pattern=arguments.get('--pattern'))
-
-    # Start a loop and execute commands that are async.
-    if asyncio.iscoroutine(command):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(command)
 
 
 if __name__ == '__main__':
