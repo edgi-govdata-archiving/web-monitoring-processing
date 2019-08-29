@@ -273,7 +273,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
     ### VERSIONS ###
 
     def list_versions(self, *, page_id=None, chunk=None, chunk_size=None,
-                      start_date=None, end_date=None,
+                      sort=None, start_date=None, end_date=None,
                       source_type=None, hash=None,
                       source_metadata=None, different=None,
                       include_change_from_previous=None,
@@ -289,6 +289,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             pagination parameter
         chunk_size : integer, optional
             number of items per chunk
+        sort : list of string, optional
+            fields to sort by in `{field}:{order}` format,
+            e.g. `capture_time:asc`
         start_date : datetime, optional
         end_date : datetime, optional
         source_type : string, optional
@@ -317,6 +320,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
+                  'sort': sort and ','.join(sort) or None,
                   'capture_time': _time_range_string(start_date, end_date),
                   'source_type': source_type,
                   'hash': hash,
