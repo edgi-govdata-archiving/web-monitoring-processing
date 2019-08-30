@@ -685,7 +685,6 @@ Options:
 --dry-run                     Don't upload data to web-monitoring-db.
 """
     arguments = docopt(doc, version='0.0.1')
-    command = None
     if arguments['import']:
         skip_unchanged = arguments['--skip-unchanged']
         if skip_unchanged not in ('none', 'response', 'resolved-response'):

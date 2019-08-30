@@ -1,7 +1,5 @@
 from datetime import datetime
-import pytest
 import queue
-import requests_mock
 import threading
 from web_monitoring.utils import extract_title, rate_limited, FiniteQueue
 

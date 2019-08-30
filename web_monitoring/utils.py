@@ -1,9 +1,7 @@
 from collections import defaultdict
 from contextlib import contextmanager
-import functools
 import hashlib
 import io
-import itertools
 import logging
 import lxml.html
 import os
@@ -14,14 +12,6 @@ import requests.adapters
 import signal
 import threading
 import time
-import urllib.parse
-
-from requests.exceptions import ConnectionError
-from urllib3.exceptions import (
-    ConnectTimeoutError,
-    MaxRetryError,
-    ReadTimeoutError
-)
 
 
 logger = logging.getLogger(__name__)
