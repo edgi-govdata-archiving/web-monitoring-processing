@@ -16,8 +16,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-_backoff_locks = defaultdict(threading.Lock)
-
 WHITESPACE_PATTERN = re.compile(r'\s+')
 
 
