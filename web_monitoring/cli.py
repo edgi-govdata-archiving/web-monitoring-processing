@@ -544,17 +544,6 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
         json.dump(mementos, file)
 
 
-# XXX: This is no longer really listing domains. Should we find a way to make
-# it do that again, or simply remove this functionality?
-def list_domains(url_pattern=None):
-    client = db.Client.from_env()
-    logger.info('Loading known pages from web-monitoring-db instance...')
-    domains, version_filter = _get_db_page_url_info(client, url_pattern)
-
-    text = '\n  '.join(domains)
-    print(f'Found {len(domains)} matching domains:\n  {text}')
-
-
 def _can_query_domain(domain):
     if domain in NEVER_QUERY_DOMAINS:
         return False
@@ -670,7 +659,6 @@ def main():
 Usage:
 wm import ia <url> [--from <from_date>] [--to <to_date>] [--tag <tag>...] [--maintainer <maintainer>...] [options]
 wm import ia-known-pages [--from <from_date>] [--to <to_date>] [--pattern <url_pattern>] [--tag <tag>...] [--maintainer <maintainer>...] [options]
-wm db list-domains [--pattern <url_pattern>]
 
 Options:
 -h --help                     Show this screen.
@@ -726,9 +714,6 @@ Options:
                 worker_count=int(arguments.get('--parallel')),
                 unplaybackable_path=arguments.get('--unplaybackable'),
                 dry_run=arguments.get('--dry-run'))
-    elif arguments['db']:
-        if arguments['list-domains']:
-            list_domains(url_pattern=arguments.get('--pattern'))
 
 
 if __name__ == '__main__':
