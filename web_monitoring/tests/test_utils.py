@@ -61,48 +61,6 @@ def test_separate_rate_limited_groups_do_not_affect_each_other():
     assert duration.total_seconds() < 0.55
 
 
-# FIXME: Run some similar tests against WaybackSession, which now has built-in
-# retry logic.
-# @pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
-# def test_retryable_request_retries():
-#     with requests_mock.Mocker() as mock:
-#         mock.get('http://test.com', [{'text': 'bad', 'status_code': 503},
-#                                      {'text': 'good', 'status_code': 200}])
-#         response = retryable_request('GET', 'http://test.com', backoff=0)
-#         assert response.ok
-
-
-# @pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
-# def test_retryable_request_stops_after_given_retries():
-#     with requests_mock.Mocker() as mock:
-#         mock.get('http://test.com', [{'text': 'bad1', 'status_code': 503},
-#                                      {'text': 'bad2', 'status_code': 503},
-#                                      {'text': 'bad3', 'status_code': 503},
-#                                      {'text': 'good', 'status_code': 200}])
-#         response = retryable_request('GET', 'http://test.com', retries=2, backoff=0)
-#         assert response.status_code == 503
-#         assert response.text == 'bad3'
-
-
-# @pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
-# def test_retryable_request_only_retries_gateway_errors():
-#     with requests_mock.Mocker() as mock:
-#         mock.get('http://test.com', [{'text': 'bad1', 'status_code': 400},
-#                                      {'text': 'good', 'status_code': 200}])
-#         response = retryable_request('GET', 'http://test.com', backoff=0)
-#         assert response.status_code == 400
-
-
-# @pytest.mark.skip(reason='Retryable request is deprecated; need to test new retry method')
-# def test_retryable_request_with_custom_retry_logic():
-#     with requests_mock.Mocker() as mock:
-#         mock.get('http://test.com', [{'text': 'bad1', 'status_code': 400},
-#                                      {'text': 'good', 'status_code': 200}])
-
-#         response = retryable_request('GET', 'http://test.com', backoff=0,
-#                                      should_retry=lambda r: r.status_code == 400)
-#         assert response.status_code == 200
-
 class TestFiniteQueue:
     def test_queue_ends_with_QUEUE_END(self):
         test_queue = FiniteQueue()
