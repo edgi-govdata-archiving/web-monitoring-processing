@@ -114,6 +114,14 @@ def _log_adds(versions):
 
 
 class WaybackRecordsWorker(threading.Thread):
+    """
+    WaybackRecordsWorker is a thread that takes CDX records from a queue and
+    loads the corresponding mementos from Wayback. It then transforms the
+    mementos into Web Monitoring import records and emits them on another
+    queue. If a `failure_queue` is provided, records that fail to load in a way
+    that might be worth retrying are emitted on that queue.
+    """
+
     def __init__(self, records, results_queue, maintainers, tags, cancel,
                  failure_queue=None, session_options=None,
                  unplaybackable=None):
@@ -131,9 +139,6 @@ class WaybackRecordsWorker(threading.Thread):
         session = ia.WaybackSession(**session_options)
         self.wayback = ia.WaybackClient(session=session)
 
-    def reset_client(self):
-        self.wayback.session.reset()
-
     def is_active(self):
         return not self.cancel.is_set()
 
@@ -143,8 +148,6 @@ class WaybackRecordsWorker(threading.Thread):
         transform them to Web Monitoring DB import entries, and queue them for
         importing.
         """
-        self.reset_client()
-
         while self.is_active():
             try:
                 record = next(self.records)
@@ -227,7 +230,7 @@ class WaybackRecordsWorker(threading.Thread):
             # This unfortunately requires string checking because the error can
             # get wrapped up into multiple kinds of higher-level errors :(
             if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
-                self.reset_client()
+                self.wayback.session.reset()
                 return self.process_record(record)
 
             # Otherwise, re-raise the error.
@@ -235,11 +238,19 @@ class WaybackRecordsWorker(threading.Thread):
 
     @classmethod
     def create_summary(cls):
+        """
+        Create a dictionary that summarizes the results of processing all the
+        CDX records on a queue.
+        """
         return {'total': 0, 'success': 0, 'playback': 0, 'missing': 0,
                 'unknown': 0}
 
     @classmethod
     def summarize(cls, workers, initial=None):
+        """
+        Combine the summaries from multiple `WaybackRecordsWorker` instances
+        into a single summary.
+        """
         return cls.merge_summaries((w.summary for w in workers), initial)
 
     @classmethod
@@ -262,11 +273,85 @@ class WaybackRecordsWorker(threading.Thread):
 
         return merged
 
+    @classmethod
+    def parallel(cls, count, *args, **kwargs):
+        """
+        Run several `WaybackRecordsWorker` instances in parallel. When this
+        returns, the workers will have finished running.
 
-def iterate_into_queue(queue, iterable):
-    for item in iterable:
-        queue.put(item)
-    queue.end()
+        Parameters
+        ----------
+        count: int
+            Number of instances to run in parallel.
+        *args
+            Arguments to pass to each instance.
+        **kwargs
+            Keyword arguments to pass to each instance.
+
+        Returns
+        -------
+        list of WaybackRecordsWorker
+        """
+        workers = []
+        for i in range(count):
+            worker = cls(*args, **kwargs)
+            workers.append(worker)
+            worker.start()
+
+        for worker in workers:
+            worker.join()
+
+        return workers
+
+    @classmethod
+    def parallel_with_retries(cls, count, summary, records, results_queue, *args, tries=None, **kwargs):
+        """
+        Run several `WaybackRecordsWorker` instances in parallel and retry
+        records that fail to load.
+
+        Parameters
+        ----------
+        count: int
+            Number of instances to run in parallel.
+        summary: dict
+            Dictionary to populate with summary data from all worker runs.
+        records: web_monitoring.utils.FiniteQueue
+            Queue of CDX records to load mementos for.
+        results_queue: web_monitoring.utils.FiniteQueue
+            Queue to place resulting import records onto.
+        *args
+            Arguments to pass to each instance.
+        **kwargs
+            Keyword arguments to pass to each instance.
+
+        Returns
+        -------
+        list of WaybackRecordsWorker
+        """
+        if tries is None or len(tries) == 0:
+            tries = (None,)
+
+        # Initialize the summary (we have to keep a reference so other threads can read)
+        summary.update(cls.create_summary())
+
+        total_tries = len(tries)
+        retry_queue = None
+        workers = []
+        for index, try_setting in enumerate(tries):
+            if retry_queue and not retry_queue.empty():
+                print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
+                retry_queue.end()
+                records = retry_queue
+
+            if index == total_tries - 1:
+                retry_queue = None
+            else:
+                retry_queue = utils.FiniteQueue()
+
+            workers.extend(cls.parallel(count, records, results_queue, *args, **kwargs))
+
+        summary.update(cls.summarize(workers, summary))
+        results_queue.end()
 
 
 def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
@@ -298,46 +383,6 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         dry_run=dry_run)
 
 
-def load_from_wayback(records, versions_queue, maintainers, tags, cancel, unplaybackable, worker_count, summary, tries=None):
-    if tries is None or len(tries) == 0:
-        tries = (None,)
-
-    # Initialize the summary (we have to keep a reference so other threads can read)
-    summary.update(WaybackRecordsWorker.create_summary())
-
-    total_tries = len(tries)
-    retry_queue = None
-    for index, try_setting in enumerate(tries):
-        if retry_queue and not retry_queue.empty():
-            print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-            retry_queue.end()
-            records = retry_queue
-
-        if index == total_tries - 1:
-            retry_queue = None
-        else:
-            retry_queue = utils.FiniteQueue()
-
-        workers = []
-        for i in range(worker_count):
-            worker = WaybackRecordsWorker(records, versions_queue,
-                                          maintainers, tags, cancel,
-                                          retry_queue, try_setting,
-                                          unplaybackable)
-            workers.append(worker)
-            worker.start()
-
-        for worker in workers:
-            worker.join()
-
-        summary.update(WaybackRecordsWorker.summarize(workers, summary))
-
-    versions_queue.end()
-    # Recalculate percentages
-    summary.update(WaybackRecordsWorker.merge_summaries([summary]))
-    return summary
-
-
 # TODO: this function probably be split apart so `dry_run` doesn't need to
 # exist as an argument.
 def import_ia_urls(urls, *, from_date=None, to_date=None,
@@ -352,7 +397,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
 
     with utils.QuitSignal((signal.SIGINT, signal.SIGTERM)) as stop_event:
         cdx_records = utils.FiniteQueue()
-        cdx_thread = threading.Thread(target=lambda: iterate_into_queue(
+        cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
             cdx_records,
             _list_ia_versions_for_urls(
                 urls,
@@ -367,15 +412,15 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         summary = {}
         versions_queue = utils.FiniteQueue()
-        memento_thread = threading.Thread(target=lambda: load_from_wayback(
+        memento_thread = threading.Thread(target=lambda: WaybackRecordsWorker.parallel_with_retries(
+            worker_count,
+            summary,
             cdx_records,
             versions_queue,
             maintainers,
             tags,
             stop_event,
             unplaybackable,
-            worker_count,
-            summary,
             tries=(None,
                    dict(retries=3, backoff=4, timeout=(30.5, 2)),
                    dict(retries=7, backoff=4, timeout=60.5))))

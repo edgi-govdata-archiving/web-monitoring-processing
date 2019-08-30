@@ -102,49 +102,18 @@ def get_color_palette():
             'differ_deletion': differ_deletion}
 
 
-class ThreadSafeIterator:
+def iterate_into_queue(queue, iterable):
     """
-    Wraps an iterator with locks to make reading from it thread-safe.
+    Read items from an iterable and place them onto a FiniteQueue.
 
     Parameters
     ----------
-    iterator : iterator
+    queue: FiniteQueue
+    iterable: sequence
     """
-    def __init__(self, iterator):
-        self.iterator = iter(iterator)
-        self.lock = threading.Lock()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        with self.lock:
-            return next(self.iterator)
-
-
-def queue_iterator(queue, auto_done=True):
-    """
-    Create an iterator over the items in a :class:`queue.Queue`. The iterator
-    will stop if it encounters a `None` item.
-
-    Parameters
-    ----------
-    queue : queue.Queue
-    auto_done : bool, optional
-        If true (the default value), the iterator will automatically call
-        `queue.task_done()` for each item. If you want to actually make use of
-        this queue feature, set it to false so you can manually call
-        `queue.task_done()` at the appropriate time.
-    """
-    auto_done = auto_done and hasattr(queue, 'task_done')
-    while True:
-        value = queue.get()
-        if auto_done:
-            queue.task_done()
-        if value:
-            yield value
-        else:
-            return
+    for item in iterable:
+        queue.put(item)
+    queue.end()
 
 
 class FiniteQueue(queue.SimpleQueue):
