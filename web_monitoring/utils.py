@@ -241,7 +241,6 @@ class Signal:
 
     def __exit__(self, type, value, traceback):
         for signal_type in self.signals:
-            self.old_handlers[signal_type] = signal.getsignal(signal_type)
             signal.signal(signal_type, self.old_handlers[signal_type])
 
 
