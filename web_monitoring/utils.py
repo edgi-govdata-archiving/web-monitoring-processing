@@ -223,6 +223,16 @@ class Signal:
     handler : callable
         A signal handler function of the same type used with `signal.signal()`.
         See: https://docs.python.org/3.6/library/signal.html#signal.signal
+
+    Examples
+    --------
+    Ignore SIGINT (ctrl+c) and print a glib message instead of quitting:
+
+    >>> def ignore_signal(signal_type, frame):
+    >>>     print("Sorry, but you can't quit this program that way!")
+    >>>
+    >>> with Signal((signal.SIGINT, signal.SIGTERM), ignore_signal):
+    >>>     do_some_work_that_cant_be_interrupted()
     """
     def __init__(self, signals, handler):
         self.handler = handler
@@ -260,6 +270,16 @@ class QuitSignal(Signal):
     final_message : string, optional
         A message to print to stdout before exiting the process when a repeat
         signal is received.
+
+    Examples
+    --------
+    Quit on SIGINT (ctrl+c) or SIGTERM:
+
+    >>> with QuitSignal((signal.SIGINT, signal.SIGTERM)) as cancel:
+    >>>     for item in some_list:
+    >>>         if cancel.is_set():
+    >>>             break
+    >>>         do_some_work()
     """
     def __init__(self, signals, graceful_message=None, final_message=None):
         self.event = threading.Event()
