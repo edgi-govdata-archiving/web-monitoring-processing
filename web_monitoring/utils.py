@@ -250,7 +250,7 @@ class QuitSignal(Signal):
     A context manager that handles system signals by triggering a
     `threading.Event` instance, giving your program an opportunity to clean up
     and shut down gracefully. If the signal is repeated a second time, the
-    process quites immediately.
+    process quits immediately.
 
     Parameters
     ----------
