@@ -489,7 +489,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                         skipped += 1
                         logger.debug('Skipping URL "%s"', version.url)
             except ia.BlockedByRobotsError as error:
-                logger.warn(str(error))
+                logger.warn(f'CDX search error: {error!r}')
             except ValueError as error:
                 # NOTE: this isn't really an exceptional case; list_versions()
                 # raises ValueError when Wayback has no matching records.

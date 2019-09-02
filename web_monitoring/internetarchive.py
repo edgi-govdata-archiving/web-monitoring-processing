@@ -514,8 +514,8 @@ class WaybackClient(utils.DepthCountedContext):
                                                  URL_DATE_FORMAT)
             except Exception:
                 if 'RobotAccessControlException' in text:
-                    raise BlockedByRobotsError(f'CDX search for URL was blocked by robots.txt "{query["url"]}" (parameters: {final_query})')
-                raise UnexpectedResponseFormat(f'Could not parse CDX output: "{text}" (parameters: {final_query})')
+                    raise BlockedByRobotsError(query["url"])
+                raise UnexpectedResponseFormat(f'Could not parse CDX output: "{text}" (query: {final_query})')
 
             clean_url = REDUNDANT_HTTPS_PORT.sub(
                 r'\1\2', REDUNDANT_HTTP_PORT.sub(
