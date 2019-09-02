@@ -203,7 +203,7 @@ class WaybackRecordsWorker(threading.Thread):
             # requests.exceptions.ConnectionError: HTTPConnectionPool(host='web.archive.org', port=80): Read timed out.
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
-            logger.exception(f'  ({type(error)}) {error}; URL: {record.raw_url}')
+            logger.exception(f'  {error!r}; URL: {record.raw_url}')
 
             if self.failure_queue:
                 self.failure_queue.put(record)
@@ -495,9 +495,9 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                 # raises ValueError when Wayback has no matching records.
                 # TODO: there should probably be no exception in this case.
                 if 'does not have archived versions' not in str(error):
-                    logger.warn(error)
+                    logger.warn(repr(error))
             except ia.WaybackException as error:
-                logger.error(f'Error getting CDX data for {url}: {error}')
+                logger.error(f'Error getting CDX data for {url}: {error!r}')
             except Exception:
                 # Need to handle the exception here to let iteration continue
                 # and allow other threads that might be running to be joined.

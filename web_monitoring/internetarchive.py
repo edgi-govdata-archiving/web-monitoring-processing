@@ -285,7 +285,7 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
                     return result
             except WaybackSession.handleable_errors as error:
                 if retries >= maximum:
-                    raise WaybackRetryError(retries, total_time, error)
+                    raise WaybackRetryError(retries, total_time, error) from error
                 elif not self.should_retry_error(error):
                     raise
 
