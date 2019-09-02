@@ -249,6 +249,8 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
 
     retryable_errors = (ConnectTimeoutError, MaxRetryError, ReadTimeoutError,
                         ProxyError, RetryError, Timeout)
+    # Handleable errors *may* be retryable, but need additional logic beyond
+    # just the error type. See `should_retry_error()`.
     handleable_errors = (ConnectionError,) + retryable_errors
 
     def __init__(self, retries=6, backoff=2, timeout=None, user_agent=None):
@@ -267,6 +269,11 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
         #     self.mount('http://', adapter)
         # But Wayback mementos can have errors, which complicates things. See:
         # https://github.com/urllib3/urllib3/issues/1445#issuecomment-422950868
+        #
+        # Also note that, if we are ever able to switch to that, we may need to
+        # get more fancy with log filtering, since we *expect* lots of retries
+        # with Wayback's APIs, but urllib3 logs a warning on every retry:
+        # https://github.com/urllib3/urllib3/blob/5b047b645f5f93900d5e2fc31230848c25eb1f5f/src/urllib3/connectionpool.py#L730-L737
 
     # Customize the built-in `send` functionality with retryability.
     # NOTE: worth considering whether we should push this logic to a custom
@@ -308,7 +315,14 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
         if isinstance(error, WaybackSession.retryable_errors):
             return True
         elif isinstance(error, ConnectionError):
+            # ConnectionErrors from requests actually wrap a whole family of
+            # more detailed errors from urllib3, so we need to do some string
+            # checking to determine whether the error is retryable.
             text = str(error)
+            # NOTE: we have also seen this, which may warrant retrying:
+            # `requests.exceptions.ConnectionError: ('Connection aborted.',
+            # RemoteDisconnected('Remote end closed connection without
+            # response'))`
             if 'NewConnectionError' in text or 'Max retries' in text:
                 return True
 
