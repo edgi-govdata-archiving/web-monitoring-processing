@@ -135,4 +135,11 @@ Memento API. We implement a Python client that can speak both.
 
     .. automethod:: search
     .. automethod:: list_versions
+    .. automethod:: get_memento
     .. automethod:: timestamped_uri_to_version
+
+Hello
+
+.. autoclass:: WaybackSession
+
+    .. automethod:: reset
