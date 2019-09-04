@@ -168,7 +168,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                    tags=None, maintainers=None, url=None, title=None,
                    include_versions=None, include_earliest=None,
                    include_latest=None, source_type=None, hash=None,
-                   start_date=None, end_date=None, active=None):
+                   start_date=None, end_date=None, active=None,
+                   include_total=False):
         """
         List all Pages, optionally filtered by search criteria.
 
@@ -194,6 +195,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         start_date : datetime, optional
         end_date : datetime, optional
         active : boolean, optional
+        include_total : boolean, optional
+            Whether to include a `meta.total_results` field in the response.
+            If not set, `links.last` will usually be empty unless you are on
+            the last chunk. Setting this option runs a pretty expensive query,
+            so use it sparingly. (Default: False)
 
         Returns
         -------
@@ -212,7 +218,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'source_type': source_type,
                   'hash': hash,
                   'capture_time': _time_range_string(start_date, end_date),
-                  'active': active}
+                  'active': active,
+                  'include_total': include_total or None}
         url = f'{self._api_url}/pages'
         res = requests.get(url, auth=self._auth, params=params)
         _process_errors(res)
@@ -277,7 +284,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                       source_type=None, hash=None,
                       source_metadata=None, different=None,
                       include_change_from_previous=None,
-                      include_change_from_earliest=None):
+                      include_change_from_earliest=None, include_total=False):
         """
         List Versions, optionally filtered by serach criteria, including Page.
 
@@ -314,6 +321,12 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             If True, include a `change_from_earliest` field in each version
             that represents a change object between it and the earliest version
             of the same page.
+        include_total : boolean, optional
+            Whether to include a `meta.total_results` field in the response.
+            If not set, `links.last` will usually be empty unless you are on
+            the last chunk. Setting this option runs a pretty expensive query,
+            so use it sparingly. (Default: False)
+
         Returns
         -------
         response : dict
@@ -326,7 +339,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'hash': hash,
                   'different': different,
                   'include_change_from_previous': include_change_from_previous,
-                  'include_change_from_earliest': include_change_from_earliest}
+                  'include_change_from_earliest': include_change_from_earliest,
+                  'include_total': include_total or None}
         if source_metadata is not None:
             for k, v in source_metadata.items():
                 params[f'source_metadata[{k}]'] = v
@@ -544,20 +558,27 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     ### CHANGES AND ANNOTATIONS ###
 
-    def list_changes(self, page_id):
+    def list_changes(self, page_id, include_total=False):
         """
         List Changes between two Versions on a Page.
 
         Parameters
         ----------
         page_id : string
+        include_total : boolean, optional
+            Whether to include a `meta.total_results` field in the response.
+            If not set, `links.last` will usually be empty unless you are on
+            the last chunk. Setting this option runs a pretty expensive query,
+            so use it sparingly. (Default: False)
 
         Returns
         -------
         response : dict
         """
         url = f'{self._api_url}/pages/{page_id}/changes/'
-        res = requests.get(url, auth=self._auth)
+        res = requests.get(url, auth=self._auth, params={
+            'include_total': include_total or None
+        })
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -593,7 +614,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
-    def list_annotations(self, *, page_id, to_version_id, from_version_id=''):
+    def list_annotations(self, *, page_id, to_version_id, from_version_id='',
+                         include_total=False):
         """
         List Annotations for a Change between two Versions.
 
@@ -604,6 +626,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         from_version_id : string, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
+        include_total : boolean, optional
+            Whether to include a `meta.total_results` field in the response.
+            If not set, `links.last` will usually be empty unless you are on
+            the last chunk. Setting this option runs a pretty expensive query,
+            so use it sparingly. (Default: False)
 
         Returns
         -------
@@ -611,7 +638,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
-        res = requests.get(url, auth=self._auth)
+        res = requests.get(url, auth=self._auth, params={
+            'include_total': include_total or None
+        })
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
