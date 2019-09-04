@@ -874,7 +874,6 @@ def format_version(*, url, dt, uri, version_hash, title, status, mime_type,
     # format into source_metadata, a free-form object for extra info that not
     # all sources are required to provide.
     metadata = {
-        'status_code': status,
         'mime_type': mime_type,
         'encoding': encoding,
         'headers': headers or {},
@@ -897,5 +896,6 @@ def format_version(*, url, dt, uri, version_hash, title, status, mime_type,
          uri=uri,
          version_hash=version_hash,
          source_type='internet_archive',
-         source_metadata=metadata
+         source_metadata=metadata,
+         status=status
     )
