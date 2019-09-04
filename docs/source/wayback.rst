@@ -71,12 +71,14 @@ There is a copy edited for human viewers on the web, available at the record's
 was originally scraped, availabe at the record's ``raw_url``. For analysis
 purposes, we generally want the ``raw_url``.
 
-Let's download the raw content using ``requests``.
+Let's download the raw content using ``WaybackClient``. (You could download the
+content directly with an HTTP library like ``requests``, but ``WaybackClient``
+adds extra tools for dealing with Wayback Machine servers.)
 
 .. ipython:: python
 
-   import requests
-   content = requests.get(record.raw_url).content.decode()
+   response = client.get_memento(record.raw_url)
+   content = response.content.decode()
 
 We can use the built-in method ``count`` on strings to count the number of
 times that ``'mars'`` appears in the content.
