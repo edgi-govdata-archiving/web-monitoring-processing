@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.list_changes &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
+  <title>web_monitoring.db.Client.list_changes &mdash; web-monitoring-processing 0+untagged.50.gf2f7e20 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0ec31e4
+                0+untagged.50.gf2f7e20
               </div>
             
           
@@ -179,12 +179,17 @@
 <h1>web_monitoring.db.Client.list_changes<a class="headerlink" href="#web-monitoring-db-client-list-changes" title="Permalink to this headline">¶</a></h1>
 <dl class="method">
 <dt id="web_monitoring.db.Client.list_changes">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_changes</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">page_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_changes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_changes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_changes</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">page_id</em>, <em class="sig-param">include_total=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_changes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_changes" title="Permalink to this definition">¶</a></dt>
 <dd><p>List Changes between two Versions on a Page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>page_id</strong><span class="classifier">string</span></dt><dd></dd>
+<dt><strong>include_total</strong><span class="classifier">boolean, optional</span></dt><dd><p>Whether to include a <cite>meta.total_results</cite> field in the response.
+If not set, <cite>links.last</cite> will usually be empty unless you are on
+the last chunk. Setting this option runs a pretty expensive query,
+so use it sparingly. (Default: False)</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>

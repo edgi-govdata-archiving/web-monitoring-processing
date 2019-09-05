@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.list_pages &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
+  <title>web_monitoring.db.Client.list_pages &mdash; web-monitoring-processing 0+untagged.50.gf2f7e20 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0ec31e4
+                0+untagged.50.gf2f7e20
               </div>
             
           
@@ -179,7 +179,7 @@
 <h1>web_monitoring.db.Client.list_pages<a class="headerlink" href="#web-monitoring-db-client-list-pages" title="Permalink to this headline">¶</a></h1>
 <dl class="method">
 <dt id="web_monitoring.db.Client.list_pages">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_pages</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">*</em>, <em class="sig-param">chunk=None</em>, <em class="sig-param">chunk_size=None</em>, <em class="sig-param">sort=None</em>, <em class="sig-param">tags=None</em>, <em class="sig-param">maintainers=None</em>, <em class="sig-param">url=None</em>, <em class="sig-param">title=None</em>, <em class="sig-param">include_versions=None</em>, <em class="sig-param">include_earliest=None</em>, <em class="sig-param">include_latest=None</em>, <em class="sig-param">source_type=None</em>, <em class="sig-param">hash=None</em>, <em class="sig-param">start_date=None</em>, <em class="sig-param">end_date=None</em>, <em class="sig-param">active=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_pages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_pages" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_pages</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">*</em>, <em class="sig-param">chunk=None</em>, <em class="sig-param">chunk_size=None</em>, <em class="sig-param">sort=None</em>, <em class="sig-param">tags=None</em>, <em class="sig-param">maintainers=None</em>, <em class="sig-param">url=None</em>, <em class="sig-param">title=None</em>, <em class="sig-param">include_versions=None</em>, <em class="sig-param">include_earliest=None</em>, <em class="sig-param">include_latest=None</em>, <em class="sig-param">source_type=None</em>, <em class="sig-param">hash=None</em>, <em class="sig-param">start_date=None</em>, <em class="sig-param">end_date=None</em>, <em class="sig-param">active=None</em>, <em class="sig-param">include_total=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_pages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_pages" title="Permalink to this definition">¶</a></dt>
 <dd><p>List all Pages, optionally filtered by search criteria.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -204,6 +204,11 @@
 <dt><strong>start_date</strong><span class="classifier">datetime, optional</span></dt><dd></dd>
 <dt><strong>end_date</strong><span class="classifier">datetime, optional</span></dt><dd></dd>
 <dt><strong>active</strong><span class="classifier">boolean, optional</span></dt><dd></dd>
+<dt><strong>include_total</strong><span class="classifier">boolean, optional</span></dt><dd><p>Whether to include a <cite>meta.total_results</cite> field in the response.
+If not set, <cite>links.last</cite> will usually be empty unless you are on
+the last chunk. Setting this option runs a pretty expensive query,
+so use it sparingly. (Default: False)</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>

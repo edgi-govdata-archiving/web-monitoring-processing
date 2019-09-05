@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.50.gf2f7e20 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0ec31e4
+                0+untagged.50.gf2f7e20
               </div>
             
           
@@ -90,7 +90,7 @@
 <li class="toctree-l1"><a class="reference internal" href="db_api.html">Python API to web-monitoring-db</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Python API to Internet Archive Wayback Machine</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#tutorial">Tutorial</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#what-is-the-earliest-snapshot-of-nasa-gov">What is the earliest snapshot of nasa.gov?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-is-the-earliest-memento-of-nasa-gov">What is the earliest memento of nasa.gov?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#how-many-times-does-the-word-mars-appear-on-nasa-gov">How many times does the word ‘mars’ appear on nasa.gov?</a></li>
 </ul>
 </li>
@@ -164,12 +164,12 @@
             
   <div class="section" id="python-api-to-internet-archive-wayback-machine">
 <h1>Python API to Internet Archive Wayback Machine<a class="headerlink" href="#python-api-to-internet-archive-wayback-machine" title="Permalink to this headline">¶</a></h1>
-<p>Search for historical snapshots of a URL. Download metadata about the snapshots
-and/or the snapshot content itself.</p>
+<p>Search for historical mementos (archived copies) of a URL. Download metadata
+about the mementos and/or the memento content itself.</p>
 <div class="section" id="tutorial">
 <h2>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="what-is-the-earliest-snapshot-of-nasa-gov">
-<h3>What is the earliest snapshot of nasa.gov?<a class="headerlink" href="#what-is-the-earliest-snapshot-of-nasa-gov" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="what-is-the-earliest-memento-of-nasa-gov">
+<h3>What is the earliest memento of nasa.gov?<a class="headerlink" href="#what-is-the-earliest-memento-of-nasa-gov" title="Permalink to this headline">¶</a></h3>
 <p>Instantiate a <a class="reference internal" href="#web_monitoring.internetarchive.WaybackClient" title="web_monitoring.internetarchive.WaybackClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaybackClient</span></code></a>.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [1]: </span><span class="kn">from</span> <span class="nn">web_monitoring.internetarchive</span> <span class="kn">import</span> <span class="n">WaybackClient</span>
 
@@ -186,7 +186,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x7fdce56dc2b0&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x7f17548b35e8&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -201,7 +201,7 @@ Wayback Machine. Looking at the record in detail,</p>
 <span class="gh">Out[6]: </span><span class="go">CdxRecord(key=&#39;gov,nasa)/&#39;, timestamp=&#39;19961231235847&#39;, url=&#39;http://www.nasa.gov/&#39;, mime_type=&#39;text/html&#39;, status_code=&#39;200&#39;, digest=&#39;MGIGF4GRGGF5GKV6VNCBAXOE3OR5BTZC&#39;, length=&#39;1811&#39;, date=datetime.datetime(1996, 12, 31, 23, 58, 47), raw_url=&#39;http://web.archive.org/web/19961231235847id_/http://www.nasa.gov/&#39;, view_url=&#39;http://web.archive.org/web/19961231235847/http://www.nasa.gov/&#39;)</span>
 </pre></div>
 </div>
-<p>we can find our answer: Wayback’s first snapshot of nasa.gov was in 1996. We
+<p>we can find our answer: Wayback’s first memento of nasa.gov was in 1996. We
 can use dot access on <code class="docutils literal notranslate"><span class="pre">record</span></code> to access the date specifically.</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [7]: </span><span class="n">record</span><span class="o">.</span><span class="n">date</span>
 <span class="gh">Out[7]: </span><span class="go">datetime.datetime(1996, 12, 31, 23, 58, 47)</span>
@@ -210,18 +210,20 @@ can use dot access on <code class="docutils literal notranslate"><span class="pr
 </div>
 <div class="section" id="how-many-times-does-the-word-mars-appear-on-nasa-gov">
 <h3>How many times does the word ‘mars’ appear on nasa.gov?<a class="headerlink" href="#how-many-times-does-the-word-mars-appear-on-nasa-gov" title="Permalink to this headline">¶</a></h3>
-<p>Above, we access the metadata for the oldest snapshot on nasa.gov, stored in
+<p>Above, we access the metadata for the oldest memento on nasa.gov, stored in
 the variable <code class="docutils literal notranslate"><span class="pre">record</span></code>. Starting from where we left off, we’ll access the
-<em>content</em> of the snapshot and do a very simple analysis.</p>
+<em>content</em> of the memento and do a very simple analysis.</p>
 <p>The Wayback Machine provides two ways to look at the data it has captured.
 There is a copy edited for human viewers on the web, available at the record’s
 <code class="docutils literal notranslate"><span class="pre">view_url</span></code>, and there is the original copy of what was captured when the page
 was originally scraped, availabe at the record’s <code class="docutils literal notranslate"><span class="pre">raw_url</span></code>. For analysis
 purposes, we generally want the <code class="docutils literal notranslate"><span class="pre">raw_url</span></code>.</p>
-<p>Let’s download the raw content using <code class="docutils literal notranslate"><span class="pre">requests</span></code>.</p>
-<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="kn">import</span> <span class="nn">requests</span>
+<p>Let’s download the raw content using <code class="docutils literal notranslate"><span class="pre">WaybackClient</span></code>. (You could download the
+content directly with an HTTP library like <code class="docutils literal notranslate"><span class="pre">requests</span></code>, but <code class="docutils literal notranslate"><span class="pre">WaybackClient</span></code>
+adds extra tools for dealing with Wayback Machine servers.)</p>
+<div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [8]: </span><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_memento</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span>
 
-<span class="gp">In [9]: </span><span class="n">content</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">raw_url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+<span class="gp">In [9]: </span><span class="n">content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>We can use the built-in method <code class="docutils literal notranslate"><span class="pre">count</span></code> on strings to count the number of
@@ -290,7 +292,7 @@ dangerously).</p>
 </dl>
 <dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.search">
-<code class="sig-name descname">search</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">url</em>, <em class="sig-param">*</em>, <em class="sig-param">matchType=None</em>, <em class="sig-param">limit=None</em>, <em class="sig-param">offset=None</em>, <em class="sig-param">fastLatest=None</em>, <em class="sig-param">gzip=None</em>, <em class="sig-param">from_date=None</em>, <em class="sig-param">to_date=None</em>, <em class="sig-param">filter_field=None</em>, <em class="sig-param">collapse=None</em>, <em class="sig-param">showResumeKey=True</em>, <em class="sig-param">resumeKey=None</em>, <em class="sig-param">page=None</em>, <em class="sig-param">pageSize=None</em>, <em class="sig-param">resolveRevisits=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">search</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">url</em>, <em class="sig-param">*</em>, <em class="sig-param">matchType=None</em>, <em class="sig-param">limit=None</em>, <em class="sig-param">offset=None</em>, <em class="sig-param">fastLatest=None</em>, <em class="sig-param">gzip=None</em>, <em class="sig-param">from_date=None</em>, <em class="sig-param">to_date=None</em>, <em class="sig-param">filter_field=None</em>, <em class="sig-param">collapse=None</em>, <em class="sig-param">showResumeKey=True</em>, <em class="sig-param">resumeKey=None</em>, <em class="sig-param">page=None</em>, <em class="sig-param">pageSize=None</em>, <em class="sig-param">resolveRevisits=True</em>, <em class="sig-param">skip_malformed_results=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search archive.org’s CDX API for all captures of a given URL.</p>
 <p>This will automatically page through all results for a given search.</p>
 <p>Returns an iterator of CdxRecord objects. The StopIteration value is
@@ -355,6 +357,13 @@ Index blocks generally cover about 3,000 items, so setting
 <dt><strong>resolveRevists</strong><span class="classifier">bool, optional</span></dt><dd><p>Attempt to resolve <cite>warc/revisit</cite> records to their actual content
 type and response code. Not supported on all CDX servers. Defaults
 to True.</p>
+</dd>
+<dt><strong>skip_malformed_results</strong><span class="classifier">bool, optional</span></dt><dd><p>If true, don’t yield records that look like they have no actual
+memento associated with them. Some crawlers will erroneously
+attempt to capture bad URLs like <cite>http://mailto:someone&#64;domain.com</cite>
+or <cite>http://data:image/jpeg;base64,AF34…</cite> and so on. This is a
+filter performed client side and is not a CDX API argument.
+(Default: True)</p>
 </dd>
 <dt><strong>**kwargs</strong></dt><dd><p>Any additional CDX API options.</p>
 </dd>
@@ -431,6 +440,49 @@ canonicalized URL:</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="web_monitoring.internetarchive.WaybackClient.get_memento">
+<code class="sig-name descname">get_memento</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">url</em>, <em class="sig-param">exact=True</em>, <em class="sig-param">exact_redirects=None</em>, <em class="sig-param">target_window=86400</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.get_memento"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.get_memento" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch a memento from the Wayback Machine. This retrieves the content
+that was ultimately returned from a memento, following any redirects
+that were present at the time the memento was captured. (That is, if
+<cite>http://example.com/a</cite> redirected to <cite>http://example.com/b</cite>, this
+returns the memento for <cite>/b</cite> when you request <cite>/a</cite>.)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>url</strong><span class="classifier">string</span></dt><dd><p>URL of memento in Wayback (e.g.
+<cite>http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/</cite>)</p>
+</dd>
+<dt><strong>exact</strong><span class="classifier">boolean, optional</span></dt><dd><p>If false and the requested memento either doesn’t exist or can’t be
+played back, this returns the closest-in-time memento to the
+requested one, so long as it is within <cite>target_window</cite>.
+Default: True</p>
+</dd>
+<dt><strong>exact_redirects</strong><span class="classifier">boolean, optional</span></dt><dd><p>If false and the requested memento is a redirect whose <em>target</em>
+doesn’t exist or or can’t be played back, this returns the closest-
+in-time memento to the intended target, so long as it is within
+<cite>target_window</cite>. If unset, this will be the same as <cite>exact</cite>.</p>
+</dd>
+<dt><strong>target_window</strong><span class="classifier">int, optional</span></dt><dd><p>If the memento is of a redirect, allow up to this many seconds
+between the capture of the redirect and the capture of the target
+URL. (Note this does NOT apply when the originally requested
+memento didn’t exist and wayback redirects to the next-closest-in-
+-time one. That will always raise a MementoPlaybackError.)
+Defaults to 86,400 (24 hours).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>dict</strong><span class="classifier">requests.Response</span></dt><dd><p>An HTTP response with the content of the memento, including a
+history of any redirects involved.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version">
 <code class="sig-name descname">timestamped_uri_to_version</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">dt</em>, <em class="sig-param">uri</em>, <em class="sig-param">*</em>, <em class="sig-param">url</em>, <em class="sig-param">maintainers=None</em>, <em class="sig-param">tags=None</em>, <em class="sig-param">view_url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackClient.timestamped_uri_to_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackClient.timestamped_uri_to_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch version content and combine it with metadata to build a Version.</p>
@@ -458,6 +510,42 @@ canonicalized URL:</p>
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="web_monitoring.internetarchive.WaybackSession">
+<em class="property">class </em><code class="sig-prename descclassname">web_monitoring.internetarchive.</code><code class="sig-name descname">WaybackSession</code><span class="sig-paren">(</span><em class="sig-param">retries=6</em>, <em class="sig-param">backoff=2</em>, <em class="sig-param">timeout=None</em>, <em class="sig-param">user_agent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackSession"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>A custom session object that network pools connections and resources for
+requests to the Wayback Machine.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>retries</strong><span class="classifier">int, optional</span></dt><dd><p>The maximum number of retries for requests.</p>
+</dd>
+<dt><strong>backoff</strong><span class="classifier">int or float, optional</span></dt><dd><p>Number of seconds from which to calculate how long to back off and wait
+when retrying requests. The first retry is always immediate, but
+subsequent retries increase by powers of 2:</p>
+<blockquote>
+<div><p>seconds = backoff * 2 ^ (retry number - 1)</p>
+</div></blockquote>
+<p>So if this was <cite>4</cite>, retries would happen after the following delays:
+0 seconds, 4 seconds, 8 seconds, 16 seconds, …</p>
+</dd>
+<dt><strong>timeout</strong><span class="classifier">int or float or tuple of (int or float, int or float), optional</span></dt><dd><p>A timeout to use for all requests. If not set, there will be no
+no explicit timeout. See the Requests docs for more:
+<a class="reference external" href="http://docs.python-requests.org/en/master/user/advanced/#timeouts">http://docs.python-requests.org/en/master/user/advanced/#timeouts</a></p>
+</dd>
+<dt><strong>user_agent</strong><span class="classifier">str, optional</span></dt><dd><p>A custom user-agent string to use in all requests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="web_monitoring.internetarchive.WaybackSession.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/web_monitoring/internetarchive.html#WaybackSession.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.internetarchive.WaybackSession.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset any network connections the session is using.</p>
 </dd></dl>
 
 </dd></dl>

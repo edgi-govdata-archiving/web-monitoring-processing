@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.list_versions &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
+  <title>web_monitoring.db.Client.list_versions &mdash; web-monitoring-processing 0+untagged.50.gf2f7e20 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0ec31e4
+                0+untagged.50.gf2f7e20
               </div>
             
           
@@ -179,7 +179,7 @@
 <h1>web_monitoring.db.Client.list_versions<a class="headerlink" href="#web-monitoring-db-client-list-versions" title="Permalink to this headline">¶</a></h1>
 <dl class="method">
 <dt id="web_monitoring.db.Client.list_versions">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_versions</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">*</em>, <em class="sig-param">page_id=None</em>, <em class="sig-param">chunk=None</em>, <em class="sig-param">chunk_size=None</em>, <em class="sig-param">sort=None</em>, <em class="sig-param">start_date=None</em>, <em class="sig-param">end_date=None</em>, <em class="sig-param">source_type=None</em>, <em class="sig-param">hash=None</em>, <em class="sig-param">source_metadata=None</em>, <em class="sig-param">different=None</em>, <em class="sig-param">include_change_from_previous=None</em>, <em class="sig-param">include_change_from_earliest=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_versions" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_versions</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">*</em>, <em class="sig-param">page_id=None</em>, <em class="sig-param">chunk=None</em>, <em class="sig-param">chunk_size=None</em>, <em class="sig-param">sort=None</em>, <em class="sig-param">start_date=None</em>, <em class="sig-param">end_date=None</em>, <em class="sig-param">source_type=None</em>, <em class="sig-param">hash=None</em>, <em class="sig-param">source_metadata=None</em>, <em class="sig-param">different=None</em>, <em class="sig-param">include_change_from_previous=None</em>, <em class="sig-param">include_change_from_earliest=None</em>, <em class="sig-param">include_total=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_versions" title="Permalink to this definition">¶</a></dt>
 <dd><p>List Versions, optionally filtered by serach criteria, including Page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -216,8 +216,15 @@ of the same page.</p>
 that represents a change object between it and the earliest version
 of the same page.</p>
 </dd>
-<dt><strong>Returns</strong></dt><dd></dd>
-<dt><strong>——-</strong></dt><dd></dd>
+<dt><strong>include_total</strong><span class="classifier">boolean, optional</span></dt><dd><p>Whether to include a <cite>meta.total_results</cite> field in the response.
+If not set, <cite>links.last</cite> will usually be empty unless you are on
+the last chunk. Setting this option runs a pretty expensive query,
+so use it sparingly. (Default: False)</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
 <dt><strong>response</strong><span class="classifier">dict</span></dt><dd></dd>
 </dl>
 </dd>

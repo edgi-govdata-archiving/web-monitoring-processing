@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g0ec31e4 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.gf2f7e20 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0ec31e4
+                0+untagged.50.gf2f7e20
               </div>
             
           
@@ -321,7 +321,8 @@
                    <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                   <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                   <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List all Pages, optionally filtered by search criteria.</span>
 
@@ -347,6 +348,11 @@
 <span class="sd">        start_date : datetime, optional</span>
 <span class="sd">        end_date : datetime, optional</span>
 <span class="sd">        active : boolean, optional</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `meta.total_results` field in the response.</span>
+<span class="sd">            If not set, `links.last` will usually be empty unless you are on</span>
+<span class="sd">            the last chunk. Setting this option runs a pretty expensive query,</span>
+<span class="sd">            so use it sparingly. (Default: False)</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -365,7 +371,8 @@
                   <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
                   <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
                   <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
-                  <span class="s1">&#39;active&#39;</span><span class="p">:</span> <span class="n">active</span><span class="p">}</span>
+                  <span class="s1">&#39;active&#39;</span><span class="p">:</span> <span class="n">active</span><span class="p">,</span>
+                  <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">}</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages&#39;</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
@@ -430,7 +437,7 @@
                       <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">different</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">include_change_from_previous</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                      <span class="n">include_change_from_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                      <span class="n">include_change_from_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List Versions, optionally filtered by serach criteria, including Page.</span>
 
@@ -467,6 +474,12 @@
 <span class="sd">            If True, include a `change_from_earliest` field in each version</span>
 <span class="sd">            that represents a change object between it and the earliest version</span>
 <span class="sd">            of the same page.</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `meta.total_results` field in the response.</span>
+<span class="sd">            If not set, `links.last` will usually be empty unless you are on</span>
+<span class="sd">            the last chunk. Setting this option runs a pretty expensive query,</span>
+<span class="sd">            so use it sparingly. (Default: False)</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
@@ -479,7 +492,8 @@
                   <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
                   <span class="s1">&#39;different&#39;</span><span class="p">:</span> <span class="n">different</span><span class="p">,</span>
                   <span class="s1">&#39;include_change_from_previous&#39;</span><span class="p">:</span> <span class="n">include_change_from_previous</span><span class="p">,</span>
-                  <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">}</span>
+                  <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">,</span>
+                  <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">source_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">source_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">params</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;source_metadata[</span><span class="si">{k}</span><span class="s1">]&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
@@ -634,7 +648,11 @@
             <span class="n">import_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">import_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">import_ids</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">monitor_import_statuses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">import_ids</span><span class="p">):</span>
+    <span class="c1"># TODO: we probably need to change the return value here to support info</span>
+    <span class="c1"># about imports that didn&#39;t finish if we stopped early. May also want an</span>
+    <span class="c1"># optional timeout given that we get stuck sometimes if the DB drops an</span>
+    <span class="c1"># import off its queue (which is a problem that also needs solving in DB).</span>
+    <span class="k">def</span> <span class="nf">monitor_import_statuses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">import_ids</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Poll status of Version import jobs until all complete.</span>
 
@@ -643,7 +661,10 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        import_ids: collection</span>
+<span class="sd">        import_ids : collection</span>
+<span class="sd">        stop : threading.Event, optional</span>
+<span class="sd">            A threading.Event to monitor in order to determine whether to stop</span>
+<span class="sd">            monitoring before all imports are complete.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -652,7 +673,7 @@
         <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">import_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">import_ids</span><span class="p">)</span>  <span class="c1"># to ensure mutable collection</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">while</span> <span class="n">import_ids</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">import_ids</span> <span class="ow">and</span> <span class="p">(</span><span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">stop</span><span class="o">.</span><span class="n">is_set</span><span class="p">()):</span>
                 <span class="k">for</span> <span class="n">import_id</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">import_ids</span><span class="p">):</span>
                     <span class="c1"># We are mainly interrested in processing errors. We don&#39;t</span>
                     <span class="c1"># expect HTTPErrors, so we&#39;ll just warn and hope that</span>
@@ -690,20 +711,27 @@
 
     <span class="c1">### CHANGES AND ANNOTATIONS ###</span>
 
-<div class="viewcode-block" id="Client.list_changes"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_changes.html#web_monitoring.db.Client.list_changes">[docs]</a>    <span class="k">def</span> <span class="nf">list_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">):</span>
+<div class="viewcode-block" id="Client.list_changes"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_changes.html#web_monitoring.db.Client.list_changes">[docs]</a>    <span class="k">def</span> <span class="nf">list_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List Changes between two Versions on a Page.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        page_id : string</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `meta.total_results` field in the response.</span>
+<span class="sd">            If not set, `links.last` will usually be empty unless you are on</span>
+<span class="sd">            the last chunk. Setting this option runs a pretty expensive query,</span>
+<span class="sd">            so use it sparingly. (Default: False)</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="p">})</span>
         <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
@@ -739,7 +767,8 @@
         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="Client.list_annotations"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_annotations.html#web_monitoring.db.Client.list_annotations">[docs]</a>    <span class="k">def</span> <span class="nf">list_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Client.list_annotations"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_annotations.html#web_monitoring.db.Client.list_annotations">[docs]</a>    <span class="k">def</span> <span class="nf">list_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                         <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List Annotations for a Change between two Versions.</span>
 
@@ -750,6 +779,11 @@
 <span class="sd">        from_version_id : string, optional</span>
 <span class="sd">            If from_version_id is not given, it will be treated as version</span>
 <span class="sd">            immediately prior to ``to_version``.</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `meta.total_results` field in the response.</span>
+<span class="sd">            If not set, `links.last` will usually be empty unless you are on</span>
+<span class="sd">            the last chunk. Setting this option runs a pretty expensive query,</span>
+<span class="sd">            so use it sparingly. (Default: False)</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -757,7 +791,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="p">})</span>
         <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
