@@ -30,7 +30,6 @@ from .differs import compute_dmp_diff
 
 # Imports only used in forked tokenization code; may be ripe for removal:
 from lxml import etree
-from lxml.html import fragment_fromstring
 from html import escape as html_escape
 
 
