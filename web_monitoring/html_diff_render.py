@@ -619,7 +619,7 @@ def parse_html(html):
     Parses an HTML fragment, returning an lxml element.  Note that the HTML
     will be wrapped in a <div> tag that was not in the original document.
     """
-    return fragment_fromstring(html, create_parent=True)
+    return html5_parser.parse(html, treebuilder='lxml')
 
 def split_trailing_whitespace(word):
     """
