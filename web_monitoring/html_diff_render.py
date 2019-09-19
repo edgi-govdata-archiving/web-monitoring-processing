@@ -603,20 +603,19 @@ def parse_html(html, cleanup=True):
         html = cleanup_html(html)
     return fragment_fromstring(html, create_parent=True)
 
-_body_re = re.compile(r'<body.*?>', re.I|re.S)
-_end_body_re = re.compile(r'</body.*?>', re.I|re.S)
+_body_re = re.compile(r'^\s*<body.*?>', re.I|re.S)
+_end_body_re = re.compile(r'</body[^>]*?>\s*$', re.I|re.S)
 _ins_del_re = re.compile(r'</?(ins|del).*?>', re.I|re.S)
 
 def cleanup_html(html):
     """ This 'cleans' the HTML, meaning that any page structure is removed
     (only the contents of <body> are used, if there is any <body).
     Also <ins> and <del> tags are removed.  """
-    match = _body_re.search(html)
-    if match:
-        html = html[match.end():]
-    match = _end_body_re.search(html)
-    if match:
-        html = html[:match.start()]
+    body_start = _body_re.search(html)
+    if body_start:
+        body_end = _end_body_re.search(html)
+        if body_end:
+            html = html[body_start.end():body_end.start()]
     html = _ins_del_re.sub('', html)
     return html
 
