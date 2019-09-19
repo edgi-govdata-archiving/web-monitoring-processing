@@ -388,7 +388,11 @@ def diff_elements(old, new, include='all'):
         return result_element
 
     results = {}
-    metadata, raw_diffs = _htmldiff(str(old), str(new), include)
+    # _htmldiff diffs just the *contents* of the <body> element.
+    metadata, raw_diffs = _htmldiff(''.join(map(str, old.children)),
+                                    ''.join(map(str, new.children)),
+                                    include)
+
     for diff_type, diff in raw_diffs.items():
         element = diff_type == 'deletions' and old or new
         results[diff_type] = fill_element(element, diff)
@@ -396,6 +400,9 @@ def diff_elements(old, new, include='all'):
     return metadata, results
 
 
+# FIXME: this should take two BeautifulSoup elements to diff (since we've
+# already parsed and generated those), not two HTML fragment strings that have
+# to get parsed again.
 def _htmldiff(old, new, include='all'):
     """
     A slightly customized version of htmldiff that uses different tokens.
@@ -603,21 +610,11 @@ def parse_html(html, cleanup=True):
         html = cleanup_html(html)
     return fragment_fromstring(html, create_parent=True)
 
-_body_re = re.compile(r'^\s*<body.*?>', re.I|re.S)
-_end_body_re = re.compile(r'</body[^>]*?>\s*$', re.I|re.S)
 _ins_del_re = re.compile(r'</?(ins|del).*?>', re.I|re.S)
 
 def cleanup_html(html):
-    """ This 'cleans' the HTML, meaning that any page structure is removed
-    (only the contents of <body> are used, if there is any <body).
-    Also <ins> and <del> tags are removed.  """
-    body_start = _body_re.search(html)
-    if body_start:
-        body_end = _end_body_re.search(html)
-        if body_end:
-            html = html[body_start.end():body_end.start()]
-    html = _ins_del_re.sub('', html)
-    return html
+    """This 'cleans' the HTML removing <ins> and <del> tags."""
+    return _ins_del_re.sub('', html)
 
 def split_trailing_whitespace(word):
     """
