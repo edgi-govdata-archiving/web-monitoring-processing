@@ -590,6 +590,9 @@ class UndiffableContentToken(DiffToken):
     pass
 
 
+# FIXME: this should be adapted to work off a BeautifulSoup element instead of
+# an etree/lxml element, since we already have that and could avoid re-parsing
+# the whole document a second time.
 def tokenize(html, include_hrefs=True):
     """
     Parse the given HTML and returns token objects (words with attached tags).
