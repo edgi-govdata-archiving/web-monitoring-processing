@@ -16,6 +16,7 @@ For now, you can mentally divide this module into two sections:
 """
 from bs4 import BeautifulSoup, Comment
 from collections import Counter, namedtuple
+from enum import Enum
 from functools import lru_cache
 import copy
 import difflib
@@ -29,7 +30,6 @@ from .differs import compute_dmp_diff
 
 # Imports only used in forked tokenization code; may be ripe for removal:
 from lxml import etree
-from lxml.html import fragment_fromstring
 from html import escape as html_escape
 
 
@@ -273,8 +273,7 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     soup_old = _cleanup_document_structure(soup_old)
     soup_new = _cleanup_document_structure(soup_new)
 
-    metadata, diff_bodies = diff_elements(soup_old.body, soup_new.body, include)
-    results = metadata.copy()
+    results, diff_bodies = diff_elements(soup_old.body, soup_new.body, include)
 
     for diff_type, diff_body in diff_bodies.items():
         soup = None
@@ -388,7 +387,10 @@ def diff_elements(old, new, include='all'):
         return result_element
 
     results = {}
-    metadata, raw_diffs = _htmldiff(str(old), str(new), include)
+    metadata, raw_diffs = _htmldiff(_diffable_fragment(old),
+                                    _diffable_fragment(new),
+                                    include)
+
     for diff_type, diff in raw_diffs.items():
         element = diff_type == 'deletions' and old or new
         results[diff_type] = fill_element(element, diff)
@@ -396,6 +398,27 @@ def diff_elements(old, new, include='all'):
     return metadata, results
 
 
+def _diffable_fragment(element):
+    """
+    Convert a beautiful soup element into an HTML fragment string with just the
+    element's *contents* that is ready for diffing.
+    """
+    # FIXME: we have to remove <ins> and <del> tags because *we* use them to
+    # indicate changes that we find. We probably shouldn't do that:
+    # https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/69#issuecomment-321424897
+    for edit_tag in element.find_all(_is_ins_or_del):
+        edit_tag.unwrap()
+    # Create a fragment string of just the element's contents
+    return ''.join(map(str, element.children))
+
+
+def _is_ins_or_del(tag):
+    return tag.name == 'ins' or tag.name == 'del'
+
+
+# FIXME: this should take two BeautifulSoup elements to diff (since we've
+# already parsed and generated those), not two HTML fragment strings that have
+# to get parsed again.
 def _htmldiff(old, new, include='all'):
     """
     A slightly customized version of htmldiff that uses different tokens.
@@ -566,6 +589,9 @@ class UndiffableContentToken(DiffToken):
     pass
 
 
+# FIXME: this should be adapted to work off a BeautifulSoup element instead of
+# an etree/lxml element, since we already have that and could avoid re-parsing
+# the whole document a second time.
 def tokenize(html, include_hrefs=True):
     """
     Parse the given HTML and returns token objects (words with attached tags).
@@ -584,41 +610,18 @@ def tokenize(html, include_hrefs=True):
     if etree.iselement(html):
         body_el = html
     else:
-        body_el = parse_html(html, cleanup=True)
+        body_el = parse_html(html)
     # Then we split the document into text chunks for each tag, word, and end tag:
     chunks = flatten_el(body_el, skip_tag=True, include_hrefs=include_hrefs)
     # Finally re-joining them into token objects:
     return fixup_chunks(chunks)
 
-def parse_html(html, cleanup=True):
+def parse_html(html):
     """
-    Parses an HTML fragment, returning an lxml element.  Note that the HTML will be
-    wrapped in a <div> tag that was not in the original document.
-
-    If cleanup is true, make sure there's no <head> or <body>, and get
-    rid of any <ins> and <del> tags.
+    Parses an HTML fragment, returning an lxml element.  Note that the HTML
+    will be wrapped in a <div> tag that was not in the original document.
     """
-    if cleanup:
-        # This removes any extra markup or structure like <head>:
-        html = cleanup_html(html)
-    return fragment_fromstring(html, create_parent=True)
-
-_body_re = re.compile(r'<body.*?>', re.I|re.S)
-_end_body_re = re.compile(r'</body.*?>', re.I|re.S)
-_ins_del_re = re.compile(r'</?(ins|del).*?>', re.I|re.S)
-
-def cleanup_html(html):
-    """ This 'cleans' the HTML, meaning that any page structure is removed
-    (only the contents of <body> are used, if there is any <body).
-    Also <ins> and <del> tags are removed.  """
-    match = _body_re.search(html)
-    if match:
-        html = html[match.end():]
-    match = _end_body_re.search(html)
-    if match:
-        html = html[:match.start()]
-    html = _ins_del_re.sub('', html)
-    return html
+    return html5_parser.parse(html, treebuilder='lxml')
 
 def split_trailing_whitespace(word):
     """
@@ -626,6 +629,14 @@ def split_trailing_whitespace(word):
     """
     stripped_length = len(word.rstrip())
     return word[0:stripped_length], word[stripped_length:]
+
+class TokenType(Enum):
+    undiffable = 0
+    start_tag = 1
+    end_tag = 2
+    word = 3
+    href = 4
+    img = 5
 
 
 def fixup_chunks(chunks):
@@ -636,46 +647,44 @@ def fixup_chunks(chunks):
     cur_word = None
     result = []
     for chunk in chunks:
-        if isinstance(chunk, tuple):
-            if chunk[0] == 'img':
-                src = chunk[1]
-                tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
-                cur_word = tag_token('img', src, html_repr=tag,
-                                     pre_tags=tag_accum,
-                                     trailing_whitespace=trailing_whitespace)
-                tag_accum = []
-                result.append(cur_word)
+        current_token = chunk[0]
+        if current_token == TokenType.img:
+            src = chunk[1]
+            tag, trailing_whitespace = split_trailing_whitespace(chunk[2])
+            cur_word = tag_token('img', src, html_repr=tag,
+                                 pre_tags=tag_accum,
+                                 trailing_whitespace=trailing_whitespace)
+            tag_accum = []
+            result.append(cur_word)
 
-            elif chunk[0] == 'href':
-                href = chunk[1]
-                cur_word = href_token(href, pre_tags=tag_accum, trailing_whitespace=" ")
-                tag_accum = []
-                result.append(cur_word)
+        elif current_token == TokenType.href:
+            href = chunk[1]
+            cur_word = href_token(href, pre_tags=tag_accum, trailing_whitespace=" ")
+            tag_accum = []
+            result.append(cur_word)
 
-            elif chunk[0] == 'UNDIFFABLE':
-                cur_word = UndiffableContentToken(chunk[1], pre_tags=tag_accum)
-                tag_accum = []
-                result.append(cur_word)
+        elif current_token == TokenType.undiffable:
+            cur_word = UndiffableContentToken(chunk[1], pre_tags=tag_accum)
+            tag_accum = []
+            result.append(cur_word)
 
-            continue
-
-        if is_word(chunk):
-            chunk, trailing_whitespace = split_trailing_whitespace(chunk)
+        elif current_token == TokenType.word:
+            chunk, trailing_whitespace = split_trailing_whitespace(chunk[1])
             cur_word = DiffToken(chunk, pre_tags=tag_accum, trailing_whitespace=trailing_whitespace)
             tag_accum = []
             result.append(cur_word)
 
-        elif is_start_tag(chunk):
-            tag_accum.append(chunk)
+        elif current_token == TokenType.start_tag:
+            tag_accum.append(chunk[1])
 
-        elif is_end_tag(chunk):
+        elif current_token == TokenType.end_tag:
             if tag_accum:
-                tag_accum.append(chunk)
+                tag_accum.append(chunk[1])
             else:
                 assert cur_word, (
                     "Weird state, cur_word=%r, result=%r, chunks=%r of %r"
                     % (cur_word, result, chunk, chunks))
-                cur_word.post_tags.append(chunk)
+                cur_word.post_tags.append(chunk[1])
         else:
             assert(0)
 
@@ -695,28 +704,28 @@ def flatten_el(el, include_hrefs, skip_tag=False):
     not returned (just its contents)."""
     if not skip_tag:
         if el.tag == 'img':
-            yield ('img', el.get('src'), start_tag(el))
+            yield (TokenType.img, el.get('src'), start_tag(el))
         elif el.tag in undiffable_content_tags:
             element_source = etree.tostring(el, encoding=str, method='html')
-            yield ('UNDIFFABLE', element_source)
+            yield (TokenType.undiffable, element_source)
             return
         else:
-            yield start_tag(el)
+            yield (TokenType.start_tag, start_tag(el))
     if el.tag in void_tags and not el.text and not len(el) and not el.tail:
         return
     start_words = split_words(el.text)
     for word in start_words:
-        yield html_escape(word)
+        yield (TokenType.word, html_escape(word))
     for child in el:
         for item in flatten_el(child, include_hrefs=include_hrefs):
             yield item
     if el.tag == 'a' and el.get('href') and include_hrefs:
-        yield ('href', el.get('href'))
+        yield (TokenType.href, el.get('href'))
     if not skip_tag:
-        yield end_tag(el)
+        yield (TokenType.end_tag, end_tag(el))
         end_words = split_words(el.tail)
         for word in end_words:
-            yield html_escape(word)
+            yield (TokenType.word, html_escape(word))
 
 split_words_re = re.compile(r'\S+(?:\s+|$)', re.U)
 
@@ -748,14 +757,6 @@ def end_tag(el):
         extra = ''
     return '</%s>%s' % (el.tag, extra)
 
-def is_word(tok):
-    return not tok.startswith('<')
-
-def is_end_tag(tok):
-    return tok.startswith('</')
-
-def is_start_tag(tok):
-    return tok.startswith('<') and not tok.startswith('</')
 
 # ------------------ END lxml.html.diff Tokenization ------------------------
 
