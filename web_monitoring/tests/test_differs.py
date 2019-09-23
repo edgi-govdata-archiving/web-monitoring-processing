@@ -56,15 +56,6 @@ def test_text_diff_omits_more_than_two_consecutive_blank_lines():
     assert actual == expected
 
 
-@pytest.mark.skip(reason="test not implemented")
-def test_pagefreezer():
-    # 1. Set up mock responses for calls to pagefreezer
-    # actual = wd.pagefreezer('http://example.com/test_a',
-    #                         'http://example.com/test_b')
-    # 2. Ensure that the resulting output is properly passed through
-    pass
-
-
 def test_get_visible_text():
     html = '<!--First comment--><h1>First Heading</h1><p>First paragraph.</p>'
     actual = wd._get_visible_text(html)
