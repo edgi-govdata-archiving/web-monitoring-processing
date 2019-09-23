@@ -1,4 +1,3 @@
-import pytest
 import web_monitoring.differs as wd
 
 
