@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g3256be6 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g46b4ad9 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.50.g3256be6
+                0+untagged.50.g46b4ad9
               </div>
             
           
@@ -764,8 +764,11 @@
         <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
+        <span class="c1"># For changes which were created just-in-time to fulfill this API request,</span>
+        <span class="c1"># created/updated_at will be None, and that&#39;s OK.</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 <div class="viewcode-block" id="Client.list_annotations"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_annotations.html#web_monitoring.db.Client.list_annotations">[docs]</a>    <span class="k">def</span> <span class="nf">list_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
