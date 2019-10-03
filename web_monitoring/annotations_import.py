@@ -21,17 +21,14 @@ def read_csv(csv_path):
         for row in reader:
             yield row
 
-def find_change(csv_row):
+def find_change_ids(csv_row):
     diff_url = csv_row['Last Two - Side by Side']
     url_regex = re.compile('^.*\/page\/(.*)/(.*)\.\.(.*)')
     regex_result = url_regex.match(diff_url)
     (page_id, from_version_id, to_version_id) = regex_result.groups()
-    
-    cli = Client.from_env()
-    change = cli.get_change(page_id=page_id,
-                            from_version_id=from_version_id,
-                            to_version_id=to_version_id)
-    return change
+    return {'page_id': page_id,
+            'from_version_id': from_version_id,
+            'to_version_id': to_version_id}
 
 def create_annotation(csv_row, is_important_changes):
     # Missing step: capture info from the "Who Found This" column and map it to
@@ -87,8 +84,13 @@ def create_annotation(csv_row, is_important_changes):
 
     return annotation
 
-def post_annotation(change, annotation_json):
-    return None
+def post_annotation(change_ids, annotation):
+    cli = Client.from_env()
+    response = cli.add_annotation(annotation=annotation,
+                                  page_id=change_ids['page_id'],
+                                  to_version_id=change_ids['to_version_id'],
+                                  from_version_id=change_ids['from_version_id'])
+    return response
 
 def main():
     doc = """Add analyst annotations from a csv file to the Web Monitoring db.
@@ -105,9 +107,10 @@ Options:
 
     # Missing step: Analyze CSV to determine spreadsheet schema version
     for row in read_csv(csv_path):
-        change = find_change(row)
+        change_ids = find_change_ids(row)
         annotation = create_annotation(row, is_important_changes)
-        response = post_annotation(change, annotation)
+        response = post_annotation(change_ids, annotation)
+        print(response)
 
 if __name__ == '__main__':
     main()
