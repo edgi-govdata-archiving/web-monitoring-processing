@@ -54,9 +54,9 @@ def rate_limited(calls_per_second=2, group='default'):
 
     Parameters
     ----------
-    calls_per_second : float or int, optional
+    calls_per_second: float or int, optional
         Maximum number of calls into this context allowed per second
-    group : string, optional
+    group: string, optional
         Unique name to scope rate limiting. If two contexts have different
         `group` values, their timings will be tracked separately.
     """
@@ -218,9 +218,9 @@ class Signal:
 
     Parameters
     ----------
-    signals : int or tuple of int
+    signals: int or tuple of int
         The signal or list of signals to handle.
-    handler : callable
+    handler: callable
         A signal handler function of the same type used with `signal.signal()`.
         See: https://docs.python.org/3.6/library/signal.html#signal.signal
 
@@ -263,11 +263,11 @@ class QuitSignal(Signal):
 
     Parameters
     ----------
-    signals : int or tuple of int
+    signals: int or tuple of int
         The signal or list of signals to handle.
-    graceful_message : string, optional
+    graceful_message: string, optional
         A message to print to stdout when a signal is received.
-    final_message : string, optional
+    final_message: string, optional
         A message to print to stdout before exiting the process when a repeat
         signal is received.
 

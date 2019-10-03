@@ -55,7 +55,7 @@ def wayback_has_captures(url, from_date=None):
 
     Parameters
     ----------
-    url : string
+    url: string
 
     Returns
     -------

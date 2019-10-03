@@ -226,9 +226,9 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
 
     Parameters
     ----------
-    retries : int, optional
+    retries: int, optional
         The maximum number of retries for requests.
-    backoff : int or float, optional
+    backoff: int or float, optional
         Number of seconds from which to calculate how long to back off and wait
         when retrying requests. The first retry is always immediate, but
         subsequent retries increase by powers of 2:
@@ -237,11 +237,11 @@ class WaybackSession(utils.DisableAfterCloseSession, requests.Session):
 
         So if this was `4`, retries would happen after the following delays:
         0 seconds, 4 seconds, 8 seconds, 16 seconds, ...
-    timeout : int or float or tuple of (int or float, int or float), optional
+    timeout: int or float or tuple of (int or float, int or float), optional
         A timeout to use for all requests. If not set, there will be no
         no explicit timeout. See the Requests docs for more:
         http://docs.python-requests.org/en/master/user/advanced/#timeouts
-    user_agent : str, optional
+    user_agent: str, optional
         A custom user-agent string to use in all requests.
     """
 
@@ -355,7 +355,7 @@ class WaybackClient(utils.DepthCountedContext):
 
     Parameters
     ----------
-    session : :class:`requests.Session`, optional
+    session: :class:`requests.Session`, optional
     """
     def __init__(self, session=None):
         self.session = session or WaybackSession()
@@ -395,53 +395,53 @@ class WaybackClient(utils.DepthCountedContext):
 
         Parameters
         ----------
-        url : str
+        url: str
             The URL to query for captures of.
-        matchType : str, optional
+        matchType: str, optional
             Must be one of 'exact', 'prefix', 'host', or 'domain'. The default
             value is calculated based on the format of `url`.
-        limit : int, optional
+        limit: int, optional
             Maximum number of results per page (this iterator will continue to
             move through all pages unless `showResumeKey=False`, though).
-        offset : int, optional
+        offset: int, optional
             Skip the first N results.
-        fastLatest : bool, optional
+        fastLatest: bool, optional
             Get faster results when using a negative value for `limit`. It may
             return a variable number of results.
-        gzip : bool, optional
+        gzip: bool, optional
             Whether output should be gzipped.
-        from_date : datetime, optional
+        from_date: datetime, optional
             Only include captures after this date. Equivalent to the
             `from` argument in the CDX API.
-        to_date : str, optional
+        to_date: str, optional
             Only include captures before this date. Equivalent to the `to`
             argument in the CDX API.
-        filter_field : str, optional
+        filter_field: str, optional
             A filter for any field in the results. Equivalent to the `filter`
             argument in the CDX API. (format: `[!]field:regex`)
-        collapse : str, optional
+        collapse: str, optional
             Collapse consecutive results that match on a given field. (format:
             `fieldname` or `fieldname:N` -- N is the number of chars to match.)
-        showResumeKey : bool, optional
+        showResumeKey: bool, optional
             If False, don't continue to iterate through all pages of results.
             The default value is True
-        resumeKey : str, optional
+        resumeKey: str, optional
             Start returning results from a specified resumption point/offset.
             The value for this is supplied by the previous page of results when
             `showResumeKey` is True.
-        page : int, optional
+        page: int, optional
             If using paging start from this page number (note: paging, as
             opposed to the using `resumeKey` is somewhat complicated because
             of the interplay with indexes and index sizes).
-        pageSize : int, optional
+        pageSize: int, optional
             The number of index blocks to examine for each page of results.
             Index blocks generally cover about 3,000 items, so setting
             `pageSize=1` might return anywhere from 0 to 3,000 results per page.
-        resolveRevists : bool, optional
+        resolveRevists: bool, optional
             Attempt to resolve `warc/revisit` records to their actual content
             type and response code. Not supported on all CDX servers. Defaults
             to True.
-        skip_malformed_results : bool, optional
+        skip_malformed_results: bool, optional
             If true, don't yield records that look like they have no actual
             memento associated with them. Some crawlers will erroneously
             attempt to capture bad URLs like `http://mailto:someone@domain.com`
@@ -563,15 +563,15 @@ class WaybackClient(utils.DepthCountedContext):
 
         Parameters
         ----------
-        url : string
+        url: string
             The URL to list versions for. Can contain wildcards.
-        from_date : datetime, optional
+        from_date: datetime, optional
             Get versions captured after this date.
-        to_date : datetime, optional
+        to_date: datetime, optional
             Get versions captured before this date.
-        skip_repeats : boolean, optional
+        skip_repeats: boolean, optional
             Don’t include consecutive captures of the same content (default: True).
-        cdx_params : dict, optional
+        cdx_params: dict, optional
             Additional options to pass directly to the CDX API when querying.
 
         Raises
@@ -641,20 +641,20 @@ class WaybackClient(utils.DepthCountedContext):
 
         Parameters
         ----------
-        url : string
+        url: string
             URL of memento in Wayback (e.g.
             `http://web.archive.org/web/20180816111911id_/http://www.nws.noaa.gov/sp/`)
-        exact : boolean, optional
+        exact: boolean, optional
             If false and the requested memento either doesn't exist or can't be
             played back, this returns the closest-in-time memento to the
             requested one, so long as it is within `target_window`.
             Default: True
-        exact_redirects : boolean, optional
+        exact_redirects: boolean, optional
             If false and the requested memento is a redirect whose *target*
             doesn't exist or or can't be played back, this returns the closest-
             in-time memento to the intended target, so long as it is within
             `target_window`. If unset, this will be the same as `exact`.
-        target_window : int, optional
+        target_window: int, optional
             If the memento is of a redirect, allow up to this many seconds
             between the capture of the redirect and the capture of the target
             URL. (Note this does NOT apply when the originally requested
@@ -664,7 +664,7 @@ class WaybackClient(utils.DepthCountedContext):
 
         Returns
         -------
-        dict : requests.Response
+        dict: requests.Response
             An HTTP response with the content of the memento, including a
             history of any redirects involved.
         """
@@ -777,22 +777,22 @@ class WaybackClient(utils.DepthCountedContext):
 
         Parameters
         ----------
-        dt : datetime.datetime
+        dt: datetime.datetime
             capture time
-        uri : string
+        uri: string
             URI of version
-        url : string
+        url: string
             page URL
-        maintainers : list of string, optional
+        maintainers: list of string, optional
             Entities responsible for maintaining the page, as a list of strings
-        tags : list of string, optional
+        tags: list of string, optional
             Any arbitrary "tags" to apply to the page for categorization
-        view_url : string, optional
+        view_url: string, optional
             The archive.org URL for viewing the page (with rewritten links, etc.)
 
         Returns
         -------
-        dict : Version
+        dict: Version
             suitable for passing to :class:`Client.add_versions`
         """
         res = self.get_memento(uri, exact_redirects=False)
@@ -834,41 +834,41 @@ def format_version(*, url, dt, uri, version_hash, title, status, mime_type,
 
     Parameters
     ----------
-    url : string
+    url: string
         page URL
-    dt : datetime.datetime
+    dt: datetime.datetime
         capture time
-    uri : string
+    uri: string
         URI of version
-    version_hash : string
+    version_hash: string
         sha256 hash of version content
-    title : string
+    title: string
         primer metadata (likely to change in the future)
-    status : int
+    status: int
         HTTP status code
-    mime_type : string
+    mime_type: string
         Mime type of HTTP response
-    encoding : string
+    encoding: string
         Character encoding of HTTP response
-    maintainers : list of string, optional
+    maintainers: list of string, optional
         Entities responsible for maintaining the page, as a list of strings
-    tags : list of string, optional
+    tags: list of string, optional
         Any arbitrary "tags" to apply to the page for categorization
-    headers : dict, optional
+    headers: dict, optional
         Any relevant HTTP headers from response
-    view_url : string, optional
+    view_url: string, optional
         The archive.org URL for viewing the page (with rewritten links, etc.)
-    redirected_url : string, optional
+    redirected_url: string, optional
         If getting `url` resulted in a redirect, this should be the URL
         that was ultimately redirected to.
-    redirects : sequence, optional
+    redirects: sequence, optional
         If getting `url` resulted in any redirects this should be a sequence
         of all the URLs that were retrieved, starting with the originally
         requested URL and ending with the value of the `redirected_url` arg.
 
     Returns
     -------
-    version : dict
+    version: dict
         properly formatted for as JSON blob for web-monitoring-db
     """
     # The reason that this is a function, not just dict(**kwargs), is that we

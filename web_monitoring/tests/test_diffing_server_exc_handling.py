@@ -343,19 +343,19 @@ class MockAsyncHttpClient(AsyncHTTPClient):
 
         Parameters
         ----------
-        matcher : callable or string
+        matcher: callable or string
             Defines whether this response data should be used for a given
             request. If callable, it will be called with the Tornado Request
             object and should return `True` if the response should be used. If
             a string, it will be used as a regular expression to match the
             request URL.
-        code : int, optional
+        code: int, optional
             The HTTP response code to response with. Defaults to 200 (OK).
-        body : string, optional
+        body: string, optional
             The response body to send back.
-        headers : dict, optional
+        headers: dict, optional
             Any headers to use for the response.
-        **kwargs : any, optional
+        **kwargs: any, optional
             Additional keyword args to pass to the Tornado Response.
             Reference: http://www.tornadoweb.org/en/stable/httpclient.html#tornado.httpclient.HTTPResponse
         """

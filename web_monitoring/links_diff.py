@@ -237,11 +237,11 @@ def _assemble_diff(a, b, opcodes):
 
     Parameters
     ----------
-    a : list
+    a: list
         The list of links in the previous verson of a document.
-    b : list
+    b: list
         The list of links in the new version of a document.
-    opcodes : list
+    opcodes: list
         List of opcodes from SequenceMatcher that defines what to do with each
         item in the lists of links.
     """
@@ -384,7 +384,7 @@ def _create_empty_soup(title=''):
 
     Parameters
     ----------
-    title : string
+    title: string
         The new document's title.
     """
     return html5_parser.parse(f"""<!doctype html>
@@ -498,7 +498,7 @@ def _render_html_diff(raw_diff):
 
     Parameters
     ----------
-    raw_diff : sequence
+    raw_diff: sequence
         The basic diff as a sequence of opcodes and links.
     """
     result = _create_empty_soup()

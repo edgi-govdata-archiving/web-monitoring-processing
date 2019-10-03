@@ -42,12 +42,12 @@ def _time_range_string(start_date, end_date):
     """
     Parameters
     ----------
-    start_date : datetime or None
-    end_date : datetime or None
+    start_date: datetime or None
+    end_date: datetime or None
 
     Returns
     -------
-    capture_time_query : None or string
+    capture_time_query: None or string
         If None, do not query ``capture_time``.
     """
     if start_date is None and end_date is None:
@@ -127,9 +127,9 @@ class Client:
 
     Parameters
     ----------
-    email : string
-    password : string
-    url : string, optional
+    email: string
+    password: string
+    url: string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     """
     def __init__(self, email, password, url=DEFAULT_URL):
@@ -176,27 +176,27 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        chunk : integer, optional
+        chunk: integer, optional
             pagination parameter
-        chunk_size : integer, optional
+        chunk_size: integer, optional
             number of items per chunk
-        sort : list of string, optional
+        sort: list of string, optional
             fields to sort by in `{field}:{order}` format, e.g. `title:asc`
-        tags : list of string, optional
-        maintainers : list of string, optional
-        url : string, optional
-        title : string, optional
-        include_versions : boolean, optional
-        include_earliest : boolean, optional
-        include_latest : boolean, optional
-        source_type : string, optional
+        tags: list of string, optional
+        maintainers: list of string, optional
+        url: string, optional
+        title: string, optional
+        include_versions: boolean, optional
+        include_earliest: boolean, optional
+        include_latest: boolean, optional
+        source_type: string, optional
             such as 'versionista' or 'internet_archive'
-        hash : string, optional
+        hash: string, optional
             SHA256 hash of Version content
-        start_date : datetime, optional
-        end_date : datetime, optional
-        active : boolean, optional
-        include_total : boolean, optional
+        start_date: datetime, optional
+        end_date: datetime, optional
+        active: boolean, optional
+        include_total: boolean, optional
             Whether to include a `meta.total_results` field in the response.
             If not set, `links.last` will usually be empty unless you are on
             the last chunk. Setting this option runs a pretty expensive query,
@@ -204,7 +204,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
@@ -257,11 +257,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        page_id : string
+        page_id: string
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = f'{self._api_url}/pages/{page_id}'
         res = requests.get(url, auth=self._auth)
@@ -291,38 +291,38 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        page_id : string, optional
+        page_id: string, optional
             restricts serach to Versions of a specific Page
-        chunk : integer, optional
+        chunk: integer, optional
             pagination parameter
-        chunk_size : integer, optional
+        chunk_size: integer, optional
             number of items per chunk
-        sort : list of string, optional
+        sort: list of string, optional
             fields to sort by in `{field}:{order}` format,
             e.g. `capture_time:asc`
-        start_date : datetime, optional
-        end_date : datetime, optional
-        source_type : string, optional
+        start_date: datetime, optional
+        end_date: datetime, optional
+        source_type: string, optional
             such as 'versionista' or 'internetarchive'
-        hash : string, optional
+        hash: string, optional
             SHA256 hash of Version content
-        source_metadata : dict, optional
+        source_metadata: dict, optional
             Examples:
 
             * ``{'version_id': 12345678}``
             * ``{'account': 'versionista1', 'has_content': True}``
-        different : boolean, optional
+        different: boolean, optional
             If False, include versions that aren't actually different from the
             previous version of the same page in the response.
-        include_change_from_previous : boolean, optional
+        include_change_from_previous: boolean, optional
             If True, include a `change_from_previous` field in each version
             that represents a change object between it and the previous version
             of the same page.
-        include_change_from_earliest : boolean, optional
+        include_change_from_earliest: boolean, optional
             If True, include a `change_from_earliest` field in each version
             that represents a change object between it and the earliest version
             of the same page.
-        include_total : boolean, optional
+        include_total: boolean, optional
             Whether to include a `meta.total_results` field in the response.
             If not set, `links.last` will usually be empty unless you are on
             the last chunk. Setting this option runs a pretty expensive query,
@@ -330,7 +330,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
@@ -366,19 +366,19 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        version_id : string
-        include_change_from_previous : boolean, optional
+        version_id: string
+        include_change_from_previous: boolean, optional
             If True, include a `change_from_previous` field in that represents
             a change object between this and the previous version of the same
             page.
-        include_change_from_earliest : boolean, optional
+        include_change_from_earliest: boolean, optional
             If True, include a `change_from_earliest` field in that represents
             a change object between this and the earliest version of the same
             page.
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = f'{self._api_url}/versions/{version_id}'
         params = {'include_change_from_previous': include_change_from_previous,
@@ -401,25 +401,25 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        page_id : string
+        page_id: string
             Page to which the Version is associated
-        uri : string
+        uri: string
             URI of content (such as an S3 bucket or InternetArchive URL)
-        hash : string
+        hash: string
             SHA256 hash of Version content
-        source_type : string
+        source_type: string
             such as 'versionista' or 'internetarchive'
-        title : string
+        title: string
             content of ``<title>`` tag
-        uuid : string, optional
+        uuid: string, optional
             A new, unique Version ID (UUID4). If not specified, the server
             will generate one.
-        source_metadata : dict, optional
+        source_metadata: dict, optional
             free-form metadata blob provided by source
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         # Do some type casting here as gentle error-checking.
         version = _build_version(
@@ -447,9 +447,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        versions : iterable
+        versions: iterable
             Iterable of dicts from :func:`format_version`
-        update : {'skip', 'replace', 'merge'}, optional
+        update: {'skip', 'replace', 'merge'}, optional
             Specifies how versions that are already in the database (i.e.
             versions with the same ``capture_time`` and ``source_type``) should
             be handled:
@@ -461,18 +461,18 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                 * ``'merge'`` -- Similar to `replace`, but merges the values in
                   ``source_metadata``
 
-        create_pages : bool, optional
+        create_pages: bool, optional
             If True, create new pages for any URLs in the import set that don't
             already exist.
-        skip_unchanged_versions : bool, optional
+        skip_unchanged_versions: bool, optional
             If true, don't import versions of a page that have the same hash as
             the version captured immediately before them.
-        batch_size : integer, optional
+        batch_size: integer, optional
             Default batch size is 50000 Versions.
 
         Returns
         -------
-        import_ids : tuple
+        import_ids: tuple
         """
         url = f'{self._api_url}/imports'
         # POST to the server in chunks. Stash the import id from each response.
@@ -509,14 +509,14 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        import_ids : collection
-        stop : threading.Event, optional
+        import_ids: collection
+        stop: threading.Event, optional
             A threading.Event to monitor in order to determine whether to stop
             monitoring before all imports are complete.
 
         Returns
         -------
-        errors : tuple
+        errors: tuple
         """
         errors = []
         import_ids = list(import_ids)  # to ensure mutable collection
@@ -546,11 +546,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        import_id : integer
+        import_id: integer
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = f'{self._api_url}/imports/{import_id}'
         res = requests.get(url, auth=self._auth)
@@ -565,8 +565,8 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        page_id : string
-        include_total : boolean, optional
+        page_id: string
+        include_total: boolean, optional
             Whether to include a `meta.total_results` field in the response.
             If not set, `links.last` will usually be empty unless you are on
             the last chunk. Setting this option runs a pretty expensive query,
@@ -574,7 +574,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = f'{self._api_url}/pages/{page_id}/changes/'
         res = requests.get(url, auth=self._auth, params={
@@ -594,15 +594,15 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        page_id: string
+        to_version_id: string
+        from_version_id: string, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
@@ -625,12 +625,12 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        page_id: string
+        to_version_id: string
+        from_version_id: string, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
-        include_total : boolean, optional
+        include_total: boolean, optional
             Whether to include a `meta.total_results` field in the response.
             If not set, `links.last` will usually be empty unless you are on
             the last chunk. Setting this option runs a pretty expensive query,
@@ -638,7 +638,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
@@ -660,16 +660,16 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        annotation : dict
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        annotation: dict
+        page_id: string
+        to_version_id: string
+        from_version_id: string, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
@@ -686,16 +686,16 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        annotation_id : string
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        annotation_id: string
+        page_id: string
+        to_version_id: string
+        from_version_id: string, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations/'
@@ -717,11 +717,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        version_id : string
+        version_id: string
 
         Returns
         -------
-        content : bytes
+        content: bytes
         """
         db_result = self.get_version(version_id)
         content_uri = db_result['data']['uri']
@@ -741,11 +741,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        versionista_id : string
+        versionista_id: string
 
         Returns
         -------
-        response : dict
+        response: dict
         """
         result = self.list_versions(
             source_type='versionista',

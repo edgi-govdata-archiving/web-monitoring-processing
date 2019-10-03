@@ -49,11 +49,11 @@ def is_not_html(text, headers=None, check_options='normal'):
 
     Parameters
     ----------
-    text : string
+    text: string
         Potential HTML content string
-    headers : dict
+    headers: dict
         Any HTTP headers associated with the text
-    check_options : string
+    check_options: string
         Control content type detection. Options are:
         - `normal` uses the `Content-Type` header and then falls back to
           sniffing to determine content type.
@@ -84,15 +84,15 @@ def raise_if_not_diffable_html(a_text, b_text, a_headers=None, b_headers=None,
 
     Parameters
     ----------
-    a_text : string
+    a_text: string
         Source HTML of one document to compare
-    b_text : string
+    b_text: string
         Source HTML of the other document to compare
-    a_headers : dict
+    a_headers: dict
         Any HTTP headers associated with the `a` document
-    b_headers : dict
+    b_headers: dict
         Any HTTP headers associated with the `b` document
-    content_type_options : string
+    content_type_options: string
         Control content type detection. Options are:
         - `normal` uses the `Content-Type` header and then falls back to
           sniffing to determine content type.
