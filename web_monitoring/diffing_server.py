@@ -174,10 +174,11 @@ class DiffHandler(BaseHandler):
             return
 
         # TODO: Add caching of fetched URIs.
-        content = [await self.fetch_diffable_content(url,
-                                                     query_params.pop(f'{param}_hash', None),
-                                                     query_params)
-                         for param, url in urls.items()]
+        requests = [self.fetch_diffable_content(url,
+                                                query_params.pop(f'{param}_hash', None),
+                                                query_params)
+                    for param, url in urls.items()]
+        content = await asyncio.gather(*requests)
         if not all(content):
             return
 
@@ -258,12 +259,11 @@ class DiffHandler(BaseHandler):
         if the process pool that executes the diff breaks.
         """
         executor = self.get_diff_executor()
+        loop = asyncio.get_running_loop()
         for attempt in range(tries):
             try:
-                loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(
+                return await loop.run_in_executor(
                     executor, functools.partial(caller, func, a, b, **params))
-                return result
             except concurrent.futures.process.BrokenProcessPool:
                 executor = self.get_diff_executor(reset=True)
 
