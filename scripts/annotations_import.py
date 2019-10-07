@@ -1,19 +1,20 @@
 import csv
 from docopt import docopt
+import logging
+import os
 import re
+from tqdm import tqdm
+from web_monitoring import db
 from web_monitoring.db import Client
 
-# source: CivFan, https://stackoverflow.com/a/32486472
+logger = logging.getLogger(__name__)
+log_level = os.getenv('LOG_LEVEL', 'WARNING')
+logger.setLevel(logging.__dict__[log_level])
+
 class DictReaderStrip(csv.DictReader):
     @property
     def fieldnames(self):
-        if self._fieldnames is None:
-            # Initialize self._fieldnames
-            # Note: DictReader is an old-style class, so can't use super()
-            csv.DictReader.fieldnames.fget(self)
-            if self._fieldnames is not None:
-                self._fieldnames = [name.strip() for name in self._fieldnames]
-        return self._fieldnames
+        return [name.strip() for name in super().fieldnames]
 
 def read_csv(csv_path):
     with open(csv_path, newline='') as csvfile:
@@ -21,14 +22,17 @@ def read_csv(csv_path):
         for row in reader:
             yield row
 
+DIFF_URL_REGEX = re.compile('^.*\/page\/(.*)/(.*)\.\.(.*)')
 def find_change_ids(csv_row):
     diff_url = csv_row['Last Two - Side by Side']
-    url_regex = re.compile('^.*\/page\/(.*)/(.*)\.\.(.*)')
-    regex_result = url_regex.match(diff_url)
-    (page_id, from_version_id, to_version_id) = regex_result.groups()
-    return {'page_id': page_id,
-            'from_version_id': from_version_id,
-            'to_version_id': to_version_id}
+    regex_result = DIFF_URL_REGEX.match(diff_url)
+    if regex_result:
+        (page_id, from_version_id, to_version_id) = regex_result.groups()
+        return {'page_id': page_id,
+                'from_version_id': from_version_id,
+                'to_version_id': to_version_id}
+    else:
+        return None
 
 def create_annotation(csv_row, is_important_changes):
     # Missing step: capture info from the "Who Found This" column and map it to
@@ -60,11 +64,17 @@ def create_annotation(csv_row, is_important_changes):
         'Subtopic 3b',
         'Any keywords to monitor (e.g. for term analyses)?',
         'Further Notes',
-        'Ask/tell other working groups?'
+        'Ask/tell other working groups?',
+
+        'Who Found This?' # Including this so that we can eventually map it to
+                          # users in the database
     ]
-    bools_dict = {k: csv_row[k] == '1' for k in bool_keys}
-    strings_dict = {k: csv_row[k] for k in string_keys}
+    bools_dict = {k: csv_row[k].strip() == '1' for k in bool_keys}
+    strings_dict = {k: csv_row[k].strip() for k in string_keys}
     annotation = {**bools_dict, **strings_dict}
+
+    # This will need additional logic to determine the actual sheet schema
+    annotation['annotation_schema'] = 'edgi_analyst_v2'
 
     significance = 0.0
     if is_important_changes:
@@ -77,19 +87,14 @@ def create_annotation(csv_row, is_important_changes):
         significance = importance_significance_mapping.get(row_importance, 0.0)
     annotation['significance'] = significance
 
-    try:
-        annotation['priority'] = float(csv_row['Priority (algorithm)'])
-    except:
-        annotation['priority'] = 0.0
-
     return annotation
 
 def post_annotation(change_ids, annotation):
-    cli = Client.from_env()
-    response = cli.add_annotation(annotation=annotation,
-                                  page_id=change_ids['page_id'],
-                                  to_version_id=change_ids['to_version_id'],
-                                  from_version_id=change_ids['from_version_id'])
+    client = Client.from_env()
+    response = client.add_annotation(annotation=annotation,
+                                     page_id=change_ids['page_id'],
+                                     to_version_id=change_ids['to_version_id'],
+                                     from_version_id=change_ids['from_version_id'])
     return response
 
 def main():
@@ -106,11 +111,20 @@ Options:
     csv_path = arguments['<csv_path>']
 
     # Missing step: Analyze CSV to determine spreadsheet schema version
-    for row in read_csv(csv_path):
+    for row in tqdm(read_csv(csv_path), unit=' rows'):
         change_ids = find_change_ids(row)
         annotation = create_annotation(row, is_important_changes)
-        response = post_annotation(change_ids, annotation)
-        print(response)
+        if not change_ids:
+            logger.warning(f'failed to extract IDs from {row}')
+        if not annotation:
+            logger.warning(f'failed to extract annotation data from {row}')
+        if change_ids and annotation:
+            try:
+                response = post_annotation(change_ids, annotation)
+                logger.debug(response)
+            except db.WebMonitoringDbError as e:
+                logger.warning(
+                    f'failed to post annotation for row {row} with error: {e}')
 
 if __name__ == '__main__':
     main()
