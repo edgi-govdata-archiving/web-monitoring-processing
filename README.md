@@ -21,13 +21,13 @@ This component is intended to hold various backend tools serving different tasks
 
 Working and Under Active Development:
 
-* A Python API to PageFreezer's diffing service in
-  ``web_monitoring.page_freezer``
 * A Python API to the Internet Archive Wayback Machine's archived webpage
   snapshots in ``web_monitoring.internetarchive``
 * A Python API to the web-monitoring-db Rails app in ``web_monitoring.db``
-* Python functions and a command-line tool for importing snapshots from PF and
-  IA into web-monitoring-db.
+* Python functions and a command-line tool for importing snapshots from the
+  Internet Archive into web-monitoring-db.
+* An HTTP API for diffing two documents according to a variety of algorithms.
+  (Uses the Tornado web framework.)
 
 Legacy projects that may be revisited:
 * [Example HTML](https://github.com/edgi-govdata-archiving/web-monitoring-processing/tree/master/archives) providing useful test cases.
@@ -119,6 +119,7 @@ This project wouldn’t exist without a lot of amazing people’s help. Thanks t
 | [💻](# "Code") | [Stuart Lynn](https://github.com/stuartlynn) |
 | [💻](# "Code") | [Allan Pichardo](https://github.com/allanpichardo) |
 | [📖](# "Documentation") [📋](# "Organizer") | [Matt Price](https://github.com/titaniumbones) |
+| [💻](# "Code") | [Mike Rotondo](https://github.com/mrotondo) |
 | [📖](# "Documentation") | [Susan Tan](https://github.com/ArcTanSusan) |
 | [💻](# "Code") [⚠️](# "Tests") | [Fotis Tsalampounis](https://github.com/ftsalamp) |
 | [📖](# "Documentation") [📋](# "Organizer") | [Dawn Walker](https://github.com/dcwalk) |
@@ -129,7 +130,7 @@ This project wouldn’t exist without a lot of amazing people’s help. Thanks t
 
 ## License & Copyright
 
-Copyright (C) 2017-2018 Environmental Data and Governance Initiative (EDGI)
+Copyright (C) 2017-2019 Environmental Data and Governance Initiative (EDGI)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.0.
 
