@@ -34,44 +34,83 @@ def find_change_ids(csv_row):
     else:
         return None
 
+class AnnotationAttributeInfo:
+    def __init__(self, column_names, json_key):
+        self.column_names = column_names
+        self.json_key = json_key
+
+# If column names ever change while leaving the value semantics intact, 
+# add the new  name to the correct list of column names here
+BOOL_ANNOTATION_ATTRIBUTES = list(map(lambda info: AnnotationAttributeInfo(*info), [
+    (['Language alteration'],
+     'language_alteration'),
+    (['Link change/addition/removal'],
+     'link_change'),
+    (['Repeated Change across many pages or a domain'],
+     'repeated_change'),
+    (['Alteration within sections of a webpage'],
+     'alteration_within_sections'),
+    (['Alteration, removal, or addition of entire section(s) of a webpage'],
+     'alteration_entire_sections'),
+    (['Alteration, removal, or addition of an entire webpage or document'],
+     'alteration_entire_webpage_or_document'),
+    (['Overhaul, removal, or addition of an entire website'],
+     'alteration_entire_website'),
+    (['Alteration, removal, or addition of datasets'],
+     'alteration_dataset')]))
+
+STRING_ANNOTATION_ATTRIBUTES = list(map(lambda info: AnnotationAttributeInfo(*info), [
+    (['Is this primarily a content or access change (or both)?'],
+     'content_or_access_change'),
+    (['Brief Description'],
+     'brief_description'),
+    (['Topic 1'],
+     'topic_1'),
+    (['Subtopic 1a'],
+     'subtopic_1a'),
+    (['Subtopic 1b'],
+     'subtopic_1b'),
+    (['Topic 2'],
+     'topic_2'),
+    (['Subtopic 2a'],
+     'subtopic_2a'),
+    (['Subtopic 2b'],
+     'subtopic_2b'),
+    (['Topic 3'],
+     'topic_3'),
+    (['Subtopic 3a'],
+     'subtopic_3a'),
+    (['Subtopic 3b'],
+     'subtopic_3b'),
+    (['Any keywords to monitor (e.g. for term analyses)?'],
+     'keywords_to_monitor'),
+    (['Further Notes'],
+     'further_notes'),
+    (['Ask/tell other working groups?'],
+     'ask_tell_other_working_groups'),
+
+    # Including this so that we can eventually map it to
+    # users in the database
+    (['Who Found This?'],
+     'annotation_author')]))
+
+def get_attribute_value(attribute_info, csv_row):
+    for column_name in attribute_info.column_names:
+        if column_name in csv_row:
+            return csv_row[column_name].strip()
+    return None
+
 def create_annotation(csv_row, is_important_changes):
-    # Missing step: capture info from the "Who Found This" column and map it to
-    # the author's user record in the database eventually, but that requires a
-    # change to the API
+    annotation = {}
 
-    bool_keys = [
-        'Language alteration',
-        'Content change/addition/removal',
-        'Link change/addition/removal',
-        'Repeated Change across many pages or a domain',
-        'Alteration within sections of a webpage',
-        'Alteration, removal, or addition of entire section(s) of a webpage',
-        'Alteration, removal, or addition of an entire webpage or document',
-        'Overhaul, removal, or addition of an entire website',
-        'Alteration, removal, or addition of datasets'
-    ]
-    string_keys = [
-        'Is this primarily a content or access change (or both)?',
-        'Brief Description',
-        'Topic 1',
-        'Subtopic 1a',
-        'Subtopic 1b',
-        'Topic 2',
-        'Subtopic 2a',
-        'Subtopic 2b',
-        'Topic 3',
-        'Subtopic 3a',
-        'Subtopic 3b',
-        'Any keywords to monitor (e.g. for term analyses)?',
-        'Further Notes',
-        'Ask/tell other working groups?',
-
-        'Who Found This?' # Including this so that we can eventually map it to
-                          # users in the database
-    ]
-    bools_dict = {k: csv_row[k].strip() == '1' for k in bool_keys}
-    strings_dict = {k: csv_row[k].strip() for k in string_keys}
-    annotation = {**bools_dict, **strings_dict}
+    for attribute_info in BOOL_ANNOTATION_ATTRIBUTES:
+        attribute_value = get_attribute_value(attribute_info, csv_row)
+        if attribute_value is not None:
+            annotation[attribute_info.json_key] = attribute_value == '1'
+    for attribute_info in STRING_ANNOTATION_ATTRIBUTES:
+        attribute_value = get_attribute_value(attribute_info, csv_row)
+        if attribute_value is not None:
+            annotation[attribute_info.json_key] = attribute_value
 
     # This will need additional logic to determine the actual sheet schema
     annotation['annotation_schema'] = 'edgi_analyst_v2'
