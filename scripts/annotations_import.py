@@ -39,9 +39,12 @@ class AnnotationAttributeInfo:
         self.column_names = column_names
         self.json_key = json_key
 
+class CsvSchemaError(Exception):
+    ...
+
 # If column names ever change while leaving the value semantics intact, 
 # add the new  name to the correct list of column names here
-BOOL_ANNOTATION_ATTRIBUTES = list(map(lambda info: AnnotationAttributeInfo(*info), [
+BOOL_ANNOTATION_ATTRIBUTES = [AnnotationAttributeInfo(*info) for info in  [
     (['Language alteration'],
      'language_alteration'),
     (['Link change/addition/removal'],
@@ -57,9 +60,9 @@ BOOL_ANNOTATION_ATTRIBUTES = list(map(lambda info: AnnotationAttributeInfo(*info
     (['Overhaul, removal, or addition of an entire website'],
      'alteration_entire_website'),
     (['Alteration, removal, or addition of datasets'],
-     'alteration_dataset')]))
+     'alteration_dataset')]]
 
-STRING_ANNOTATION_ATTRIBUTES = list(map(lambda info: AnnotationAttributeInfo(*info), [
+STRING_ANNOTATION_ATTRIBUTES = [AnnotationAttributeInfo(*info) for info in [
     (['Is this primarily a content or access change (or both)?'],
      'content_or_access_change'),
     (['Brief Description'],
@@ -92,25 +95,27 @@ STRING_ANNOTATION_ATTRIBUTES = list(map(lambda info: AnnotationAttributeInfo(*in
     # Including this so that we can eventually map it to
     # users in the database
     (['Who Found This?'],
-     'annotation_author')]))
+     'annotation_author')]]
 
 def get_attribute_value(attribute_info, csv_row):
     for column_name in attribute_info.column_names:
         if column_name in csv_row:
             return csv_row[column_name].strip()
-    return None
+
+    # Despite being raised in a row-level function, this error means that the
+    # whole sheet is missing a column, so we don't catch and allow it to crash
+    raise CsvSchemaError(f'Expected to find one of {attribute_info.column_names} '
+                         f'in {csv_row.keys()}')
 
 def create_annotation(csv_row, is_important_changes):
     annotation = {}
 
     for attribute_info in BOOL_ANNOTATION_ATTRIBUTES:
         attribute_value = get_attribute_value(attribute_info, csv_row)
-        if attribute_value is not None:
-            annotation[attribute_info.json_key] = attribute_value == '1'
+        annotation[attribute_info.json_key] = attribute_value == '1'
     for attribute_info in STRING_ANNOTATION_ATTRIBUTES:
         attribute_value = get_attribute_value(attribute_info, csv_row)
-        if attribute_value is not None:
-            annotation[attribute_info.json_key] = attribute_value
+        annotation[attribute_info.json_key] = attribute_value
 
     # This will need additional logic to determine the actual sheet schema
     annotation['annotation_schema'] = 'edgi_analyst_v2'
