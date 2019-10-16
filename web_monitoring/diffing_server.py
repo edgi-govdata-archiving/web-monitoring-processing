@@ -247,7 +247,7 @@ class DiffHandler(BaseHandler):
             actual_hash = hashlib.sha256(response.body).hexdigest()
             if actual_hash != expected_hash:
                 response = None
-                self.send_error(500,
+                self.send_error(502,
                                 reason=(f'Fetched content at "{url}" does not '
                                         f'match hash "{expected_hash}".'))
 
