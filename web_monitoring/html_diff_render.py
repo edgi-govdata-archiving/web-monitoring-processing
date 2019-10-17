@@ -383,7 +383,7 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     soup_new = _cleanup_document_structure(soup_new)
 
     comparator = None
-    if strict_urls is not None:
+    if strict_urls:
         comparator = StrictUrlRule.get_comparator(strict_urls)
 
     results, diff_bodies = diff_elements(soup_old.body, soup_new.body, comparator, include)
