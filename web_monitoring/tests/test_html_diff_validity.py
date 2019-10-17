@@ -177,7 +177,7 @@ def test_html_diff_works_on_documents_with_no_body():
     assert isinstance(results['combined'], str)
 
 
-def test_html_diff_works_wbm_snapshots():
+def test_html_diff_works_wayback_snapshots():
     results = html_diff_render(
         '''
         <div>
@@ -191,7 +191,7 @@ def test_html_diff_works_wbm_snapshots():
             <a href=/web/20171203125801/https://en.wikipedia.org/wiki/Mars_(mythology)>Mars (mythology)</a>.
         </div>
         ''',
-        include='all', url_rules='WBM')
+        include='all', url_rules='wayback')
 
     assert results['change_count'] == 0
 
@@ -215,7 +215,7 @@ def test_html_diff_works_without_custom_url_comparisons():
     assert results['change_count'] == 2
 
 
-def test_html_diff_works_with_wbm_srcset():
+def test_html_diff_works_with_wayback_srcset():
     results = html_diff_render(
         '''
         <img
@@ -235,7 +235,7 @@ def test_html_diff_works_with_wbm_srcset():
             width="275"
             height="275">
         ''',
-        include='all', url_rules='WBM')
+        include='all', url_rules='wayback')
 
     assert results['change_count'] == 0
 
@@ -271,11 +271,11 @@ def test_html_diff_works_with_jsessionid():
     assert results['change_count'] == 0
 
 
-def test_html_diff_works_with_uk_wbm_snapshots():
+def test_html_diff_works_with_wayback_uk_snapshots():
     results = html_diff_render(
         '<a href="https://www.webarchive.org.uk/wayback/en/archive/20190525141538/https://www.example.gov/></a>',
         '<a href="https://www.webarchive.org.uk/wayback/en/archive/20181231224558/https://www.example.gov/></a>',
-        include='all', url_rules='UK_WBM')
+        include='all', url_rules='wayback_uk')
 
     assert results['change_count'] == 0
 
@@ -296,6 +296,6 @@ def test_html_diff_compound_comparisons_works():
             <a href="https://www.webarchive.org.uk/wayback/en/archive/20181231224558/https://www.example.gov/></a>
         </div>
         ''',
-        include='all', url_rules='jsessionid,WBM,UK_WBM')
+        include='all', url_rules='jsessionid,wayback,wayback_uk')
 
     assert results['change_count'] == 0

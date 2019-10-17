@@ -262,9 +262,9 @@ class UrlRules:
     various Comparator classes and the keywords used to match them. This
     mapping is done inside the RULES dictionary.
     """
-    RULES = {'WBM': WaybackUrlComparator,
-             'jsessionid': ServletSessionUrlComparator,
-             'UK_WBM': WaybackUkUrlComparator}
+    RULES = {'jsessionid': ServletSessionUrlComparator,
+             'wayback': WaybackUrlComparator,
+             'wayback_uk': WaybackUkUrlComparator}
 
     @classmethod
     def compare_array(cls, url_list_a, url_list_b, comparator):
@@ -349,11 +349,11 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         Use specialized rules for comparing URLs in links, images, etc.
         Possible values are:
         - `jsessionid` ignores Java Servlet session IDs in URLs.
-        - `WBM` considers two Wayback Machine links as equivalent if they have
+        - `wayback` considers two Wayback Machine links as equivalent if they have
           the same original URL, regardless of each of their timestamps.
-        - `UK_WBM` like `WBM`, but for the UK Web Archive (webarchive.org.uk)
+        - `wayback_uk` like `wayback`, but for the UK Web Archive (webarchive.org.uk)
         You can also combine multiple comparison rules with a comma,
-        e.g. `jsessionid,WBM`. Use None or an empty string for exact
+        e.g. `jsessionid,wayback`. Use None or an empty string for exact
         comparisons. (Default: `jsessionid`)
 
     Example
