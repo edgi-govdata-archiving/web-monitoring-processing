@@ -327,7 +327,7 @@ class StrictUrlRule:
 
 def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
                      include='combined', content_type_options='normal',
-                     strict_urls=None):
+                     strict_urls='jsessionid'):
     """
     HTML Diff for rendering. This is focused on visually highlighting portions
     of a page’s text that have been changed. It does not do much to show how
