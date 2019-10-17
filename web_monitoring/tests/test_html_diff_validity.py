@@ -179,20 +179,18 @@ def test_html_diff_works_on_documents_with_no_body():
 
 def test_html_diff_works_wbm_snapshots():
     results = html_diff_render(
-        '<div role="note" class="hatnote navigation-not-searchable">'
-        'This article is about the planet. For the deity, see <a href="/web/'
-        '20171105043925/https://en.wikipedia.org/wiki/Mars_(mythology)" title='
-        '"Mars (mythology)">Mars (mythology)</a>. For other uses, see <a href='
-        '"/web/20171105043925/https://en.wikipedia.org/wiki/Mars_'
-        '(disambiguation)" class="mw-disambig" title="Mars (disambiguation)">'
-        'Mars (disambiguation)</a>.</div>',
-        '<div role="note" class="hatnote navigation-not-searchable">'
-        'This article is about the planet. For the deity, see <a href="/web/'
-        '20171203125801/https://en.wikipedia.org/wiki/Mars_(mythology)" title='
-        '"Mars (mythology)">Mars (mythology)</a>. For other uses, see <a href='
-        '"/web/20171203125801/https://en.wikipedia.org/wiki/Mars_'
-        '(disambiguation)" class="mw-disambig" title="Mars (disambiguation)">'
-        'Mars (disambiguation)</a>.</div>',
+        '''
+        <div>
+            This article is about the planet. For the deity, see
+            <a href=/web/20171105043925/https://en.wikipedia.org/wiki/Mars_(mythology)>Mars (mythology)</a>.
+        </div>
+        ''',
+        '''
+        <div>
+            This article is about the planet. For the deity, see
+            <a href=/web/20171203125801/https://en.wikipedia.org/wiki/Mars_(mythology)>Mars (mythology)</a>.
+        </div>
+        ''',
         include='all', strict_urls='WBM')
 
     assert results['change_count'] == 0
@@ -200,20 +198,24 @@ def test_html_diff_works_wbm_snapshots():
 
 def test_html_diff_works_with_wbm_srcset():
     results = html_diff_render(
-        '<img alt="OSIRIS Mars true color.jpg" srcset="//web-beta.archive.org/'
-        'web/20171105043925im_/https://upload.wikimedia.org/wikipedia/commons/'
-        'thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_Mars_true_color'
-        '.jpg 1.5x, //web-beta.archive.org/web/20171105043925im_/https://'
-        'upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_'
-        'color.jpg/550px-OSIRIS_Mars_true_color.jpg 2x" data-file-width="2205"'
-        ' data-file-height="2205" width="275" height="275">',
-        '<img alt="OSIRIS Mars true color.jpg" srcset="//web-beta.archive.org/'
-        'web/20171203125801im_/https://upload.wikimedia.org/wikipedia/commons/'
-        'thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_Mars_true_color'
-        '.jpg 1.5x, //web-beta.archive.org/web/20171203125801im_/https://'
-        'upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_'
-        'color.jpg/550px-OSIRIS_Mars_true_color.jpg 2x" data-file-width="2205"'
-        ' data-file-height="2205" width="275" height="275">',
+        '''
+        <img
+            alt="OSIRIS Mars true color.jpg"
+            srcset="//web-beta.archive.org/web/20171105043925im_/https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_Mars_true_color.jpg 1.5x, //web-beta.archive.org/web/20171105043925im_/https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/550px-OSIRIS_Mars_true_color.jpg 2x"
+            data-file-width="2205"
+            data-file-height="2205"
+            width="275"
+            height="275">
+        ''',
+        '''
+        <img
+            alt="OSIRIS Mars true color.jpg"
+            srcset="//web-beta.archive.org/web/20171203125801im_/https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_Mars_true_color.jpg 1.5x, //web-beta.archive.org/web/20171203125801im_/https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/550px-OSIRIS_Mars_true_color.jpg 2x"
+            data-file-width="2205"
+            data-file-height="2205"
+            width="275"
+            height="275">
+        ''',
         include='all', strict_urls='WBM')
 
     assert results['change_count'] == 0
@@ -221,17 +223,21 @@ def test_html_diff_works_with_wbm_srcset():
 
 def test_html_diff_works_with_srcset():
     results = html_diff_render(
-        '<img alt="OSIRIS Mars true color.jpg" src="https://upload.wikimedia.'
-        'org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-'
-        'OSIRIS_Mars_true_color.jpg">',
-        '<img alt="OSIRIS Mars true color.jpg" src="https://upload.wikimedia.'
-        'org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/275px-'
-        'OSIRIS_Mars_true_color.jpg" srcset="https://upload.wikimedia.org/'
-        'wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_'
-        'Mars_true_color.jpg 1.5x, https://upload.wikimedia.org/wikipedia/'
-        'commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/550px-OSIRIS_Mars_true_'
-        'color.jpg 2x" data-file-width="2205" data-file-height="2205" width='
-        '"275" height="275">',
+        '''
+        <img
+            alt="OSIRIS Mars true color.jpg"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_Mars_true_color.jpg">
+        ''',
+        '''
+        <img
+            alt="OSIRIS Mars true color.jpg"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/275px-OSIRIS_Mars_true_color.jpg"
+            srcset="https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/413px-OSIRIS_Mars_true_color.jpg 1.5x, https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/550px-OSIRIS_Mars_true_color.jpg 2x"
+            data-file-width="2205"
+            data-file-height="2205"
+            width="275"
+            height="275">
+        ''',
         include='all')
 
     assert results['change_count'] == 0
@@ -239,10 +245,8 @@ def test_html_diff_works_with_srcset():
 
 def test_html_diff_works_with_jsessionid():
     results = html_diff_render(
-        '<a href="https://www.ncdc.noaa.gov/homr/api;jsessionid=A2DECB66D2648B'
-        'FED11FC721FC3043A1"></a>',
-        '<a href="https://www.ncdc.noaa.gov/homr/api;jsessionid=45312D9542FDB0'
-        '15289A1BBD76958F43"></a>',
+        '<a href="https://www.ncdc.noaa.gov/homr/api;jsessionid=A2DECB66D2648BFED11FC721FC3043A1"></a>',
+        '<a href="https://www.ncdc.noaa.gov/homr/api;jsessionid=45312D9542FDB015289A1BBD76958F43"></a>',
         include='all', strict_urls='jsessionid')
 
     assert results['change_count'] == 0
@@ -250,10 +254,8 @@ def test_html_diff_works_with_jsessionid():
 
 def test_html_diff_works_with_uk_wbm_snapshots():
     results = html_diff_render(
-        '<a href="https://www.webarchive.org.uk/wayback/en/archive/'
-        '20190525141538/https://www.example.gov/></a>',
-        '<a href="https://www.webarchive.org.uk/wayback/en/archive/'
-        '20181231224558/https://www.example.gov/></a>',
+        '<a href="https://www.webarchive.org.uk/wayback/en/archive/20190525141538/https://www.example.gov/></a>',
+        '<a href="https://www.webarchive.org.uk/wayback/en/archive/20181231224558/https://www.example.gov/></a>',
         include='all', strict_urls='UK_WBM')
 
     assert results['change_count'] == 0
