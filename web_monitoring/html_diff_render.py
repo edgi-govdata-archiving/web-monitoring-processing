@@ -282,6 +282,18 @@ class ServletSessionUrlComparator:
         return match_a == match_b
 
 
+class CompoundComparator:
+    def __init__(self, *comparators):
+        self.comparators = comparators
+
+    def compare(self, url_a, url_b):
+        for comparator in self.comparators:
+            if comparator.compare(url_a, url_b):
+                return True
+
+        return False
+
+
 class StrictUrlRule:
     """
     The StrictUrlRule class represents the the mapping between the
@@ -306,7 +318,9 @@ class StrictUrlRule:
     @classmethod
     def get_comparator(cls, mode):
         try:
-            return cls.CLASS_RULES[mode]()
+            comparators = [cls.CLASS_RULES[name.strip()]()
+                           for name in mode.split(',')]
+            return CompoundComparator(*comparators)
         except KeyError:
             raise KeyError(f'{mode} is an invalid strict URL rule.')
 
