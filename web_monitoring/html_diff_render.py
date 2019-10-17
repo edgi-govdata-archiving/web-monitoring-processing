@@ -256,20 +256,20 @@ class CompoundComparator:
         return False
 
 
-class StrictUrlRule:
+class UrlRules:
     """
-    The StrictUrlRule class represents the the mapping between the
+    The UrlComparisonRule class represents the the mapping between the
     various Comparator classes and the keywords used to match them. This
-    mapping is done inside the CLASS_RULES dictionary.
+    mapping is done inside the RULES dictionary.
     """
-    CLASS_RULES = {'WBM': WaybackUrlComparator,
-                   'jsessionid': ServletSessionUrlComparator,
-                   'UK_WBM': WaybackUkUrlComparator}
+    RULES = {'WBM': WaybackUrlComparator,
+             'jsessionid': ServletSessionUrlComparator,
+             'UK_WBM': WaybackUkUrlComparator}
 
     @classmethod
-    def compare_array(cls, element_array, other_array, comparator):
-        for url_a in element_array:
-            for url_b in other_array:
+    def compare_array(cls, url_list_a, url_list_b, comparator):
+        for url_a in url_list_a:
+            for url_b in url_list_b:
                 if comparator:
                     if comparator.compare(url_a, url_b):
                         return True
@@ -279,8 +279,11 @@ class StrictUrlRule:
 
     @classmethod
     def get_comparator(cls, mode):
+        if not mode:
+            return None
+
         try:
-            comparators = [cls.CLASS_RULES[name.strip()]()
+            comparators = [cls.RULES[name.strip()]()
                            for name in mode.split(',')]
             return CompoundComparator(comparators)
         except KeyError:
@@ -289,7 +292,7 @@ class StrictUrlRule:
 
 def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
                      include='combined', content_type_options='normal',
-                     strict_urls='jsessionid'):
+                     url_rules='jsessionid'):
     """
     HTML Diff for rendering. This is focused on visually highlighting portions
     of a page’s text that have been changed. It does not do much to show how
@@ -342,16 +345,16 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         - `nocheck` ignores the `Content-Type` header but still sniffs.
         - `nosniff` uses the `Content-Type` header but does not sniff.
         - `ignore` doesn’t do any checking at all.
-    strict_urls : string
-        The value of this parameter indicates whether the tag elements and href
-        elements should use special rules when checking their equality.
+    url_rules : string
+        Use specialized rules for comparing URLs in links, images, etc.
+        Possible values are:
         - `jsessionid` ignores Java Servlet session IDs in URLs.
         - `WBM` considers two Wayback Machine links as equivalent if they have
           the same original URL, regardless of each of their timestamps.
         - `UK_WBM` like `WBM`, but for the UK Web Archive (webarchive.org.uk)
-        You can also combine multiple comparison methods with a comma,
-        e.g. `jsessionid,WBM`.
-        Default: `jsessionid`
+        You can also combine multiple comparison rules with a comma,
+        e.g. `jsessionid,WBM`. Use None or an empty string for exact
+        comparisons. (Default: `jsessionid`)
 
     Example
     -------
@@ -365,6 +368,8 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         a_headers,
         b_headers,
         content_type_options)
+
+    comparator = UrlRules.get_comparator(url_rules)
 
     soup_old = html5_parser.parse(a_text.strip() or EMPTY_HTML,
                                   treebuilder='soup', return_root=False)
@@ -381,10 +386,6 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
 
     soup_old = _cleanup_document_structure(soup_old)
     soup_new = _cleanup_document_structure(soup_new)
-
-    comparator = None
-    if strict_urls:
-        comparator = StrictUrlRule.get_comparator(strict_urls)
 
     results, diff_bodies = diff_elements(soup_old.body, soup_new.body, comparator, include)
 
@@ -850,8 +851,7 @@ def flatten_el(el, include_hrefs, skip_tag=False):
                 src_array.append(el_src)
             srcset = el.get('srcset')
             if srcset is not None:
-                srcset_array = srcset.split(',')
-                for src in srcset_array:
+                for src in srcset.split(','):
                     src_array.append(src.split(' ', maxsplit=1)[0])
             yield (TokenType.img, src_array, start_tag(el))
         elif el.tag in undiffable_content_tags:
@@ -980,7 +980,7 @@ class ImgTagToken(tag_token):
 
     def __eq__(self, other):
         if isinstance(other, ImgTagToken):
-            return StrictUrlRule.compare_array(self.data, other.data, self.comparator)
+            return UrlRules.compare_array(self.data, other.data, self.comparator)
         return False
 
     def __hash__(self):
