@@ -529,6 +529,27 @@ def diff_elements(old, new, comparator, include='all'):
     return metadata, results
 
 
+def _diffable_fragment(element):
+    """
+    Convert a beautiful soup element into an HTML fragment string with just the
+    element's *contents* that is ready for diffing.
+    """
+    # FIXME: we have to remove <ins> and <del> tags because *we* use them to
+    # indicate changes that we find. We probably shouldn't do that:
+    # https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/69#issuecomment-321424897
+    for edit_tag in element.find_all(_is_ins_or_del):
+        edit_tag.unwrap()
+    # Create a fragment string of just the element's contents
+    return ''.join(map(str, element.children))
+
+
+def _is_ins_or_del(tag):
+    return tag.name == 'ins' or tag.name == 'del'
+
+
+# FIXME: this should take two BeautifulSoup elements to diff (since we've
+# already parsed and generated those), not two HTML fragment strings that have
+# to get parsed again.
 def _htmldiff(old, new, comparator, include='all'):
     """
     A slightly customized version of htmldiff that uses different tokens.
