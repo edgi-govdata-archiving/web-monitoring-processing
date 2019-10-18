@@ -241,15 +241,24 @@ class DiffHandler(BaseHandler):
                     response = error.response
                 else:
                     self.send_error(502,
-                                    reason=f'Received a {error.response.code} status while fetching "{url}": {error}')
+                                    reason=f'Received a {error.response.code} '
+                                           f'status while fetching "{url}": '
+                                           f'{error}',
+                                    extra={'type': 'UPSTREAM_ERROR',
+                                           'url': url,
+                                           'upstream_code': error.response.code})
 
         if response and expected_hash:
             actual_hash = hashlib.sha256(response.body).hexdigest()
             if actual_hash != expected_hash:
                 response = None
-                self.send_error(500,
+                self.send_error(502,
                                 reason=(f'Fetched content at "{url}" does not '
-                                        f'match hash "{expected_hash}".'))
+                                        f'match hash "{expected_hash}".'),
+                                extra={'type': 'HASH_MISMATCH',
+                                       'url': url,
+                                       'expected_hash': expected_hash,
+                                       'actual_hash': actual_hash})
 
         return response
 
@@ -285,6 +294,9 @@ class DiffHandler(BaseHandler):
 
     def write_error(self, status_code, **kwargs):
         response = {'code': status_code, 'error': self._reason}
+        if 'extra' in kwargs:
+            for key, value in kwargs['extra'].items():
+                response[key] = value
 
         # Handle errors that are allowed to be public
         # TODO: this error filtering should probably be in `send_error()`
@@ -296,19 +308,21 @@ class DiffHandler(BaseHandler):
         # Pass non-raised (i.e. we manually called `send_error()`), non-user
         # errors to Sentry.io.
         if actual_error is None and response['code'] >= 500:
-            # TODO: this breadcrumb should happen at the start of the request
-            # handler, but we need to test and make sure crumbs are properly
-            # attached to *this* HTTP request and don't bleed over to others,
-            # since Sentry's special support for Tornado has been dropped.
-            headers = dict(self.request.headers)
-            if 'Authorization' in headers:
-                headers['Authorization'] = '[removed]'
-            sentry_sdk.add_breadcrumb(category='request', data={
-                'url': self.request.full_url(),
-                'method': self.request.method,
-                'headers': headers,
-            })
-            sentry_sdk.capture_message(f'{self._reason} (status: {response["code"]})')
+            with sentry_sdk.push_scope():
+                # TODO: this breadcrumb should happen at the start of the
+                # request handler, but we need to test and make sure crumbs are
+                # properly attached to *this* HTTP request and don't bleed over
+                # to others, since Sentry's special support for Tornado has
+                # been dropped.
+                headers = dict(self.request.headers)
+                if 'Authorization' in headers:
+                    headers['Authorization'] = '[removed]'
+                sentry_sdk.add_breadcrumb(category='request', data={
+                    'url': self.request.full_url(),
+                    'method': self.request.method,
+                    'headers': headers,
+                })
+                sentry_sdk.capture_message(f'{self._reason} (status: {response["code"]})')
 
         # Fill in full info if configured to do so
         if self.settings.get('serve_traceback') and 'exc_info' in kwargs:
