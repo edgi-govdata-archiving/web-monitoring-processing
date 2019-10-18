@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.50.g5a4e4cd documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.50.gbd1b60e documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g5a4e4cd
+                0+untagged.50.gbd1b60e
               </div>
             
           
@@ -186,11 +186,11 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x7f25f47e05e8&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x7f6605f35570&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
-simple way is to use the built-in Python function <a class="reference external" href="https://docs.python.org/3/library/functions.html#next" title="(in Python v3.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">next()</span></code></a>, like so:</p>
+simple way is to use the built-in Python function <a class="reference external" href="https://docs.python.org/3/library/functions.html#next" title="(in Python v3.8)"><code class="xref py py-func docutils literal notranslate"><span class="pre">next()</span></code></a>, like so:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [5]: </span><span class="n">record</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 </pre></div>
 </div>
