@@ -388,10 +388,10 @@ def caller(func, a, b, **query_params):
 
     Parameters
     ----------
-    func: callable
+    func : callable
         a 'differ' function
-    a: tornado.httpclient.HTTPResponse
-    b: tornado.httpclient.HTTPResponse
+    a : tornado.httpclient.HTTPResponse
+    b : tornado.httpclient.HTTPResponse
     **query_params
         additional parameters parsed from the REST diffing request
 

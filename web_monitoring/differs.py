@@ -115,12 +115,12 @@ def insert_style(html, css):
 
     Parameters
     ----------
-    html: string
-    css: string
+    html : string
+    css : string
 
     Returns
     -------
-    render: string
+    render : string
     """
     soup = html5_parser.parse(html,  treebuilder='soup', return_root=False)
 

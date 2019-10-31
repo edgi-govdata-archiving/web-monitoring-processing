@@ -213,15 +213,15 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
 
     Parameters
     ----------
-    a_text: string
+    a_text : string
         Source HTML of one document to compare
-    b_text: string
+    b_text : string
         Source HTML of the other document to compare
-    a_headers: dict
+    a_headers : dict
         Any HTTP headers associated with the `a` document
-    b_headers: dict
+    b_headers : dict
         Any HTTP headers associated with the `b` document
-    include: string
+    include : string
         Which comparisons to include in output. Options are:
         - `combined` returns an HTML document with insertions and deletions
           together.
@@ -232,7 +232,7 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
         - `all` returns all of the above documents. You might use this for
           efficiency -- the most expensive part of the diff is only performed
           once and reused for all three return types.
-    content_type_options: string
+    content_type_options : string
         Change how content type detection is handled. It doesn’t make a lot of
         sense to apply an HTML-focused diffing algorithm to, say, a JPEG image,
         so this function uses a combination of headers and content sniffing to
@@ -1067,11 +1067,11 @@ def merge_changes(change_chunks, doc, tag_type='ins'):
 
     Parameters
     ----------
-    change_chunks: list of token
+    change_chunks : list of token
         The changes to merge.
-    doc: list of token
+    doc : list of token
         The "document" to merge `change_chunks` into.
-    tag_type: str
+    tag_type : str
         The type of HTML tag to wrap the changes with.
     """
     # NOTE: this serves a similar purpose to LXML's html.diff.merge_insert
@@ -1338,11 +1338,11 @@ def merge_change_groups(change_chunks, doc, tag_type=None):
 
     Parameters
     ----------
-    change_chunks: list of token
+    change_chunks : list of token
         The changes to merge.
-    doc: list of token
+    doc : list of token
         The "document" to merge `change_chunks` into.
-    tag_type: str
+    tag_type : str
         The type of HTML tag to wrap the changes with.
     """
     depth = 0
