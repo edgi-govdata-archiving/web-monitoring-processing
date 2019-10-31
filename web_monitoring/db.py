@@ -163,6 +163,12 @@ variables:
 Alternatively, you can instaniate Client(user, password) directly.""")
         return cls(email=email, password=password, url=url)
 
+    def get_request(self, url, params=None):
+        return requests.get(url,
+                            params=params,
+                            auth=self._auth,
+                            headers={'accept': 'application/json'})
+
     ### PAGES ###
 
     def list_pages(self, *, chunk=None, chunk_size=None, sort=None,
@@ -222,7 +228,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'active': active,
                   'include_total': include_total or None}
         url = f'{self._api_url}/pages'
-        res = requests.get(url, auth=self._auth, params=params)
+        res = self.get_request(url, params=params)
         _process_errors(res)
         result = res.json()
         data = result['data']
@@ -264,7 +270,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         response : dict
         """
         url = f'{self._api_url}/pages/{page_id}'
-        res = requests.get(url, auth=self._auth)
+        res = self.get_request(url)
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -349,7 +355,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             url = f'{self._api_url}/versions'
         else:
             url = f'{self._api_url}/pages/{page_id}/versions'
-        res = requests.get(url, auth=self._auth, params=params)
+        res = self.get_request(url, params=params)
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -383,7 +389,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         url = f'{self._api_url}/versions/{version_id}'
         params = {'include_change_from_previous': include_change_from_previous,
                   'include_change_from_earliest': include_change_from_earliest}
-        res = requests.get(url, auth=self._auth, params=params)
+        res = self.get_request(url, params=params)
         _process_errors(res)
         result = res.json()
         data = result['data']
@@ -553,7 +559,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         response : dict
         """
         url = f'{self._api_url}/imports/{import_id}'
-        res = requests.get(url, auth=self._auth)
+        res = self.get_request(url)
         _process_errors(res)
         return res.json()
 
@@ -577,9 +583,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         response : dict
         """
         url = f'{self._api_url}/pages/{page_id}/changes/'
-        res = requests.get(url, auth=self._auth, params={
-            'include_total': include_total or None
-        })
+        res = self.get_request(url, params={'include_total': include_total or None})
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -606,7 +610,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
-        res = requests.get(url, auth=self._auth)
+        res = self.get_request(url)
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -642,9 +646,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
-        res = requests.get(url, auth=self._auth, params={
-            'include_total': include_total or None
-        })
+        res = self.get_request(url, params={'include_total': include_total or None})
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -700,7 +702,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         url = (f'{self._api_url}/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations/'
                f'{annotation_id}')
-        res = requests.get(url, auth=self._auth)
+        res = self.get_request(url)
         _process_errors(res)
         result = res.json()
         # In place, replace datetime strings with datetime objects.
@@ -725,7 +727,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         db_result = self.get_version(version_id)
         content_uri = db_result['data']['uri']
-        res = requests.get(content_uri)
+        res = self.get_request(content_uri)
         _process_errors(res)
         if res.headers.get('Content-Type', '').startswith('text/'):
             return res.text
