@@ -127,7 +127,6 @@ html_css_files = [
     'css/custom.css',
 ]
 
-
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #
