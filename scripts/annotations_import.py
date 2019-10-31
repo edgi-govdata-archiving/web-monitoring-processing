@@ -22,7 +22,7 @@ def read_csv(csv_path):
         for row in reader:
             yield row
 
-DIFF_URL_REGEX = re.compile('^.*\/page\/(.*)/(.*)\.\.(.*)')
+DIFF_URL_REGEX = re.compile(r'^.*/page/(.*)/(.*)\.\.(.*)')
 def find_change_ids(csv_row):
     diff_url = csv_row['Last Two - Side by Side']
     regex_result = DIFF_URL_REGEX.match(diff_url)
@@ -133,14 +133,6 @@ def create_annotation(csv_row, is_important_changes):
 
     return annotation
 
-def post_annotation(change_ids, annotation):
-    client = Client.from_env()
-    response = client.add_annotation(annotation=annotation,
-                                     page_id=change_ids['page_id'],
-                                     to_version_id=change_ids['to_version_id'],
-                                     from_version_id=change_ids['from_version_id'])
-    return response
-
 def main():
     doc = """Add analyst annotations from a csv file to the Web Monitoring db.
 
@@ -154,6 +146,7 @@ Options:
     is_important_changes = arguments['--is_important_changes']
     csv_path = arguments['<csv_path>']
 
+    client = Client.from_env()
     # Missing step: Analyze CSV to determine spreadsheet schema version
     for row in tqdm(read_csv(csv_path), unit=' rows'):
         change_ids = find_change_ids(row)
@@ -164,7 +157,8 @@ Options:
             logger.warning(f'failed to extract annotation data from {row}')
         if change_ids and annotation:
             try:
-                response = post_annotation(change_ids, annotation)
+                response = client.add_annotation(**change_ids,
+                                                 annotation=annotation)
                 logger.debug(response)
             except db.WebMonitoringDbError as e:
                 logger.warning(
