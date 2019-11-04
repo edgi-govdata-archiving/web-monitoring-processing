@@ -493,8 +493,8 @@ class WaybackClient(utils.DepthCountedContext):
                     # represent UTC) or convert the datetime to UTC.
                     value_utc = value
                     if value.tzinfo:
-                        value = value.astimezone(tzutc())
-                    final_query[key] = value.strftime(URL_DATE_FORMAT)
+                        value_utc = value.astimezone(tzutc())
+                    final_query[key] = value_utc.strftime(URL_DATE_FORMAT)
                 else:
                     final_query[key] = str(value).lower()
 
