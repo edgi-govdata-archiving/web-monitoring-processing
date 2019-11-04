@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.50.g0c91dca documentation</title>
+  <title>Python API to Internet Archive Wayback Machine &mdash; web-monitoring-processing 0+untagged.50.g3b024e2 documentation</title>
   
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0c91dca
+                0+untagged.50.g3b024e2
               </div>
             
           
@@ -186,7 +186,7 @@ object from which we can pull results, one at a time. As we pull items
 out of it, it loads them as needed from the Wayback Machine in chronological
 order. We can see that <code class="docutils literal notranslate"><span class="pre">results</span></code> by itself is not informative:</p>
 <div class="highlight-ipython notranslate"><div class="highlight"><pre><span></span><span class="gp">In [4]: </span><span class="n">results</span>
-<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x7efe03a622a0&gt;</span>
+<span class="gh">Out[4]: </span><span class="go">&lt;generator object WaybackClient.search at 0x7f78de92c048&gt;</span>
 </pre></div>
 </div>
 <p>There are couple ways to pull items out of generator like <code class="docutils literal notranslate"><span class="pre">results</span></code>. One
@@ -328,10 +328,12 @@ return a variable number of results.</p>
 <dt><strong>gzip</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether output should be gzipped.</p>
 </dd>
 <dt><strong>from_date</strong><span class="classifier">datetime, optional</span></dt><dd><p>Only include captures after this date. Equivalent to the
-<cite>from</cite> argument in the CDX API.</p>
+<cite>from</cite> argument in the CDX API. If it does not have a time zone, it
+is assumed to be in UTC.</p>
 </dd>
 <dt><strong>to_date</strong><span class="classifier">str, optional</span></dt><dd><p>Only include captures before this date. Equivalent to the <cite>to</cite>
-argument in the CDX API.</p>
+argument in the CDX API.  If it does not have a time zone, it is
+assumed to be in UTC.</p>
 </dd>
 <dt><strong>filter_field</strong><span class="classifier">str, optional</span></dt><dd><p>A filter for any field in the results. Equivalent to the <cite>filter</cite>
 argument in the CDX API. (format: <cite>[!]field:regex</cite>)</p>

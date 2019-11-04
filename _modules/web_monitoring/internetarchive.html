@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.50.g0c91dca documentation</title>
+  <title>web_monitoring.internetarchive &mdash; web-monitoring-processing 0+untagged.50.g3b024e2 documentation</title>
   
 
   
@@ -58,7 +58,7 @@
             
             
               <div class="version">
-                0+untagged.50.g0c91dca
+                0+untagged.50.g3b024e2
               </div>
             
           
@@ -169,6 +169,7 @@
 <span class="kn">from</span> <span class="nn">base64</span> <span class="k">import</span> <span class="n">b32encode</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">dateutil.tz</span> <span class="k">import</span> <span class="n">tzutc</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">urllib.parse</span>
@@ -565,10 +566,12 @@
 <span class="sd">            Whether output should be gzipped.</span>
 <span class="sd">        from_date : datetime, optional</span>
 <span class="sd">            Only include captures after this date. Equivalent to the</span>
-<span class="sd">            `from` argument in the CDX API.</span>
+<span class="sd">            `from` argument in the CDX API. If it does not have a time zone, it</span>
+<span class="sd">            is assumed to be in UTC.</span>
 <span class="sd">        to_date : str, optional</span>
 <span class="sd">            Only include captures before this date. Equivalent to the `to`</span>
-<span class="sd">            argument in the CDX API.</span>
+<span class="sd">            argument in the CDX API.  If it does not have a time zone, it is</span>
+<span class="sd">            assumed to be in UTC.</span>
 <span class="sd">        filter_field : str, optional</span>
 <span class="sd">            A filter for any field in the results. Equivalent to the `filter`</span>
 <span class="sd">            argument in the CDX API. (format: `[!]field:regex`)</span>
@@ -639,7 +642,12 @@
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                     <span class="n">final_query</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
-                    <span class="n">final_query</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">URL_DATE_FORMAT</span><span class="p">)</span>
+                    <span class="c1"># Make sure we have either a naive datetime (assumed to</span>
+                    <span class="c1"># represent UTC) or convert the datetime to UTC.</span>
+                    <span class="n">value_utc</span> <span class="o">=</span> <span class="n">value</span>
+                    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span><span class="p">:</span>
+                        <span class="n">value_utc</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">tzutc</span><span class="p">())</span>
+                    <span class="n">final_query</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value_utc</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">URL_DATE_FORMAT</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">final_query</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
