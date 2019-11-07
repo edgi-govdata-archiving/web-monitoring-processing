@@ -168,7 +168,7 @@ variables:
 Alternatively, you can instaniate Client(user, password) directly.""")
         return cls(email=email, password=password, url=url)
 
-    def request(self, method, url, data=None, **kwargs):
+    def request(self, method, url, data=None, raw_response=False, **kwargs):
         if data is not None:
             headers = kwargs.setdefault('headers', {})
             if isinstance(data, collections.Sequence):
@@ -179,7 +179,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                 kwargs['data'] = json.dumps(data)
         response = self._session.request(method=method, url=url, **kwargs)
         _process_errors(response)
-        return response.json()
+        if raw_response:
+            return response
+        else:
+            return response.json()
 
     ### PAGES ###
 
@@ -715,7 +718,14 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         db_result = self.get_version(version_id)
         content_uri = db_result['data']['uri']
-        return self.request(GET, content_uri)
+        raw_response = self.request(GET,
+                                    content_uri,
+                                    raw_response=True,
+                                    headers={'accept': None})
+        if raw_response.headers.get('Content-Type', '').startswith('text/'):
+            return raw_response.text
+        else:
+            return raw_response.content
 
     def get_version_by_versionista_id(self, versionista_id):
         """
