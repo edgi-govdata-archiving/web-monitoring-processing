@@ -1,6 +1,6 @@
 # Functions for interacting with web-monitoring-db
 from dateutil.parser import parse as parse_timestamp
-import collections
+from collections.abc import Sequence
 import json
 import os
 import requests
@@ -169,9 +169,12 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         return cls(email=email, password=password, url=url)
 
     def request(self, method, url, data=None, raw_response=False, **kwargs):
+        if not url.startswith('http://') and not url.startswith('https://'):
+            url = f'{self._api_url}{url}'
+
         if data is not None:
             headers = kwargs.setdefault('headers', {})
-            if isinstance(data, collections.Sequence):
+            if isinstance(data, Sequence):
                 headers.update({'Content-Type': 'application/x-json-stream'})
                 kwargs['data'] = '\n'.join(map(json.dumps, data))
             else:
@@ -242,7 +245,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'capture_time': _time_range_string(start_date, end_date),
                   'active': active,
                   'include_total': include_total or None}
-        url = f'{self._api_url}/pages'
+        url = '/pages'
         result = self.request(GET, url, params=params)
         data = result['data']
         # In place, replace datetime strings with datetime objects.
@@ -282,7 +285,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = f'{self._api_url}/pages/{page_id}'
+        url = f'/pages/{page_id}'
         result = self.request(GET, url)
         # In place, replace datetime strings with datetime objects.
         data = result['data']
@@ -363,9 +366,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             for k, v in source_metadata.items():
                 params[f'source_metadata[{k}]'] = v
         if page_id is None:
-            url = f'{self._api_url}/versions'
+            url = '/versions'
         else:
-            url = f'{self._api_url}/pages/{page_id}/versions'
+            url = f'/pages/{page_id}/versions'
         result = self.request(GET, url, params=params)
         # In place, replace datetime strings with datetime objects.
         for v in result['data']:
@@ -395,7 +398,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = f'{self._api_url}/versions/{version_id}'
+        url = f'/versions/{version_id}'
         params = {'include_change_from_previous': include_change_from_previous,
                   'include_change_from_earliest': include_change_from_earliest}
         result = self.request(GET, url, params=params)
@@ -444,7 +447,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             source_type=source_type,
             title=title,
             source_metadata=source_metadata)
-        url = f'{self._api_url}/pages/{page_id}/versions'
+        url = f'/pages/{page_id}/versions'
         return self.request(POST, url, data=version)
 
     def add_versions(self, versions, *, update='skip', create_pages=None,
@@ -483,7 +486,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         import_ids : tuple
         """
-        url = f'{self._api_url}/imports'
+        url = '/imports'
         # POST to the server in chunks. Stash the import id from each response.
         import_ids = []
         for batch in toolz.partition_all(batch_size, versions):
@@ -559,7 +562,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = f'{self._api_url}/imports/{import_id}'
+        url = f'/imports/{import_id}'
         return self.request(GET, url)
 
     ### CHANGES AND ANNOTATIONS ###
@@ -581,7 +584,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = f'{self._api_url}/pages/{page_id}/changes/'
+        url = f'/pages/{page_id}/changes/'
         result = self.request(GET,
                               url,
                               params={'include_total': include_total or None})
@@ -607,7 +610,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = (f'{self._api_url}/pages/{page_id}/changes/'
+        url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
         result = self.request(GET, url)
         # In place, replace datetime strings with datetime objects.
@@ -641,7 +644,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = (f'{self._api_url}/pages/{page_id}/changes/'
+        url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
         result = self.request(GET,
                               url,
@@ -670,7 +673,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = (f'{self._api_url}/pages/{page_id}/changes/'
+        url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
         return self.request(POST, url, data=annotation)
 
@@ -692,7 +695,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        url = (f'{self._api_url}/pages/{page_id}/changes/'
+        url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations/'
                f'{annotation_id}')
         result = self.request(GET, url)
