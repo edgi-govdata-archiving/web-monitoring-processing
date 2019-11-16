@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g4dd5c40 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.gd32f383 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.50.g4dd5c40
+                0+untagged.50.gd32f383
               </div>
             
           
@@ -154,6 +154,7 @@
   <h1>Source code for web_monitoring.db</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Functions for interacting with web-monitoring-db</span>
 <span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="k">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">parse_timestamp</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Sequence</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">requests</span>
@@ -165,6 +166,8 @@
 
 
 <span class="n">DEFAULT_URL</span> <span class="o">=</span> <span class="s1">&#39;https://api.monitoring.envirodatagov.org&#39;</span>
+<span class="n">GET</span> <span class="o">=</span> <span class="s1">&#39;GET&#39;</span>
+<span class="n">POST</span> <span class="o">=</span> <span class="s1">&#39;POST&#39;</span>
 
 
 <span class="k">def</span> <span class="nf">_tzaware_isoformat</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
@@ -287,8 +290,10 @@
 <span class="sd">        Default is ``https://api.monitoring.envirodatagov.org``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Client.__init__"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">DEFAULT_URL</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_api_url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{url}</span><span class="s1">/api/v0&#39;</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{url}</span><span class="s1">/api/v0&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span></div>
 
 <div class="viewcode-block" id="Client.from_env"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.from_env.html#web_monitoring.db.Client.from_env">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_env</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -316,6 +321,26 @@
 
 <span class="s2">Alternatively, you can instaniate Client(user, password) directly.&quot;&quot;&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http://&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;https://&#39;</span><span class="p">):</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}{url}</span><span class="s1">&#39;</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">headers</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;headers&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+                <span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/x-json-stream&#39;</span><span class="p">})</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">_process_errors</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span>
+
+    <span class="k">def</span> <span class="nf">request_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 
     <span class="c1">### PAGES ###</span>
 
@@ -375,10 +400,8 @@
                   <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
                   <span class="s1">&#39;active&#39;</span><span class="p">:</span> <span class="n">active</span><span class="p">,</span>
                   <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">}</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;/pages&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
@@ -417,10 +440,8 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
@@ -500,12 +521,10 @@
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">source_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">params</span><span class="p">[</span><span class="n">f</span><span class="s1">&#39;source_metadata[</span><span class="si">{k}</span><span class="s1">]&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
         <span class="k">if</span> <span class="n">page_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/versions&#39;</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;/versions&#39;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/versions&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/versions&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
             <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
@@ -534,12 +553,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/versions/</span><span class="si">{version_id}</span><span class="s1">&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;/versions/</span><span class="si">{version_id}</span><span class="s1">&#39;</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;include_change_from_previous&#39;</span><span class="p">:</span> <span class="n">include_change_from_previous</span><span class="p">,</span>
                   <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">}</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
@@ -585,12 +602,8 @@
             <span class="n">source_type</span><span class="o">=</span><span class="n">source_type</span><span class="p">,</span>
             <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
             <span class="n">source_metadata</span><span class="o">=</span><span class="n">source_metadata</span><span class="p">)</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/versions&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
-                            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">},</span>
-                            <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">version</span><span class="p">))</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/versions&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">POST</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">version</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Client.add_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_versions.html#web_monitoring.db.Client.add_versions">[docs]</a>    <span class="k">def</span> <span class="nf">add_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">versions</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="n">create_pages</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                      <span class="n">skip_unchanged_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
@@ -628,7 +641,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        import_ids : tuple</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/imports&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;/imports&#39;</span>
         <span class="c1"># POST to the server in chunks. Stash the import id from each response.</span>
         <span class="n">import_ids</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">toolz</span><span class="o">.</span><span class="n">partition_all</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">versions</span><span class="p">):</span>
@@ -640,13 +653,11 @@
                       <span class="s1">&#39;skip_unchanged_versions&#39;</span><span class="p">:</span> <span class="n">skip_unchanged_versions</span><span class="p">}</span>
             <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
                       <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-                <span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
-                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/x-json-stream&#39;</span><span class="p">},</span>
-                <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-                <span class="n">data</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">,</span> <span class="n">validated_versions</span><span class="p">)))</span>
-            <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-            <span class="n">import_id</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">POST</span><span class="p">,</span>
+                                       <span class="n">url</span><span class="p">,</span>
+                                       <span class="n">data</span><span class="o">=</span><span class="n">validated_versions</span><span class="p">,</span>
+                                       <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">import_id</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
             <span class="n">import_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">import_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">import_ids</span><span class="p">)</span></div>
 
@@ -706,10 +717,8 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/imports/</span><span class="si">{import_id}</span><span class="s1">&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;/imports/</span><span class="si">{import_id}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
 
     <span class="c1">### CHANGES AND ANNOTATIONS ###</span>
 
@@ -730,12 +739,9 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span>
-        <span class="p">})</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span>
+            <span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">})</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
             <span class="n">change</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">change</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
@@ -758,11 +764,9 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
         <span class="c1"># For changes which were created just-in-time to fulfill this API request,</span>
@@ -794,13 +798,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span>
-        <span class="p">})</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span>
+            <span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">})</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
             <span class="n">a</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
@@ -825,13 +826,9 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">,</span>
-                            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">},</span>
-                            <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">annotation</span><span class="p">))</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">POST</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">annotation</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Client.get_annotation"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_annotation.html#web_monitoring.db.Client.get_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">get_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">annotation_id</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span>
                        <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
@@ -851,12 +848,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{self._api_url}</span><span class="s1">/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;/pages/</span><span class="si">{page_id}</span><span class="s1">/changes/&#39;</span>
                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{from_version_id}</span><span class="s1">..</span><span class="si">{to_version_id}</span><span class="s1">/annotations/&#39;</span>
                <span class="n">f</span><span class="s1">&#39;</span><span class="si">{annotation_id}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
         <span class="c1"># In place, replace datetime strings with datetime objects.</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
@@ -879,12 +874,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">db_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_version</span><span class="p">(</span><span class="n">version_id</span><span class="p">)</span>
         <span class="n">content_uri</span> <span class="o">=</span> <span class="n">db_result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;uri&#39;</span><span class="p">]</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">content_uri</span><span class="p">)</span>
-        <span class="n">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;text/&#39;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">text</span>
+        <span class="c1"># override the session-level &quot;accept: json&quot; header</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">content_uri</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;text/&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">content</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
 
     <span class="k">def</span> <span class="nf">get_version_by_versionista_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">versionista_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

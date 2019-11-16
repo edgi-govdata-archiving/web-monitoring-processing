@@ -30,6 +30,8 @@ web\_monitoring.db.Client
       ~Client.list_pages
       ~Client.list_versions
       ~Client.monitor_import_statuses
+      ~Client.request
+      ~Client.request_json
    
    
 
