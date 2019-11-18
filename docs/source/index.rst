@@ -21,5 +21,4 @@ developers. Contributions are welcome! See the
 
     installation
     db_api
-    wayback
     data_sources
