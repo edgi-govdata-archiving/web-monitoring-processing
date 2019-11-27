@@ -1,6 +1,5 @@
 ./_modules/index.html
 ./_modules/web_monitoring/db.html
-./_modules/web_monitoring/internetarchive.html
 ./_sources/data_sources.rst.txt
 ./_sources/db_api.rst.txt
 ./_sources/generated/web_monitoring.db.Client.add_annotation.rst.txt
@@ -18,7 +17,6 @@
 ./_sources/generated/web_monitoring.db.Client.rst.txt
 ./_sources/index.rst.txt
 ./_sources/installation.rst.txt
-./_sources/wayback.rst.txt
 ./_static/basic.css
 ./_static/css/badge_only.css
 ./_static/css/custom.css
@@ -94,4 +92,3 @@
 ./objects.inv
 ./search.html
 ./searchindex.js
-./wayback.html
