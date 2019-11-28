@@ -2,167 +2,83 @@ interactions:
 - request:
     body: null
     headers:
-      Accept-Encoding:
-      - gzip, deflate
-      User-Agent:
-      - edgi.web_monitoring.WaybackClient/0.2.0a1
-    method: GET
-    uri: http://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.epa.gov%2Fghgreporting%2Fsan5779-factsheet&from=20180808094144&to=20180808094145&showResumeKey=true&resolveRevisits=true
-  response:
-    body:
-      string: !!binary |
-        H4sIAAAAAAAAAEvPL9NJLUjU1E/PSC9KLcgvKsnMS9cvTswzNTe31E1LTC4pzkhNLVEwMjC0MABB
-        SxNDExOFjJKSgmIrff3y8nI9oHa99PwyQiaUJxYl6xellmUWZ5Yo6CoYe5oYeRgHm/n5uQUa+QaH
-        RZhHRHlHOkYGO0eYBjpFeimYGZpzAQAS1lnnngAAAA==
-    headers:
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Type:
-      - text/plain;charset=UTF-8
-      Date:
-      - Mon, 18 Nov 2019 20:50:53 GMT
-      Server:
-      - nginx/1.15.8
-      Transfer-Encoding:
-      - chunked
-      X-App-Server:
-      - wwwb-app54
-      X-Cache-Key:
-      - httpweb.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.epa.gov%2Fghgreporting%2Fsan5779-factsheet&from=20180808094144&to=20180808094145&showResumeKey=true&resolveRevisits=trueUS
-      X-Page-Cache:
-      - BYPASS
-      X-location:
-      - cdx
-      X-ts:
-      - '200'
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept-Encoding:
-      - gzip, deflate
-      User-Agent:
-      - edgi.web_monitoring.WaybackClient/0.2.0a1
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
     method: GET
     uri: http://web.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/san5779-factsheet
   response:
-    body:
-      string: ''
+    body: {string: ''}
     headers:
-      Cache-Control:
-      - max-age=1800
-      Connection:
-      - keep-alive
-      Content-Security-Policy:
-      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
-        web.archive.org analytics.archive.org pragma.archivelab.org'
-      Content-Type:
-      - text/html; charset=UTF-8
-      Date:
-      - Mon, 18 Nov 2019 20:50:55 GMT
-      Link:
-      - <https://www.epa.gov/ghgreporting/san5779-factsheet>; rel="original", <http://web.archive.org/web/timemap/link/https://www.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="timegate", <http://web.archive.org/web/20150921195814/http://www2.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="first memento"; datetime="Mon, 21 Sep 2015 19:58:14 GMT", <http://web.archive.org/web/20180807093520/https://www.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="prev memento"; datetime="Tue, 07 Aug 2018 09:35:20 GMT", <http://web.archive.org/web/20180808094144/https://www.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="memento"; datetime="Wed, 08 Aug 2018 09:41:44 GMT", <http://web.archive.org/web/20180809102441/https://www.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="next memento"; datetime="Thu, 09 Aug 2018 10:24:41 GMT", <http://web.archive.org/web/20191117023837/https://www.epa.gov/ghgreporting/san5779-factsheet>;
-        rel="last memento"; datetime="Sun, 17 Nov 2019 02:38:37 GMT"
-      Location:
-      - http://web.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming
-      Memento-Datetime:
-      - Wed, 08 Aug 2018 09:41:44 GMT
-      Server:
-      - nginx/1.15.8
-      Transfer-Encoding:
-      - chunked
-      X-App-Server:
-      - wwwb-app13
-      X-Archive-Orig-Cache-Control:
-      - no-cache, must-revalidate
-      X-Archive-Orig-Connection:
-      - close
-      X-Archive-Orig-Content-Length:
-      - '0'
-      X-Archive-Orig-Date:
-      - Wed, 08 Aug 2018 09:41:44 GMT
-      X-Archive-Orig-Expires:
-      - Wed, 08 Aug 2018 09:41:44 GMT
-      X-Archive-Orig-Server:
-      - Apache
-      X-Archive-Orig-Strict-Transport-Security:
-      - max-age=31536000; preload;
-      X-Archive-Orig-X-Content-Type-Options:
-      - nosniff
-      X-Archive-Orig-X-Redirect-ID:
-      - '87045'
-      X-Archive-Orig-X-UA-Compatible:
-      - IE=Edge
-      X-Archive-Src:
-      - epa.gov3-20180302-214937/IA-FOC-epa.gov3-20180808091414-00000.warc.gz
-      X-Cache-Key:
-      - httpweb.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/san5779-factsheetUS
-      X-Page-Cache:
-      - MISS
-      X-location:
-      - All
-      X-ts:
-      - '301'
-    status:
-      code: 301
-      message: Moved Permanently
+      Cache-Control: [max-age=1800]
+      Connection: [keep-alive]
+      Content-Security-Policy: ['default-src ''self'' ''unsafe-eval'' ''unsafe-inline''
+          data: blob: archive.org web.archive.org analytics.archive.org']
+      Content-Type: [text/html; charset=UTF-8]
+      Date: ['Thu, 06 Sep 2018 05:31:21 GMT']
+      Link: ['<https://www.epa.gov/ghgreporting/san5779-factsheet>; rel="original",
+          <http://web.archive.org/web/timemap/link/https://www.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="timegate", <http://web.archive.org/web/20150921195814/http://www2.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="first memento"; datetime="Mon, 21 Sep 2015 19:58:14 GMT", <http://web.archive.org/web/20180807093520/https://www.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="prev memento"; datetime="Tue, 07 Aug 2018 09:35:20 GMT", <http://web.archive.org/web/20180808094144/https://www.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="memento"; datetime="Wed, 08 Aug 2018 09:41:44 GMT", <http://web.archive.org/web/20180809102441/https://www.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="next memento"; datetime="Thu, 09 Aug 2018 10:24:41 GMT", <http://web.archive.org/web/20180904232415/https://www.epa.gov/ghgreporting/san5779-factsheet>;
+          rel="last memento"; datetime="Tue, 04 Sep 2018 23:24:15 GMT"']
+      Memento-Datetime: ['Wed, 08 Aug 2018 09:41:44 GMT']
+      Server: [nginx/1.13.11]
+      X-App-Server: [wwwb-app40]
+      X-Archive-Orig-cache-control: ['no-cache, must-revalidate']
+      X-Archive-Orig-connection: [close]
+      X-Archive-Orig-content-length: ['0']
+      X-Archive-Orig-date: ['Wed, 08 Aug 2018 09:41:44 GMT']
+      X-Archive-Orig-expires: ['Wed, 08 Aug 2018 09:41:44 GMT']
+      X-Archive-Orig-server: [Apache]
+      X-Archive-Orig-strict-transport-security: [max-age=31536000; preload;]
+      X-Archive-Orig-x-content-type-options: [nosniff]
+      X-Archive-Orig-x-redirect-id: ['87045']
+      X-Archive-Orig-x-ua-compatible: [IE=Edge]
+      X-Archive-Src: [epa.gov3-20180302-214937/IA-FOC-epa.gov3-20180808091414-00000.warc.gz]
+      X-Cache-Key: ['httpweb.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/san5779-factsheetUS']
+      X-Page-Cache: [HIT]
+      X-location: [All]
+      X-ts: ['----']
+      location: ['http://web.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming']
+    status: {code: 301, message: Moved Permanently}
 - request:
     body: null
     headers:
-      Accept-Encoding:
-      - gzip, deflate
-      User-Agent:
-      - edgi.web_monitoring.WaybackClient/0.2.0a1
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
     method: GET
     uri: http://web.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming
   response:
-    body:
-      string: ''
+    body: {string: 'found capture at 20180808104500
+
+        '}
     headers:
-      Connection:
-      - keep-alive
-      Content-Length:
-      - '0'
-      Content-Type:
-      - text/plain; charset=utf-8
-      Date:
-      - Mon, 18 Nov 2019 20:50:56 GMT
-      Location:
-      - http://web.archive.org/web/20180808104500id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming
-      Server:
-      - nginx/1.15.8
-      X-App-Server:
-      - wwwb-app57
-      X-Archive-Redirect-Reason:
-      - found capture at 20180808104500
-      X-Cache-Key:
-      - httpweb.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warmingUS
-      X-Page-Cache:
-      - MISS
-      X-location:
-      - All
-      X-ts:
-      - '302'
-    status:
-      code: 302
-      message: FOUND
+      Connection: [keep-alive]
+      Content-Length: ['32']
+      Content-Type: [text/plain; charset=utf-8]
+      Date: ['Thu, 06 Sep 2018 05:31:21 GMT']
+      Location: ['http://web.archive.org/web/20180808104500id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming']
+      Server: [nginx/1.13.11]
+      X-App-Server: [wwwb-app22]
+      X-Cache-Key: ['httpweb.archive.org/web/20180808094144id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warmingUS']
+      X-Page-Cache: [HIT]
+      X-location: [All]
+      X-ts: ['----']
+    status: {code: 302, message: FOUND}
 - request:
     body: null
     headers:
-      Accept-Encoding:
-      - gzip, deflate
-      User-Agent:
-      - edgi.web_monitoring.WaybackClient/0.2.0a1
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
     method: GET
     uri: http://web.archive.org/web/20180808104500id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming
   response:
@@ -403,75 +319,43 @@ interactions:
         L28+ffZfffJ/2X3x/KfzH8Wrc89Dw7Cpx4K+nGG3+cOqxfF38hl6p8c53Kpt+2g3OHx7/r53NHhC
         VY3vQuDl7ERBQ4wk9nUhtjealH9Eegmd+bT5w/8Bwo1au3adAAA=
     headers:
-      Cache-Control:
-      - max-age=1800
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Security-Policy:
-      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
-        web.archive.org analytics.archive.org pragma.archivelab.org'
-      Content-Type:
-      - text/html; charset=utf-8
-      Date:
-      - Mon, 18 Nov 2019 20:50:56 GMT
-      Link:
-      - <https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="original", <http://web.archive.org/web/timemap/link/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="timegate", <http://web.archive.org/web/20150922221816/http://www2.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="first memento"; datetime="Tue, 22 Sep 2015 22:18:16 GMT", <http://web.archive.org/web/20180807105844/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="prev memento"; datetime="Tue, 07 Aug 2018 10:58:44 GMT", <http://web.archive.org/web/20180808104500/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="memento"; datetime="Wed, 08 Aug 2018 10:45:00 GMT", <http://web.archive.org/web/20180809112339/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="next memento"; datetime="Thu, 09 Aug 2018 11:23:39 GMT", <http://web.archive.org/web/20191117033850/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="last memento"; datetime="Sun, 17 Nov 2019 03:38:50 GMT"
-      Memento-Datetime:
-      - Wed, 08 Aug 2018 10:45:00 GMT
-      Server:
-      - nginx/1.15.8
-      Transfer-Encoding:
-      - chunked
-      X-App-Server:
-      - wwwb-app39
-      X-Archive-Orig-Cache-Control:
-      - no-cache, must-revalidate
-      X-Archive-Orig-Connection:
-      - close
-      X-Archive-Orig-Content-Language:
-      - en
-      X-Archive-Orig-Content-Length:
-      - '40310'
-      X-Archive-Orig-Date:
-      - Wed, 08 Aug 2018 10:45:00 GMT
-      X-Archive-Orig-Expires:
-      - Wed, 08 Aug 2018 10:45:00 GMT
-      X-Archive-Orig-Link:
-      - <https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
-        rel="canonical",<https://www.epa.gov/node/95755>; rel="shortlink"
-      X-Archive-Orig-Server:
-      - Apache
-      X-Archive-Orig-Strict-Transport-Security:
-      - max-age=31536000; preload;
-      X-Archive-Orig-X-Content-Type-Options:
-      - nosniff
-      X-Archive-Orig-X-Frame-Options:
-      - SAMEORIGIN
-      X-Archive-Orig-X-Generator:
-      - Drupal 7 (http://drupal.org)
-      X-Archive-Orig-X-UA-Compatible:
-      - IE=Edge
-      X-Archive-Src:
-      - epa.gov3-20180302-214937/IA-FOC-epa.gov3-20180808091414-00000.warc.gz
-      X-Cache-Key:
-      - httpweb.archive.org/web/20180808104500id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warmingUS
-      X-Page-Cache:
-      - MISS
-      X-location:
-      - All
-      X-ts:
-      - '200'
-    status:
-      code: 200
-      message: OK
+      Cache-Control: [max-age=1800]
+      Connection: [keep-alive]
+      Content-Encoding: [gzip]
+      Content-Security-Policy: ['default-src ''self'' ''unsafe-eval'' ''unsafe-inline''
+          data: blob: archive.org web.archive.org analytics.archive.org']
+      Content-Type: [text/html; charset=utf-8]
+      Date: ['Thu, 06 Sep 2018 05:31:21 GMT']
+      Link: ['<https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="original", <http://web.archive.org/web/timemap/link/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="timegate", <http://web.archive.org/web/20150922221816/http://www2.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="first memento"; datetime="Tue, 22 Sep 2015 22:18:16 GMT", <http://web.archive.org/web/20180806091045/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="prev memento"; datetime="Mon, 06 Aug 2018 09:10:45 GMT", <http://web.archive.org/web/20180808104500/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="memento"; datetime="Wed, 08 Aug 2018 10:45:00 GMT", <http://web.archive.org/web/20180809112339/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="next memento"; datetime="Thu, 09 Aug 2018 11:23:39 GMT", <http://web.archive.org/web/20180905002422/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="last memento"; datetime="Wed, 05 Sep 2018 00:24:22 GMT"']
+      Memento-Datetime: ['Wed, 08 Aug 2018 10:45:00 GMT']
+      Server: [nginx/1.13.11]
+      X-App-Server: [wwwb-app43]
+      X-Archive-Orig-cache-control: ['no-cache, must-revalidate']
+      X-Archive-Orig-connection: [close]
+      X-Archive-Orig-content-language: [en]
+      X-Archive-Orig-content-length: ['40310']
+      X-Archive-Orig-date: ['Wed, 08 Aug 2018 10:45:00 GMT']
+      X-Archive-Orig-expires: ['Wed, 08 Aug 2018 10:45:00 GMT']
+      X-Archive-Orig-link: ['<https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warming>;
+          rel="canonical",<https://www.epa.gov/node/95755>; rel="shortlink"']
+      X-Archive-Orig-server: [Apache]
+      X-Archive-Orig-strict-transport-security: [max-age=31536000; preload;]
+      X-Archive-Orig-x-content-type-options: [nosniff]
+      X-Archive-Orig-x-frame-options: [SAMEORIGIN]
+      X-Archive-Orig-x-generator: ['Drupal 7 (http://drupal.org)']
+      X-Archive-Orig-x-ua-compatible: [IE=Edge]
+      X-Archive-Src: [epa.gov3-20180302-214937/IA-FOC-epa.gov3-20180808091414-00000.warc.gz]
+      X-Cache-Key: ['httpweb.archive.org/web/20180808104500id_/https://www.epa.gov/ghgreporting/proposed-rule-fact-sheet-greenhouse-gas-reporting-program-addition-global-warmingUS']
+      X-Page-Cache: [HIT]
+      X-location: [All]
+      X-ts: ['----']
+    status: {code: 200, message: OK}
 version: 1
