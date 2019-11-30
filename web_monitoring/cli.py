@@ -54,6 +54,11 @@ from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
 import wayback
+# FIXME: These exceptions should be exposed publicly, but we have to pull them
+# from a private part of the wayback package right now. Will be fixed with:
+# https://github.com/edgi-govdata-archiving/wayback/pull/7
+from wayback._client import (WaybackException, WaybackRetryError,
+                             MementoPlaybackError, BlockedByRobotsError)
 from web_monitoring import utils
 
 
@@ -209,7 +214,7 @@ class WaybackRecordsWorker(threading.Thread):
             version = self.process_record(record, retry_connection_failures=True)
             self.results_queue.put(version)
             self.summary['success'] += 1
-        except wayback.MementoPlaybackError as error:
+        except MementoPlaybackError as error:
             self.summary['playback'] += 1
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
@@ -227,7 +232,7 @@ class WaybackRecordsWorker(threading.Thread):
                     self.failure_queue.put(record)
                 else:
                     self.summary['unknown'] += 1
-        except wayback.WaybackRetryError as error:
+        except WaybackRetryError as error:
             logger.info(f'  {error}; URL: {record.raw_url}')
 
             if self.failure_queue:
@@ -563,9 +568,9 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     else:
                         skipped += 1
                         logger.debug('Skipping URL "%s"', version.url)
-            except wayback.BlockedByRobotsError as error:
+            except BlockedByRobotsError as error:
                 logger.warn(f'CDX search error: {error!r}')
-            except wayback.WaybackException as error:
+            except WaybackException as error:
                 logger.error(f'Error getting CDX data for {url}: {error!r}')
             except Exception:
                 # Need to handle the exception here to let iteration continue
