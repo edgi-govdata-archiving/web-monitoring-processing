@@ -259,7 +259,8 @@ class WaybackRecordsWorker(threading.Thread):
         try:
             memento = self.wayback.get_memento(record.raw_url,
                                                exact_redirects=False)
-            return self.format_memento(memento)
+            return self.format_memento(memento, record, self.maintainers,
+                                       self.tags)
         except Exception as error:
             # On connection failures, reset the session and try again. If we
             # don't do this, the connection pool for this thread is pretty much
