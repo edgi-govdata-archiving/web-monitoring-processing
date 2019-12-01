@@ -279,8 +279,8 @@ class WaybackRecordsWorker(threading.Thread):
         """
         Format a Wayback Memento response as a dict with import-ready info.
         """
-        iso_date = cdx_record.date.isoformat()
-        if cdx_record.date.tzinfo is None:
+        iso_date = cdx_record.timestamp.isoformat()
+        if cdx_record.timestamp.tzinfo is None:
             iso_date += 'Z'
 
         # Get all headers from the original response.
