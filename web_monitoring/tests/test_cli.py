@@ -1,8 +1,19 @@
+from datetime import datetime, timezone
+import os
 from pathlib import Path
+from unittest.mock import patch
 import vcr
 from wayback import WaybackClient
-from web_monitoring.cli import _filter_unchanged_versions, WaybackRecordsWorker
+from web_monitoring.cli import (_filter_unchanged_versions,
+                                WaybackRecordsWorker, import_ia_db_urls)
 
+
+# The only matters when re-recording the tests for vcr.
+AUTH_ENVIRON = {
+    'WEB_MONITORING_DB_URL': 'https://api-staging.monitoring.envirodatagov.org',
+    'WEB_MONITORING_DB_EMAIL': 'public.access@envirodatagov.org',
+    'WEB_MONITORING_DB_PASSWORD': 'PUBLIC_ACCESS'
+}
 
 # This stashes HTTP responses in local files (one per test) so that an actual
 # server does not have to be running.
@@ -90,3 +101,18 @@ def test_format_memento_handles_redirects():
         assert len(version['source_metadata']['redirects']) == 3
         assert version['source_metadata']['redirects'][0] == url
         assert version['source_metadata']['redirects'][2] == final_url
+
+
+# TODO: this test covers some of the various error cases, but probably not all
+# of them, and has a pretty big cassette file. We should *probably* rewrite it
+# with mock db.client and wayback.WaybackCLient instances that exercise all the
+# various errors (BlockedByRobots, Unplaybackable, RetryError, etc.) that could
+# arise from the clients.
+@ia_vcr.use_cassette()
+@patch.dict(os.environ, AUTH_ENVIRON)
+def test_complete_import_ia_db_urls():
+    # The only real goal in this test is to make sure it doesn't raise.
+    import_ia_db_urls(from_date=datetime(2019, 1, 1, 3, 22, tzinfo=timezone.utc),
+                      to_date=datetime(2019, 1, 1, 3, 25, tzinfo=timezone.utc),
+                      skip_unchanged='resolved-response',
+                      url_pattern='*energy.gov/*')
