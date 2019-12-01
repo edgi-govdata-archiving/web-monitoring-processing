@@ -54,11 +54,8 @@ from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
 import wayback
-# FIXME: These exceptions should be exposed publicly, but we have to pull them
-# from a private part of the wayback package right now. Will be fixed with:
-# https://github.com/edgi-govdata-archiving/wayback/pull/7
-from wayback._client import (WaybackException, WaybackRetryError,
-                             MementoPlaybackError, BlockedByRobotsError)
+from wayback.exceptions import (WaybackException, WaybackRetryError,
+                                MementoPlaybackError, BlockedByRobotsError)
 from web_monitoring import utils
 
 
