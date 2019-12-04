@@ -176,9 +176,8 @@ class WaybackRecordsWorker(threading.Thread):
         self.tags = tags
         self.unplaybackable = unplaybackable
         session_options = session_options or dict(retries=3, backoff=2,
-                                                  timeout=(30.5, 2),
-                                                  user_agent=USER_AGENT)
-        session = wayback.WaybackSession(**session_options)
+                                                  timeout=(30.5, 2))
+        session = wayback.WaybackSession(user_agent=USER_AGENT, **session_options)
         self.wayback = wayback.WaybackClient(session=session)
 
     def is_active(self):
@@ -512,9 +511,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             tags,
             stop_event,
             unplaybackable,
-            tries=(dict(user_agent=USER_AGENT),
-                   dict(user_agent=USER_AGENT, retries=3, backoff=4, timeout=(30.5, 2)),
-                   dict(user_agent=USER_AGENT, retries=7, backoff=4, timeout=60.5))))
+            tries=(None,
+                   dict(retries=3, backoff=4, timeout=(30.5, 2)),
+                   dict(retries=7, backoff=4, timeout=60.5))))
         memento_thread.start()
 
         uploadable_versions = versions_queue
