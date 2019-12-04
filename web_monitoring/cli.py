@@ -56,10 +56,13 @@ from web_monitoring import db
 import wayback
 from wayback.exceptions import (WaybackException, WaybackRetryError,
                                 MementoPlaybackError, BlockedByRobotsError)
-from web_monitoring import utils
+from web_monitoring import utils, __version__
 
 
 logger = logging.getLogger(__name__)
+
+# User agent for requests to Wayback
+USER_AGENT = f'edgi.web_monitoring.WaybackClient/{__version__}'
 
 # Number of memento requests to make at once. Can be overridden via CLI args.
 PARALLEL_REQUESTS = 10
@@ -173,7 +176,8 @@ class WaybackRecordsWorker(threading.Thread):
         self.tags = tags
         self.unplaybackable = unplaybackable
         session_options = session_options or dict(retries=3, backoff=2,
-                                                  timeout=(30.5, 2))
+                                                  timeout=(30.5, 2),
+                                                  user_agent=USER_AGENT)
         session = wayback.WaybackSession(**session_options)
         self.wayback = wayback.WaybackClient(session=session)
 
@@ -491,7 +495,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                 to_date,
                 version_filter,
                 # Use a custom session to make sure CDX calls are extra robust.
-                client=wayback.WaybackClient(wayback.WaybackSession(retries=10, backoff=4)),
+                client=wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT,
+                                                                    retries=10,
+                                                                    backoff=4)),
                 stop=stop_event)))
         cdx_thread.start()
 
@@ -506,9 +512,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             tags,
             stop_event,
             unplaybackable,
-            tries=(None,
-                   dict(retries=3, backoff=4, timeout=(30.5, 2)),
-                   dict(retries=7, backoff=4, timeout=60.5))))
+            tries=(dict(user_agent=USER_AGENT),
+                   dict(user_agent=USER_AGENT, retries=3, backoff=4, timeout=(30.5, 2)),
+                   dict(user_agent=USER_AGENT, retries=7, backoff=4, timeout=60.5))))
         memento_thread.start()
 
         uploadable_versions = versions_queue
@@ -554,7 +560,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
     version_filter = version_filter or _is_page
     skipped = 0
 
-    with client or wayback.WaybackClient() as client:
+    with client or wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT)) as client:
         for url in url_patterns:
             if stop and stop.is_set():
                 break
