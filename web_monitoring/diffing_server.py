@@ -263,7 +263,7 @@ class DiffHandler(BaseHandler):
                                   f'Could not fetch "{url}": {error}',
                                   'Could not fetch upstream content',
                                   extra={'url': url, 'cause': str(error)})
-            except tornado.simple_httpclient.HTTPTimeoutError as error:
+            except tornado.simple_httpclient.HTTPTimeoutError:
                 raise PublicError(502,
                                   f'Timed out while fetching "{url}"',
                                   'Could not fetch upstream content',
