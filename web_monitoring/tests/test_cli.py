@@ -4,8 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 import vcr
 from wayback import WaybackClient
-from web_monitoring.cli import (_filter_unchanged_versions,
-                                WaybackRecordsWorker, import_ia_db_urls)
+from web_monitoring.cli.cli import (_filter_unchanged_versions,
+                                    WaybackRecordsWorker, import_ia_db_urls)
 
 
 # The only matters when re-recording the tests for vcr.
