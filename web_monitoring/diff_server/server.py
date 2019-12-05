@@ -14,8 +14,8 @@ import tornado.ioloop
 import tornado.web
 import traceback
 import web_monitoring
-from .diff import differs, html_diff_render, links_diff
-from .diff.diff_errors import UndiffableContentError, UndecodableContentError
+from ..diff import differs, html_diff_render, links_diff
+from ..diff.diff_errors import UndiffableContentError, UndecodableContentError
 
 # Track errors with Sentry.io. It will automatically detect the `SENTRY_DSN`
 # environment variable. If not set, all its methods will operate conveniently
