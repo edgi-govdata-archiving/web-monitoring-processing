@@ -7,7 +7,7 @@ import tempfile
 from tornado.testing import AsyncHTTPTestCase
 from unittest.mock import patch
 import web_monitoring.diffing_server as df
-from web_monitoring.diff_errors import UndecodableContentError
+from web_monitoring.diff.diff_errors import UndecodableContentError
 import web_monitoring
 from tornado.escape import utf8
 from tornado.httpclient import HTTPResponse, AsyncHTTPClient
