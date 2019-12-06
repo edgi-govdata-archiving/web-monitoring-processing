@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 import random
 import sentry_sdk
 import sys
-from web_monitoring import db, internetarchive
+from web_monitoring import db
+from wayback import WaybackClient
 
 
 # The current Sentry client truncates string values at 512 characters. It
@@ -61,14 +62,14 @@ def wayback_has_captures(url, from_date=None):
     -------
     list of JSON
     """
-    try:
-        with internetarchive.WaybackClient() as wayback:
-            versions = wayback.list_versions(url, from_date=from_date)
+    with WaybackClient() as wayback:
+        versions = wayback.search(url, from_date=from_date)
+        try:
             next(versions)
-    except ValueError:
-        return False
-    else:
-        return True
+        except StopIteration:
+            return False
+        else:
+            return True
 
 
 def output_results(statuses):
