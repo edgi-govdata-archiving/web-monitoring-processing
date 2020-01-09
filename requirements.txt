@@ -1,4 +1,4 @@
-beautifulsoup4 ==4.8.1
+beautifulsoup4 ==4.8.2
 cchardet ==2.1.5
 python-dateutil ~=2.8.1
 diff_match_patch_python ~=1.0.2
@@ -7,10 +7,10 @@ git+https://github.com/anastasia/htmldiffer@develop
 git+https://github.com/danielballan/htmltreediff@customize
 html5-parser ~=0.4.9 --no-binary lxml
 lxml ~=4.4.2
-sentry-sdk ~=0.13.4
+sentry-sdk ~=0.13.5
 requests ~=2.22.0
 toolz ~=0.10.0
 tornado ~=6.0.3
-tqdm ~=4.40.0
+tqdm ~=4.41.0
 tzlocal ~=2.0
 wayback ~=0.2.1
