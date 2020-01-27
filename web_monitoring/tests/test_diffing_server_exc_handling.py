@@ -388,34 +388,21 @@ class MockAsyncHttpClient(AsyncHTTPClient):
 
 class MockResponderHeadersTest(unittest.TestCase):
     def test_pdf_extension(self):
-        headers = df.MockResponse._get_content_type_headers_from_url(
-            f'file://{fixture_path("simple.pdf")}'
-        )
-        assert headers['Content-Type'] == 'application/pdf'
+        response = df.MockResponse(f'file://{fixture_path("simple.pdf")}', '')
+        assert response.headers['Content-Type'] == 'application/pdf'
 
     def test_html_extension(self):
-        headers = df.MockResponse._get_content_type_headers_from_url(
-            f'file://{fixture_path("unknown_encoding.html")}'
-        )
-        assert headers['Content-Type'] == 'text/html'
+        response = df.MockResponse(f'file://{fixture_path("unknown_encoding.html")}', '')
+        assert response.headers['Content-Type'] == 'text/html'
 
     def test_txt_extension(self):
-        headers = df.MockResponse._get_content_type_headers_from_url(
-            f'file://{fixture_path("empty.txt")}'
-        )
-        assert headers['Content-Type'] == 'text/plain'
+        response = df.MockResponse(f'file://{fixture_path("empty.txt")}', '')
+        assert response.headers['Content-Type'] == 'text/plain'
 
     def test_no_extension_should_assume_html(self):
-        resp = df.MockResponse
-        headers = resp._get_content_type_headers_from_url(
-            f'file://{fixture_path("unknown_encoding")}'
-        )
-        assert headers['Content-Type'] == 'text/html'
+        response = df.MockResponse(f'file://{fixture_path("unknown_encoding")}', '')
+        assert response.headers['Content-Type'] == 'text/html'
 
     def test_unknown_extension_should_assume_html(self):
-        resp = df.MockResponse
-        headers = resp._get_content_type_headers_from_url(
-            f'file://{fixture_path("unknown_encoding.notarealextension")}'
-        )
-        assert headers['Content-Type'] == 'text/html'
-
+        response = df.MockResponse(f'file://{fixture_path("unknown_encoding.notarealextension")}', '')
+        assert response.headers['Content-Type'] == 'text/html'
