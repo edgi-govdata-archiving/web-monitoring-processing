@@ -112,7 +112,13 @@ NEVER_QUERY_DOMAINS = (
 )
 # Query an entire domain for snapshots if we are interested in more than this
 # many URLs in the domain (NEVER_QUERY_DOMAINS above overrides this).
-MAX_QUERY_URLS_PER_DOMAIN = 30
+# NOTE: this is intentionally set high enough that we are unlikely to ever
+# reach this threshold -- it turns out the CDX API doesn't always return all
+# pages when using domain/prefix queries (some indexes are excluded from those
+# queries, but it also looks like there are some bugs preventing other mementos
+# from being included), so until that gets resolved (maybe never?), this makes
+# sure we query for ever page individually.
+MAX_QUERY_URLS_PER_DOMAIN = 30_000
 
 
 # These functions lump together library code into monolithic operations for the
