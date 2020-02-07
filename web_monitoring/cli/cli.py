@@ -214,6 +214,7 @@ class WaybackRecordsWorker(threading.Thread):
         self.maintainers = maintainers
         self.tags = tags
         self.unplaybackable = unplaybackable
+        self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
                                                   timeout=(30.5, 2))
         # session = wayback.WaybackSession(user_agent=USER_AGENT, **session_options)
@@ -240,7 +241,10 @@ class WaybackRecordsWorker(threading.Thread):
 
             self.handle_record(record, retry_connection_failures=True)
 
-        # self.wayback.close()
+        # Only close the client if it's using an adapter we created, instead of
+        # one some other piece of code owns.
+        if not self.adapter:
+            self.wayback.close()
         return self.summary
 
     def handle_record(self, record, retry_connection_failures=False):
