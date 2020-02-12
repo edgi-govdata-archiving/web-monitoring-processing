@@ -43,6 +43,7 @@ import dateutil.parser
 from docopt import docopt
 import json
 import logging
+import os
 from os.path import splitext
 from pathlib import Path
 import re
@@ -120,6 +121,11 @@ NEVER_QUERY_DOMAINS = (
 # sure we query for ever page individually.
 MAX_QUERY_URLS_PER_DOMAIN = 30_000
 
+try:
+    WAYBACK_RATE_LIMIT = int(os.getenv('WAYBACK_RATE_LIMIT'))
+except Exception:
+    WAYBACK_RATE_LIMIT = 10
+
 
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
@@ -162,6 +168,16 @@ def _log_adds(versions):
     versions = _get_progress_meter(versions)
     for version in versions:
         print(json.dumps(version))
+
+
+class RateLimitedAdapter(requests.adapters.HTTPAdapter):
+    def __init__(self, *args, requests_per_second=0, **kwargs):
+        self._rate_limit = utils.RateLimit(requests_per_second)
+        return super().__init__(*args, **kwargs)
+
+    def send(self, *args, **kwargs):
+        with self._rate_limit:
+            return super().send(*args, **kwargs)
 
 
 class CustomAdapterSession(wayback.WaybackSession):
@@ -440,8 +456,9 @@ class WaybackRecordsWorker(threading.Thread):
         # perfect. However, the surface area of HTTPAdapter is fairly small
         # relative to the rest of requests, and a quick review of the code
         # looks like this should be ok. We haven't seen issues yet.
-        adapter = requests.adapters.HTTPAdapter(pool_maxsize=count,
-                                                pool_block=True)
+        adapter = RateLimitedAdapter(requests_per_second=WAYBACK_RATE_LIMIT,
+                                     pool_maxsize=count,
+                                     pool_block=True)
         kwargs.setdefault('adapter', adapter)
         workers = []
         for i in range(count):
