@@ -1,5 +1,3 @@
-from collections import defaultdict
-from contextlib import contextmanager
 import hashlib
 import io
 import logging
@@ -162,12 +160,19 @@ class FiniteQueue(queue.SimpleQueue):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self, timeout=None):
         item = self.get()
         if item is self.QUEUE_END:
             raise StopIteration
 
         return item
+
+    def iterate_with_timeout(self, timeout):
+        while True:
+            try:
+                yield self.__next__(timeout)
+            except StopIteration:
+                return
 
 
 class DepthCountedContext:
