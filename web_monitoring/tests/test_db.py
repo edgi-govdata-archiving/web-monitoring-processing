@@ -211,7 +211,7 @@ def test_monitor_import_statuses():
     cli = Client(**AUTH)
     import_ids = global_stash['import_ids']
     errors = cli.monitor_import_statuses(import_ids)
-    assert not errors
+    assert errors == {46: [], 47: []}
 
 
 @db_vcr.use_cassette()
