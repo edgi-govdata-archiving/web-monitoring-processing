@@ -150,8 +150,10 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
     print('Import jobs IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids, stop_event)
-    if errors:
-        print("Errors: {}".format(errors))
+    if any((len(import_errors) > 0 for import_errors in errors.values())):
+        print('Database Import Processing Errors:')
+        for import_id, import_errors in errors.items():
+            print(f'  {import_id}: {import_errors or "none"}')
 
 
 def _log_adds(versions):
