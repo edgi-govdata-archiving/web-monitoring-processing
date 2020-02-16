@@ -544,8 +544,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                         continue
                     data = result['data']
                     if data['status'] == 'complete':
-                        errors[import_id] = data['processing_errors']
                         import_ids.remove(import_id)
+                        job_errors = data['processing_errors']
+                        if job_errors:
+                            errors[import_id] = job_errors
                 time.sleep(1)
         except KeyboardInterrupt:
             ...

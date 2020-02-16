@@ -211,7 +211,18 @@ def test_monitor_import_statuses():
     cli = Client(**AUTH)
     import_ids = global_stash['import_ids']
     errors = cli.monitor_import_statuses(import_ids)
-    assert errors == {46: [], 47: []}
+    assert not errors
+
+
+# NOTE: Even though this looks the same as the above test, the VCR fixture for
+# this test includes an error.
+@db_vcr.use_cassette()
+def test_monitor_import_statuses_returns_errors():
+    cli = Client(**AUTH)
+    import_ids = global_stash['import_ids']
+    errors = cli.monitor_import_statuses(import_ids)
+    assert errors == {47: ["Row 2: Response body for 'http://example.com' did "
+                           "not match expected hash (hash_placeholder)"]}
 
 
 @db_vcr.use_cassette()
