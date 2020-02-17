@@ -147,11 +147,15 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
     versions = _get_progress_meter(versions)
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
-    print('Import jobs IDs: {}'.format(import_ids))
+    print('Import job IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids, stop_event)
-    if errors:
-        print("Errors: {}".format(errors))
+    total = sum(len(job_errors) for job_errors in errors.values())
+    if total > 0:
+        print('Import job errors:')
+        for job_id, job_errors in errors.items():
+            print(f'  {job_id}: {len(job_errors):>3} errors {job_errors}')
+        print(f'  Total: {total:>3} errors')
 
 
 def _log_adds(versions):
