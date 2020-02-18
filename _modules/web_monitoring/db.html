@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.59.g5220721 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.59.g0a00e25 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.59.g5220721
+                0+untagged.59.g0a00e25
               </div>
             
           
@@ -668,21 +668,21 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Poll status of Version import jobs until all complete.</span>
 
-<span class="sd">        Use Ctrl+C to exit early. A list of the errors (so far) will be</span>
-<span class="sd">        returned.</span>
+<span class="sd">        Use Ctrl+C to exit early. A dict mapping the import IDs to any errors</span>
+<span class="sd">        from those imports (so far) will be returned.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        import_ids : collection</span>
+<span class="sd">        import_ids : iterable of (str or int)</span>
 <span class="sd">        stop : threading.Event, optional</span>
 <span class="sd">            A threading.Event to monitor in order to determine whether to stop</span>
 <span class="sd">            monitoring before all imports are complete.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        errors : tuple</span>
+<span class="sd">        errors : dict of {str or int : list}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">import_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">import_ids</span><span class="p">)</span>  <span class="c1"># to ensure mutable collection</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">while</span> <span class="n">import_ids</span> <span class="ow">and</span> <span class="p">(</span><span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">stop</span><span class="o">.</span><span class="n">is_set</span><span class="p">()):</span>
@@ -697,8 +697,10 @@
                         <span class="k">continue</span>
                     <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;complete&#39;</span><span class="p">:</span>
-                        <span class="n">errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;processing_errors&#39;</span><span class="p">])</span>
                         <span class="n">import_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">import_id</span><span class="p">)</span>
+                        <span class="n">job_errors</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;processing_errors&#39;</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">job_errors</span><span class="p">:</span>
+                            <span class="n">errors</span><span class="p">[</span><span class="n">import_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">job_errors</span>
                 <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
             <span class="o">...</span>
