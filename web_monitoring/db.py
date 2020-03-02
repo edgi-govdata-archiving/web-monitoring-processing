@@ -515,21 +515,21 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         Poll status of Version import jobs until all complete.
 
-        Use Ctrl+C to exit early. A list of the errors (so far) will be
-        returned.
+        Use Ctrl+C to exit early. A dict mapping the import IDs to any errors
+        from those imports (so far) will be returned.
 
         Parameters
         ----------
-        import_ids : collection
+        import_ids : iterable of (str or int)
         stop : threading.Event, optional
             A threading.Event to monitor in order to determine whether to stop
             monitoring before all imports are complete.
 
         Returns
         -------
-        errors : tuple
+        errors : dict of {str or int : list}
         """
-        errors = []
+        errors = {}
         import_ids = list(import_ids)  # to ensure mutable collection
         try:
             while import_ids and (stop is None or not stop.is_set()):
@@ -544,8 +544,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                         continue
                     data = result['data']
                     if data['status'] == 'complete':
-                        errors.extend(data['processing_errors'])
                         import_ids.remove(import_id)
+                        job_errors = data['processing_errors']
+                        if job_errors:
+                            errors[import_id] = job_errors
                 time.sleep(1)
         except KeyboardInterrupt:
             ...

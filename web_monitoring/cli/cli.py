@@ -112,7 +112,13 @@ NEVER_QUERY_DOMAINS = (
 )
 # Query an entire domain for snapshots if we are interested in more than this
 # many URLs in the domain (NEVER_QUERY_DOMAINS above overrides this).
-MAX_QUERY_URLS_PER_DOMAIN = 30
+# NOTE: this is intentionally set high enough that we are unlikely to ever
+# reach this threshold -- it turns out the CDX API doesn't always return all
+# pages when using domain/prefix queries (some indexes are excluded from those
+# queries, but it also looks like there are some bugs preventing other mementos
+# from being included), so until that gets resolved (maybe never?), this makes
+# sure we query for ever page individually.
+MAX_QUERY_URLS_PER_DOMAIN = 30_000
 
 
 # These functions lump together library code into monolithic operations for the
@@ -141,11 +147,15 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
     versions = _get_progress_meter(versions)
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
-    print('Import jobs IDs: {}'.format(import_ids))
+    print('Import job IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids, stop_event)
-    if errors:
-        print("Errors: {}".format(errors))
+    total = sum(len(job_errors) for job_errors in errors.values())
+    if total > 0:
+        print('Import job errors:')
+        for job_id, job_errors in errors.items():
+            print(f'  {job_id}: {len(job_errors):>3} errors {job_errors}')
+        print(f'  Total: {total:>3} errors')
 
 
 def _log_adds(versions):
