@@ -43,6 +43,7 @@ import dateutil.parser
 from docopt import docopt
 import json
 import logging
+import os
 from os.path import splitext
 from pathlib import Path
 import re
@@ -120,6 +121,11 @@ NEVER_QUERY_DOMAINS = (
 # sure we query for ever page individually.
 MAX_QUERY_URLS_PER_DOMAIN = 30_000
 
+try:
+    WAYBACK_RATE_LIMIT = int(os.getenv('WAYBACK_RATE_LIMIT'))
+except Exception:
+    WAYBACK_RATE_LIMIT = 10
+
 
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
@@ -164,6 +170,45 @@ def _log_adds(versions):
         print(json.dumps(version))
 
 
+class RateLimitedAdapter(requests.adapters.HTTPAdapter):
+    def __init__(self, *args, requests_per_second=0, **kwargs):
+        self._rate_limit = utils.RateLimit(requests_per_second)
+        return super().__init__(*args, **kwargs)
+
+    def send(self, *args, **kwargs):
+        with self._rate_limit:
+            return super().send(*args, **kwargs)
+
+
+class CustomAdapterSession(wayback.WaybackSession):
+    """
+    CustomAdapterSession is a WaybackSession with a user-supplied HTTP adapter.
+    (HTTP adapters in requests are the main interface between requests's
+    high-level concepts and urllib3's ConnectionManager, which pools sets of
+    connections together).
+
+    We use this here to provide a single adapter for use across a number of
+    parallel sessions in order to more safely and reliably manage the number
+    of connections that get opened to Wayback. This makes for a HUGE
+    improvement in performance and error rates. (NOTE: requests is not thread-
+    safe, which is why we don't just share a single WaybackSession or
+    WaybackClient across threads. Even sharing the HTTPAdapter instance is
+    not really a good idea, but a quick read of the source makes this seem ok.)
+    """
+    def __init__(self, *args, adapter=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Close existing adapters (requests.Session automatically creates new
+        # adapters as part of __init__, so the only way to override is to drop
+        # the built-in ones first).
+        for built_in_adapter in self.adapters.values():
+            built_in_adapter.close()
+        self.mount('https://', adapter or requests.adapters.HTTPAdapter())
+        self.mount('http://', adapter or requests.adapters.HTTPAdapter())
+
+    def reset(self, *args, **kwargs):
+        pass
+
+
 class WaybackRecordsWorker(threading.Thread):
     """
     WaybackRecordsWorker is a thread that takes CDX records from a queue and
@@ -174,7 +219,7 @@ class WaybackRecordsWorker(threading.Thread):
     """
 
     def __init__(self, records, results_queue, maintainers, tags, cancel,
-                 failure_queue=None, session_options=None,
+                 failure_queue=None, session_options=None, adapter=None,
                  unplaybackable=None):
         super().__init__()
         self.summary = self.create_summary()
@@ -185,9 +230,12 @@ class WaybackRecordsWorker(threading.Thread):
         self.maintainers = maintainers
         self.tags = tags
         self.unplaybackable = unplaybackable
+        self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
                                                   timeout=(30.5, 2))
-        session = wayback.WaybackSession(user_agent=USER_AGENT, **session_options)
+        session = CustomAdapterSession(adapter=adapter,
+                                       user_agent=USER_AGENT,
+                                       **session_options)
         self.wayback = wayback.WaybackClient(session=session)
 
     def is_active(self):
@@ -208,7 +256,10 @@ class WaybackRecordsWorker(threading.Thread):
 
             self.handle_record(record, retry_connection_failures=True)
 
-        self.wayback.close()
+        # Only close the client if it's using an adapter we created, instead of
+        # one some other piece of code owns.
+        if not self.adapter:
+            self.wayback.close()
         return self.summary
 
     def handle_record(self, record, retry_connection_failures=False):
@@ -266,26 +317,11 @@ class WaybackRecordsWorker(threading.Thread):
         Load the actual Wayback memento for a CDX record and transform it to
         a Web Monitoring DB import record.
         """
-        try:
-            memento = self.wayback.get_memento(record.raw_url,
-                                               exact_redirects=False)
-            with memento:
-                return self.format_memento(memento, record, self.maintainers,
-                                           self.tags)
-        except Exception as error:
-            # On connection failures, reset the session and try again. If we
-            # don't do this, the connection pool for this thread is pretty much
-            # dead. It's not clear to me whether there is a problem in urllib3
-            # or Wayback's servers that requires this.
-            # This unfortunately requires string checking because the error can
-            # get wrapped up into multiple kinds of higher-level errors :(
-            if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
-                logger.warn(f'Resetting Wayback Session for memento thread {self.name}.')
-                self.wayback.session.reset()
-                return self.process_record(record)
-
-            # Otherwise, re-raise the error.
-            raise error
+        memento = self.wayback.get_memento(record.raw_url,
+                                           exact_redirects=False)
+        with memento:
+            return self.format_memento(memento, record, self.maintainers,
+                                       self.tags)
 
     def format_memento(self, memento, cdx_record, maintainers, tags):
         """
@@ -394,6 +430,20 @@ class WaybackRecordsWorker(threading.Thread):
         -------
         list of WaybackRecordsWorker
         """
+        # Use a shared adapter across workers to help manage HTTP connections
+        # to Wayback. We've had real problems with overdoing on connections
+        # across threads before, and using a single adapter with a limited
+        # number of connections (you have set both `pool_maxsize` *and*
+        # `pool_block` to actually have a limit) lets us do this fairly well.
+        #
+        # NOTE: Requests is not thread-safe (urllib3 is), so this is not
+        # perfect. However, the surface area of HTTPAdapter is fairly small
+        # relative to the rest of requests, and a quick review of the code
+        # looks like this should be ok. We haven't seen issues yet.
+        adapter = RateLimitedAdapter(requests_per_second=WAYBACK_RATE_LIMIT,
+                                     pool_maxsize=count,
+                                     pool_block=True)
+        kwargs.setdefault('adapter', adapter)
         workers = []
         for i in range(count):
             worker = cls(*args, **kwargs)
@@ -403,6 +453,7 @@ class WaybackRecordsWorker(threading.Thread):
         for worker in workers:
             worker.join()
 
+        adapter.close()
         return workers
 
     @classmethod
