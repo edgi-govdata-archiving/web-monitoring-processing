@@ -233,7 +233,6 @@ class WaybackRecordsWorker(threading.Thread):
         self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
                                                   timeout=(30.5, 2))
-        # session = wayback.WaybackSession(user_agent=USER_AGENT, **session_options)
         session = CustomAdapterSession(adapter=adapter,
                                        user_agent=USER_AGENT,
                                        **session_options)
@@ -318,26 +317,11 @@ class WaybackRecordsWorker(threading.Thread):
         Load the actual Wayback memento for a CDX record and transform it to
         a Web Monitoring DB import record.
         """
-        try:
-            memento = self.wayback.get_memento(record.raw_url,
-                                               exact_redirects=False)
-            with memento:
-                return self.format_memento(memento, record, self.maintainers,
-                                           self.tags)
-        except Exception as error:
-            # # On connection failures, reset the session and try again. If we
-            # # don't do this, the connection pool for this thread is pretty much
-            # # dead. It's not clear to me whether there is a problem in urllib3
-            # # or Wayback's servers that requires this.
-            # # This unfortunately requires string checking because the error can
-            # # get wrapped up into multiple kinds of higher-level errors :(
-            # if retry_connection_failures and ('failed to establish a new connection' in str(error).lower()):
-            #     logger.warn(f'Resetting Wayback Session for memento thread {self.name}.')
-            #     self.wayback.session.reset()
-            #     return self.process_record(record)
-
-            # # Otherwise, re-raise the error.
-            raise error
+        memento = self.wayback.get_memento(record.raw_url,
+                                           exact_redirects=False)
+        with memento:
+            return self.format_memento(memento, record, self.maintainers,
+                                       self.tags)
 
     def format_memento(self, memento, cdx_record, maintainers, tags):
         """
