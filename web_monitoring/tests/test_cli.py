@@ -5,7 +5,8 @@ from unittest.mock import patch
 import vcr
 from wayback import WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
-                                    WaybackRecordsWorker, import_ia_db_urls)
+                                    WaybackRecordsWorker, import_ia_db_urls,
+                                    _all_urls_valid)
 
 
 # The only matters when re-recording the tests for vcr.
@@ -47,6 +48,18 @@ def test_filter_unchanged_versions():
         {'page_url': 'http://other.com',   'version_hash': 'b'},
     ]
 
+def test_all_valid_urls():
+    valid_single_url = ['https://example.com']
+    valid_urls = ['https://example.com', 'http://example.com/interesting/path', 'https://subdomain.example.com']
+    valid_url_missing_domain = ['https://google']
+    invalid_single_url = ['asldkfje']
+    invalid_and_valid_urls = ['https://exmaple.com', 'http:badprotocol.com']
+
+    assert _all_urls_valid(valid_urls)
+    assert _all_urls_valid(valid_single_url)
+    assert _all_urls_valid(valid_url_missing_domain)
+    assert not _all_urls_valid(invalid_single_url)
+    assert not _all_urls_valid(invalid_and_valid_urls)
 
 @ia_vcr.use_cassette()
 def test_format_memento():
