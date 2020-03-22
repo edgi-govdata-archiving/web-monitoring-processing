@@ -50,17 +50,13 @@ def test_filter_unchanged_versions():
 
 
 def test_is_valid():
-    valid_single_url = ['https://example.com']
-    valid_urls = ['https://example.com', 'http://example.com/interesting/path', 'https://subdomain.example.com']
-    valid_url_missing_domain = ['https://google']
-    invalid_single_url = ['asldkfje']
-    invalid_and_valid_urls = ['https://exmaple.com', 'http:badprotocol.com']
+    valid_url = 'https://example.com'
+    valid_url_without_tld = 'https://google'
+    invalid_url = 'asldkfje'
 
-    assert all(_is_valid(url) for url in valid_single_url)
-    assert all(_is_valid(url) for url in valid_urls)
-    assert all(_is_valid(url) for url in valid_url_missing_domain)
-    assert not all(_is_valid(url) for url in invalid_single_url)
-    assert not all(_is_valid(url) for url in invalid_and_valid_urls)
+    assert _is_valid(valid_url)
+    assert _is_valid(valid_url_without_tld)
+    assert not _is_valid(invalid_url)
 
 
 @ia_vcr.use_cassette()
