@@ -544,6 +544,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
                    dry_run=False):
+    if not all(_is_valid(url) for url in urls):
+        raise ValueError("Invalid URL provided")
+
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
@@ -809,6 +812,18 @@ def _parse_date_argument(date_string):
         pass
 
     return None
+
+
+def _is_valid(url):
+    """
+    Validate that all URLs are formatted correctly. This function assumes that
+    a URL is valid if it has a valid addressing scheme and network location.
+    """
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
 
 
 def main():
