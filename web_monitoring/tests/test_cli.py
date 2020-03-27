@@ -109,9 +109,9 @@ def test_format_memento_handles_redirects():
 
         assert isinstance(version, dict)
         assert version['source_metadata']['redirected_url'] == final_url
-        assert len(version['source_metadata']['redirects']) == 3
+        assert len(version['source_metadata']['redirects']) == 2
         assert version['source_metadata']['redirects'][0] == url
-        assert version['source_metadata']['redirects'][2] == final_url
+        assert version['source_metadata']['redirects'][1] == final_url
 
 
 # TODO: this test covers some of the various error cases, but probably not all

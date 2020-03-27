@@ -354,7 +354,6 @@ class WaybackRecordsWorker(threading.Thread):
                 lambda response: wayback.memento_url_data(response.url)[0],
                 memento.history))
             redirected_url = wayback.memento_url_data(memento.url)[0]
-            redirects.append(redirected_url)
             metadata['redirected_url'] = redirected_url
             metadata['redirects'] = redirects
 
