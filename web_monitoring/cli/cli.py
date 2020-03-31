@@ -356,7 +356,8 @@ class WaybackRecordsWorker(threading.Thread):
             redirected_url = wayback.memento_url_data(memento.url)[0]
             redirects.append(redirected_url)
             metadata['redirected_url'] = redirected_url
-            metadata['redirects'] = redirects
+            metadata['redirects'] = [url for i, url in enumerate(redirects)
+                                     if url not in redirects[:i]]
 
         return dict(
             # Page-level info
