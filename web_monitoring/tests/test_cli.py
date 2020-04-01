@@ -5,7 +5,8 @@ from unittest.mock import patch
 import vcr
 from wayback import WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
-                                    WaybackRecordsWorker, import_ia_db_urls)
+                                    WaybackRecordsWorker, import_ia_db_urls,
+                                    _is_valid)
 
 
 # The only matters when re-recording the tests for vcr.
@@ -46,6 +47,16 @@ def test_filter_unchanged_versions():
         {'page_url': 'http://other.com',   'version_hash': 'd'},
         {'page_url': 'http://other.com',   'version_hash': 'b'},
     ]
+
+
+def test_is_valid():
+    valid_url = 'https://example.com'
+    valid_url_without_tld = 'https://google'
+    invalid_url = 'asldkfje'
+
+    assert _is_valid(valid_url)
+    assert _is_valid(valid_url_without_tld)
+    assert not _is_valid(invalid_url)
 
 
 @ia_vcr.use_cassette()
@@ -98,9 +109,9 @@ def test_format_memento_handles_redirects():
 
         assert isinstance(version, dict)
         assert version['source_metadata']['redirected_url'] == final_url
-        assert len(version['source_metadata']['redirects']) == 3
+        assert len(version['source_metadata']['redirects']) == 2
         assert version['source_metadata']['redirects'][0] == url
-        assert version['source_metadata']['redirects'][2] == final_url
+        assert version['source_metadata']['redirects'][1] == final_url
 
 
 # TODO: this test covers some of the various error cases, but probably not all
