@@ -118,6 +118,10 @@ class MissingCredentials(RuntimeError):
     ...
 
 
+class InvalidCredentials(RuntimeError):
+    ...
+
+
 class Client:
     """
     Communicate with web-monitoring-db via its REST API.
@@ -706,6 +710,23 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
+    ### USERS ###
+
+    def get_user_session(self):
+        """
+        Get the current user session
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        response : dict
+        """
+        user_session_url = f'{self._api_url[:-7]}/users/session'
+        return self.request_json(GET, user_session_url)
+
     ### CONVENIENCE METHODS ###
 
     def get_version_content(self, version_id):
@@ -760,3 +781,25 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         # Make result look like the result of `get_version` rather than the
         # result of `list_versions`.
         return {'data': result['data'][0]}
+
+    def validate_db_credentials(self):
+        """
+        Validate that the DB Client is authorized for the provided host
+
+        Parameters
+        ----------
+        none
+
+        Returns
+        -------
+        none
+        """
+        try:
+            response = self.get_user_session()
+        except requests.exceptions.HTTPError as exc:
+            if exc.response.status_code == 401:
+                raise MissingCredentials(f'\n\n\n\nCheck your DB credentials - 401 Unauthorized for url: {exc.request.url}\n\n\n\n')
+            else:
+                # Client didn't receive a 401, but hit another 4XX or 5XX error
+                raise RuntimeError(f'\n\n\n\nOops: an unexpected error occurred while checking DB credentials...\n\n{exc}\n\n\n\n')
+        return
