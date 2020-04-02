@@ -827,6 +827,12 @@ def _is_valid(url):
         return False
 
 
+def validate_db_credentials():
+    """Validate DB credentials by creating a client and hitting the /users/sessions route"""
+    credentails_test_client = db.Client.from_env()
+    credentails_test_client.validate_db_credentials()
+
+
 def main():
     doc = f"""Command Line Interface to the web_monitoring Python package
 
@@ -865,6 +871,7 @@ Options:
                   'or `resolved-response`')
             return
 
+        validate_db_credentials()
         if arguments['ia']:
             import_ia_urls(
                 urls=[arguments['<url>']],
