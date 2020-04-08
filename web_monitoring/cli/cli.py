@@ -829,8 +829,17 @@ def _is_valid(url):
 
 def validate_db_credentials():
     """Validate DB credentials by creating a client and hitting the /users/sessions route"""
-    credentails_test_client = db.Client.from_env()
-    credentails_test_client.validate_db_credentials()
+    test_client = db.Client.from_env()
+    try:
+        test_client.validate_credentials()
+    except db.InvalidCredentials as exc:
+        raise Exception("""
+            401 Unauthorized for the WEB_MONITORING_DB_URL provided, check the following environment
+            variables:
+
+                WEB_MONITORING_DB_URL
+                WEB_MONITORING_DB_EMAIL
+                WEB_MONITORING_DB_PASSWORD""")
 
 
 def main():

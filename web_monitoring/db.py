@@ -28,6 +28,10 @@ class WebMonitoringDbError(Exception):
     ...
 
 
+class InvalidCredentials(Exception):
+    ...
+
+
 def _process_errors(res):
     # If the app gives us errors, raise a custom exception with those.
     # If not, fall back on requests, which will raise an HTTPError.
@@ -36,7 +40,10 @@ def _process_errors(res):
     try:
         errors = res.json()['errors']
     except Exception:
-        res.raise_for_status()
+        if res.status_code == 401:
+            raise InvalidCredentials()
+        else:
+            res.raise_for_status()
     else:
         raise WebMonitoringDbError(', '.join(map(repr, errors)))
 
@@ -118,10 +125,6 @@ class MissingCredentials(RuntimeError):
     ...
 
 
-class InvalidCredentials(RuntimeError):
-    ...
-
-
 class Client:
     """
     Communicate with web-monitoring-db via its REST API.
@@ -141,6 +144,7 @@ class Client:
     """
     def __init__(self, email, password, url=DEFAULT_URL):
         self._api_url = f'{url}/api/v0'
+        self._base_url = url
         self._session = requests.Session()
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
@@ -151,10 +155,10 @@ class Client:
         Instantiate a :class:`Client` by obtaining its authentication info from
         these environment variables:
 
-            * ``WEB_MONITORING_DB_URL``
-            * ``WEB_MONITORING_DB_EMAIL``
-            * ``WEB_MONITORING_DB_PASSWORD`` (optional -- defaults to
+            * ``WEB_MONITORING_DB_URL`` (optional -- defaults to
               ``https://api.monitoring.envirodatagov.org``)
+            * ``WEB_MONITORING_DB_EMAIL``
+            * ``WEB_MONITORING_DB_PASSWORD``
         """
         try:
             url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
@@ -724,7 +728,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        user_session_url = f'{self._api_url[:-7]}/users/session'
+        user_session_url = f'{self._base_url}/users/session'
         return self.request_json(GET, user_session_url)
 
     ### CONVENIENCE METHODS ###
@@ -782,7 +786,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         # result of `list_versions`.
         return {'data': result['data'][0]}
 
-    def validate_db_credentials(self):
+    def validate_credentials(self):
         """
         Validate that the DB Client is authorized for the provided host
 
@@ -794,12 +798,4 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         none
         """
-        try:
-            response = self.get_user_session()
-        except requests.exceptions.HTTPError as exc:
-            if exc.response.status_code == 401:
-                raise MissingCredentials(f'\n\n\n\nCheck your DB credentials - 401 Unauthorized for url: {exc.request.url}\n\n\n\n')
-            else:
-                # Client didn't receive a 401, but hit another 4XX or 5XX error
-                raise RuntimeError(f'\n\n\n\nOops: an unexpected error occurred while checking DB credentials...\n\n{exc}\n\n\n\n')
-        return
+        self.get_user_session()
