@@ -28,7 +28,7 @@ class WebMonitoringDbError(Exception):
     ...
 
 
-class InvalidCredentials(Exception):
+class UnauthorizedCredentials(Exception):
     ...
 
 
@@ -41,7 +41,7 @@ def _process_errors(res):
         errors = res.json()['errors']
     except Exception:
         if res.status_code == 401:
-            raise InvalidCredentials()
+            raise UnauthorizedCredentials('Unauthorized credentials for Web Wonitoring DB')
         else:
             res.raise_for_status()
     else:
@@ -718,11 +718,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     def get_user_session(self):
         """
-        Get the current user session
-
-        Parameters
-        ----------
-        none
+        Get the current user session.
 
         Returns
         -------
@@ -788,14 +784,13 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     def validate_credentials(self):
         """
-        Validate that the DB Client is authorized for the provided host
+        Validate that the DB Client is authorized for the provided host.
+        This function raises an exception if the credentials are invalid, so
+        it's intended to be used like an assert statement.
 
-        Parameters
-        ----------
-        none
-
-        Returns
-        -------
-        none
+        Raises
+        ------
+        UnauthorizedCredentials
+            If the credentials are not authorized for the provided host.
         """
         self.get_user_session()

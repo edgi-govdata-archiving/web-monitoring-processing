@@ -828,18 +828,27 @@ def _is_valid(url):
 
 
 def validate_db_credentials():
-    """Validate DB credentials by creating a client and hitting the /users/sessions route"""
+    """
+    Validate Web Monitoring DB credentials by creating a temporary client and
+    attempting to get the current user session.
+
+    Raises
+    ------
+    InvalidCredentials
+        If the credentials are not authorized for the provided host.
+    """
     test_client = db.Client.from_env()
     try:
         test_client.validate_credentials()
-    except db.InvalidCredentials as exc:
-        raise Exception("""
-            401 Unauthorized for the WEB_MONITORING_DB_URL provided, check the following environment
-            variables:
+    except db.UnauthorizedCredentials:
+        raise Exception(f"""
+            Unauthorized credentials for {test_client._base_url}.
+            Check the following environment variables:
 
                 WEB_MONITORING_DB_URL
-                WEB_MONITORING_DB_EMAIL
-                WEB_MONITORING_DB_PASSWORD""")
+                WEB_MONITORING_DB_EMAIL {os.environ['WEB_MONITORING_DB_EMAIL']}
+                WEB_MONITORING_DB_PASSWORD
+                """)
 
 
 def main():
