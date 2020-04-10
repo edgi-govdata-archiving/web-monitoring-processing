@@ -211,7 +211,7 @@ class DiffServer(tornado.web.Application):
 
         async def shutdown_and_stop():
             try:
-                immediate = signal_type == signal.SIGTERM or self.terminating
+                immediate = self.terminating
                 method = 'immediately' if immediate else 'gracefully'
                 print(f'Shutting down server {method}...')
                 await self.shutdown(immediate=immediate)
