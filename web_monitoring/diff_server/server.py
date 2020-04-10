@@ -183,13 +183,10 @@ class DiffServer(tornado.web.Application):
         the server will kill any in-progress diff processes immediately.
         Otherwise, diffs are allowed to try and finish.
         """
-        method = 'immediately' if immediate else 'gracefully'
-        print(f'Shutting down server {method}...')
         self.terminating = True
         self.server.stop()
         await self.shutdown_differs(immediate)
         await self.server.close_all_connections()
-        print('Shutdown complete.')
 
     async def shutdown_differs(self, immediate=False):
         """Stop all child processes used for running diffs."""
@@ -197,7 +194,7 @@ class DiffServer(tornado.web.Application):
         if differs:
             if immediate:
                 # NOTE: this might be fragile since we are grabbing a private
-                # variable. One alternative is to use psutil to find all child
+                # attribute. One alternative is to use psutil to find all child
                 # pids and indiscriminately kill them, but that has its own
                 # issues.
                 for child in differs._processes.values():
@@ -215,8 +212,11 @@ class DiffServer(tornado.web.Application):
         async def shutdown_and_stop():
             try:
                 immediate = signal_type == signal.SIGTERM or self.terminating
+                method = 'immediately' if immediate else 'gracefully'
+                print(f'Shutting down server {method}...')
                 await self.shutdown(immediate=immediate)
                 loop.stop()
+                print('Shutdown complete.')
             except Exception:
                 logger.exception('Failed to gracefully stop server!')
                 sys.exit(1)
