@@ -834,14 +834,14 @@ def validate_db_credentials():
 
     Raises
     ------
-    InvalidCredentials
+    UnauthorizedCredentials
         If the credentials are not authorized for the provided host.
     """
     test_client = db.Client.from_env()
     try:
         test_client.validate_credentials()
     except db.UnauthorizedCredentials:
-        raise Exception(f"""
+        raise db.UnauthorizedCredentials(f"""
             Unauthorized credentials for {test_client._base_url}.
             Check the following environment variables:
 
