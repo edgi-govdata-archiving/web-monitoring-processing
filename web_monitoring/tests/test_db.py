@@ -284,6 +284,7 @@ def test_validate_credentials():
     cli = Client(**AUTH) 
     cli.validate_credentials()
 
+
 @db_vcr.use_cassette()
 def test_validate_credentials_should_raise():
     bad_auth = AUTH.copy()
