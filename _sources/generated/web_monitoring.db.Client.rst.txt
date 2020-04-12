@@ -22,6 +22,7 @@ web\_monitoring.db.Client
       ~Client.get_change
       ~Client.get_import_status
       ~Client.get_page
+      ~Client.get_user_session
       ~Client.get_version
       ~Client.get_version_by_versionista_id
       ~Client.get_version_content
@@ -32,6 +33,7 @@ web\_monitoring.db.Client
       ~Client.monitor_import_statuses
       ~Client.request
       ~Client.request_json
+      ~Client.validate_credentials
    
    
 

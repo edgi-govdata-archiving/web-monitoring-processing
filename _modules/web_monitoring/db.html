@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.gebe8890 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g9b51823 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.50.gebe8890
+                0+untagged.50.g9b51823
               </div>
             
           
@@ -181,6 +181,10 @@
     <span class="o">...</span>
 
 
+<span class="k">class</span> <span class="nc">UnauthorizedCredentials</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
 <span class="k">def</span> <span class="nf">_process_errors</span><span class="p">(</span><span class="n">res</span><span class="p">):</span>
     <span class="c1"># If the app gives us errors, raise a custom exception with those.</span>
     <span class="c1"># If not, fall back on requests, which will raise an HTTPError.</span>
@@ -189,7 +193,10 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">errors</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="n">res</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">UnauthorizedCredentials</span><span class="p">(</span><span class="s1">&#39;Unauthorized credentials for Web Wonitoring DB&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">WebMonitoringDbError</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="n">errors</span><span class="p">)))</span>
 
@@ -290,6 +297,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Client.__init__"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">DEFAULT_URL</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_api_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">/api/v0&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span> <span class="o">=</span> <span class="n">url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span></div>
@@ -300,10 +308,10 @@
 <span class="sd">        Instantiate a :class:`Client` by obtaining its authentication info from</span>
 <span class="sd">        these environment variables:</span>
 
-<span class="sd">            * ``WEB_MONITORING_DB_URL``</span>
-<span class="sd">            * ``WEB_MONITORING_DB_EMAIL``</span>
-<span class="sd">            * ``WEB_MONITORING_DB_PASSWORD`` (optional -- defaults to</span>
+<span class="sd">            * ``WEB_MONITORING_DB_URL`` (optional -- defaults to</span>
 <span class="sd">              ``https://api.monitoring.envirodatagov.org``)</span>
+<span class="sd">            * ``WEB_MONITORING_DB_EMAIL``</span>
+<span class="sd">            * ``WEB_MONITORING_DB_PASSWORD``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;WEB_MONITORING_DB_URL&#39;</span><span class="p">,</span> <span class="n">DEFAULT_URL</span><span class="p">)</span>
@@ -859,6 +867,19 @@
         <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
+    <span class="c1">### USERS ###</span>
+
+    <span class="k">def</span> <span class="nf">get_user_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current user session.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        response : dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">user_session_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span><span class="si">}</span><span class="s1">/users/session&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">user_session_url</span><span class="p">)</span>
+
     <span class="c1">### CONVENIENCE METHODS ###</span>
 
     <span class="k">def</span> <span class="nf">get_version_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version_id</span><span class="p">):</span>
@@ -912,7 +933,20 @@
                                       <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]))</span>
         <span class="c1"># Make result look like the result of `get_version` rather than the</span>
         <span class="c1"># result of `list_versions`.</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]}</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]}</span>
+
+    <span class="k">def</span> <span class="nf">validate_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate that the DB Client is authorized for the provided host.</span>
+<span class="sd">        This function raises an exception if the credentials are invalid, so</span>
+<span class="sd">        it&#39;s intended to be used like an assert statement.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        UnauthorizedCredentials</span>
+<span class="sd">            If the credentials are not authorized for the provided host.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_user_session</span><span class="p">()</span></div>
 </pre></div>
 
            </div>
