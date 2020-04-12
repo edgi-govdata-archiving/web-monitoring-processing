@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import pytest
-from web_monitoring.db import Client, MissingCredentials
+from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials
 import vcr
 
 
@@ -270,3 +270,25 @@ def test_get_annotation():
     fetched_annotation = result['data']['annotation']
     annotation = {'foo': 'bar'}
     assert fetched_annotation == annotation
+
+
+@db_vcr.use_cassette()
+def test_get_user_session():
+    cli = Client(**AUTH)
+    session = cli.get_user_session()
+    assert session['user']['email'] == AUTH['email']
+
+
+@db_vcr.use_cassette()
+def test_validate_credentials():
+    cli = Client(**AUTH) 
+    cli.validate_credentials()
+
+
+@db_vcr.use_cassette()
+def test_validate_credentials_should_raise():
+    bad_auth = AUTH.copy()
+    bad_auth['password'] = 'BAD_PASSWORD'
+    cli = Client(**bad_auth)
+    with pytest.raises(UnauthorizedCredentials):
+        cli.validate_credentials()

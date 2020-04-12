@@ -6,7 +6,7 @@ import vcr
 from wayback import WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
                                     WaybackRecordsWorker, import_ia_db_urls,
-                                    _is_valid)
+                                    _is_valid, validate_db_credentials)
 
 
 # The only matters when re-recording the tests for vcr.
@@ -127,3 +127,9 @@ def test_complete_import_ia_db_urls():
                       to_date=datetime(2019, 1, 1, 3, 25, tzinfo=timezone.utc),
                       skip_unchanged='resolved-response',
                       url_pattern='*energy.gov/*')
+
+
+@ia_vcr.use_cassette()
+@patch.dict(os.environ, AUTH_ENVIRON)
+def test_validate_db_credentials():
+    validate_db_credentials()

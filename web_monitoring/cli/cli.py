@@ -827,6 +827,30 @@ def _is_valid(url):
         return False
 
 
+def validate_db_credentials():
+    """
+    Validate Web Monitoring DB credentials by creating a temporary client and
+    attempting to get the current user session.
+
+    Raises
+    ------
+    UnauthorizedCredentials
+        If the credentials are not authorized for the provided host.
+    """
+    test_client = db.Client.from_env()
+    try:
+        test_client.validate_credentials()
+    except db.UnauthorizedCredentials:
+        raise db.UnauthorizedCredentials(f"""
+            Unauthorized credentials for {test_client._base_url}.
+            Check the following environment variables:
+
+                WEB_MONITORING_DB_URL
+                WEB_MONITORING_DB_EMAIL {os.environ['WEB_MONITORING_DB_EMAIL']}
+                WEB_MONITORING_DB_PASSWORD
+                """)
+
+
 def main():
     doc = f"""Command Line Interface to the web_monitoring Python package
 
@@ -865,6 +889,7 @@ Options:
                   'or `resolved-response`')
             return
 
+        validate_db_credentials()
         if arguments['ia']:
             import_ia_urls(
                 urls=[arguments['<url>']],
