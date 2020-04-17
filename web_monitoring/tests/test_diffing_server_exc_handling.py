@@ -88,7 +88,7 @@ class DiffingServerFetchTest(DiffingServerTestCase):
 
     def test_pass_headers(self):
         mock = MockAsyncHttpClient()
-        with patch.object(df, 'client', wraps=mock):
+        with patch.object(df, 'get_http_client', return_value=mock):
             mock.respond_to(r'/a$')
             mock.respond_to(r'/b$')
 
@@ -196,7 +196,7 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         we proceed with diffing.
         """
         mock = MockAsyncHttpClient()
-        with patch.object(df, 'client', wraps=mock):
+        with patch.object(df, 'get_http_client', return_value=mock):
             mock.respond_to(r'/error$', code=404, headers={'Memento-Datetime': 'Tue Sep 25 2018 03:38:50'})
             mock.respond_to(r'/success$')
 
@@ -306,35 +306,43 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         assert 'hash' in json.loads(response.body)['error']
 
 
+def patch_http_client(**kwargs):
+    """
+    Create HTTP clients in the diffing server with the specified parameters
+    during this patch. Can be a function decorator or context manager.
+    """
+    def get_client():
+        return tornado.httpclient.AsyncHTTPClient(force_instance=True,
+                                                  **kwargs)
+    return patch.object(df, 'get_http_client', get_client)
+
+
 class DiffingServerResponseSizeTest(DiffingServerTestCase):
+    @patch_http_client(max_body_size=100 * 1024)
     def test_succeeds_if_response_is_small_enough(self):
         async def responder(handler):
             text = (80 * 1024) * 'x'
             handler.write(text.encode('utf-8'))
 
-        client = tornado.httpclient.AsyncHTTPClient(force_instance=True,
-                                                    max_body_size=100 * 1024)
-        with patch.object(df, 'client', client):
-            with SimpleHttpServer(responder) as server:
-                response = self.fetch('/html_source_dmp?'
-                                      f'a={server.url("/whatever1")}&'
-                                      f'b={server.url("/whatever2")}')
-                assert response.code == 200
+        with SimpleHttpServer(responder) as server:
+            response = self.fetch('/html_source_dmp?'
+                                  f'a={server.url("/whatever1")}&'
+                                  f'b={server.url("/whatever2")}')
+            assert response.code == 200
 
+    @patch_http_client(max_body_size=100 * 1024)
     def test_stops_if_response_is_too_big(self):
         async def responder(handler):
             text = (110 * 1024) * 'x'
             handler.write(text.encode('utf-8'))
 
-        client = tornado.httpclient.AsyncHTTPClient(force_instance=True,
-                                                    max_body_size=100 * 1024)
-        with patch.object(df, 'client', client):
-            with SimpleHttpServer(responder) as server:
-                response = self.fetch('/html_source_dmp?'
-                                      f'a={server.url("/whatever1")}&'
-                                      f'b={server.url("/whatever2")}')
-                assert response.code == 502
+        with SimpleHttpServer(responder) as server:
+            response = self.fetch('/html_source_dmp?'
+                                  f'a={server.url("/whatever1")}&'
+                                  f'b={server.url("/whatever2")}')
+            assert response.code == 502
 
+    @patch_http_client(max_body_size=100 * 1024)
     def test_stops_reading_early_when_content_length_is_a_lie(self):
         async def responder(handler):
             # Tornado tries to be careful and prevent us from sending more
@@ -347,26 +355,23 @@ class DiffingServerResponseSizeTest(DiffingServerTestCase):
             text = (110 * 1024) * 'x'
             handler.write(text.encode('utf-8'))
 
-        client = tornado.httpclient.AsyncHTTPClient(force_instance=True,
-                                                    max_body_size=100 * 1024)
-        with patch.object(df, 'client', client):
-            with SimpleHttpServer(responder) as server:
-                response = self.fetch('/html_source_dmp?'
-                                      f'a={server.url("/whatever1")}&'
-                                      f'b={server.url("/whatever2")}')
-                # Even though the response was longer than the max_body_size,
-                # the client should have stopped reading when it hit the number
-                # of bytes set in the Content-Length, header, which is less
-                # than the client's limit. So what should actually happen is a
-                # successful diff of the first <Content-Length> bytes of the
-                # responses.
-                assert response.code == 200
-                # The responses should be the same, and should only be
-                # <Content-Length> bytes long (all our chars are basic ASCII
-                # in this case, so len(bytes) == len(characters)).
-                result = json.loads(response.body)
-                assert result['change_count'] == 0
-                assert len(result['diff'][0][1]) == 1024
+        with SimpleHttpServer(responder) as server:
+            response = self.fetch('/html_source_dmp?'
+                                  f'a={server.url("/whatever1")}&'
+                                  f'b={server.url("/whatever2")}')
+            # Even though the response was longer than the max_body_size,
+            # the client should have stopped reading when it hit the number
+            # of bytes set in the Content-Length, header, which is less
+            # than the client's limit. So what should actually happen is a
+            # successful diff of the first <Content-Length> bytes of the
+            # responses.
+            assert response.code == 200
+            # The responses should be the same, and should only be
+            # <Content-Length> bytes long (all our chars are basic ASCII
+            # in this case, so len(bytes) == len(characters)).
+            result = json.loads(response.body)
+            assert result['change_count'] == 0
+            assert len(result['diff'][0][1]) == 1024
 
 
 def mock_diffing_method(c_body):

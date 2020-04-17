@@ -86,7 +86,10 @@ except ValueError:
 # to enforce something like max_body_size with it.
 tornado.httpclient.AsyncHTTPClient.configure(None,
                                              max_body_size=MAX_BODY_SIZE)
-client = tornado.httpclient.AsyncHTTPClient()
+
+
+def get_http_client():
+    return tornado.httpclient.AsyncHTTPClient()
 
 
 class PublicError(tornado.web.HTTPError):
@@ -344,6 +347,7 @@ class DiffHandler(BaseHandler):
                         headers[header_key] = header_value
 
             try:
+                client = get_http_client()
                 response = await client.fetch(url, headers=headers,
                                               validate_cert=VALIDATE_TARGET_CERTIFICATES)
             except ValueError as error:
