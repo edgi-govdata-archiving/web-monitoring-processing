@@ -8,11 +8,14 @@ import functools
 import logging
 import mimetypes
 import os
+import pycurl
 import re
 import cchardet
 import sentry_sdk
 import signal
 import sys
+from tornado.curl_httpclient import CurlAsyncHTTPClient
+import tornado.simple_httpclient
 import tornado.httpclient
 import tornado.ioloop
 import tornado.web
@@ -82,9 +85,23 @@ except ValueError:
     print('DIFFER_MAX_BODY_SIZE must be an integer', file=sys.stderr)
     sys.exit(1)
 
-# TODO: we'd like to support CurlAsyncHTTPClient, but we need to figure out how
-# to enforce something like max_body_size with it.
-tornado.httpclient.AsyncHTTPClient.configure(None,
+
+class LimitedCurlAsyncHTTPClient(CurlAsyncHTTPClient):
+    def initialize(self, max_clients=10, defaults=None, max_body_size=None):
+        self.max_body_size = max_body_size
+        defaults = defaults or {}
+        defaults['prepare_curl_callback'] = self.prepare_curl
+        super().initialize(max_clients=max_clients, defaults=defaults)
+
+    def prepare_curl(self, curl):
+        if self.max_body_size:
+            # NOTE: cURL's docs suggest this doesn't work if the server doesn't
+            # send a Content-Length header, but it seems to do just fine in
+            # tests. ¯\_(ツ)_/¯
+            curl.setopt(pycurl.MAXFILESIZE, self.max_body_size)
+
+
+tornado.httpclient.AsyncHTTPClient.configure(LimitedCurlAsyncHTTPClient,
                                              max_body_size=MAX_BODY_SIZE)
 
 
@@ -393,6 +410,13 @@ class DiffHandler(BaseHandler):
                                       extra={'type': 'UPSTREAM_ERROR',
                                              'url': url,
                                              'upstream_code': code})
+            except Exception as error:
+                # XXX: Most of the above errors are specific to the simple
+                # client, and need to be rewritten to work with the cURL client
+                # before merging.
+                print(f'ERROR OH NO: {error.__class__} / "{error}"')
+                raise
+
 
         if response and expected_hash:
             actual_hash = hashlib.sha256(response.body).hexdigest()
