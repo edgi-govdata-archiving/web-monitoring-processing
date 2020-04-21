@@ -1,0 +1,82 @@
+{
+    "version": 1,
+    "interactions": [
+        {
+            "request": {
+                "method": "GET",
+                "uri": "http://localhost:3000/users/session",
+                "body": null,
+                "headers": {
+                    "User-Agent": [
+                        "python-requests/2.23.0"
+                    ],
+                    "Accept-Encoding": [
+                        "gzip, deflate"
+                    ],
+                    "accept": [
+                        "application/json"
+                    ],
+                    "Connection": [
+                        "keep-alive"
+                    ],
+                    "Authorization": [
+                        "Basic c2VlZC1hZG1pbkBleGFtcGxlLmNvbTpQQVNTV09SRA=="
+                    ]
+                }
+            },
+            "response": {
+                "status": {
+                    "code": 200,
+                    "message": "OK"
+                },
+                "headers": {
+                    "X-Frame-Options": [
+                        "SAMEORIGIN"
+                    ],
+                    "X-Content-Type-Options": [
+                        "nosniff"
+                    ],
+                    "Content-Type": [
+                        "application/json; charset=utf-8"
+                    ],
+                    "Transfer-Encoding": [
+                        "chunked"
+                    ],
+                    "X-Permitted-Cross-Domain-Policies": [
+                        "none"
+                    ],
+                    "X-Request-Id": [
+                        "5b24231b-2f78-421f-92f5-95ad42c406c6"
+                    ],
+                    "X-XSS-Protection": [
+                        "1; mode=block"
+                    ],
+                    "X-Download-Options": [
+                        "noopen"
+                    ],
+                    "X-Runtime": [
+                        "0.116514"
+                    ],
+                    "ETag": [
+                        "W/\"f5f21ceb6f3da41d5204b0f8319d7ce9\""
+                    ],
+                    "Referrer-Policy": [
+                        "strict-origin-when-cross-origin"
+                    ],
+                    "Cache-Control": [
+                        "max-age=0, private, must-revalidate"
+                    ],
+                    "Set-Cookie": [
+                        "_webpage-versions-db_session=fvbazAn2NDNEUVRe6rWO8atDk5x7SPdfMxr%2BOcPEV7i4rdAMwbQBIKE2uh%2B1YQr3cdY4bRVYdB2rdekB1AwSktWwxARXIJsaw6swrF4kmLpGA3B6jx3FrD0U9W5Q%2FPo16DyHh5Z8tB6Bd9BW%2BKKhFCsZwtmEMONHailnYDBeRQKe4d4YuijlVS9dUedBC8d2uLsf8Q%3D%3D--p6NKPRykBzkph4Qt--Kk4W0eE9j4%2BDz8kC88Nz6A%3D%3D; path=/; HttpOnly"
+                    ],
+                    "Vary": [
+                        "Origin"
+                    ]
+                },
+                "body": {
+                    "string": "{\"user\":{\"id\":1,\"email\":\"seed-admin@example.com\",\"created_at\":\"2020-03-29T05:27:33.487Z\",\"updated_at\":\"2020-04-11T15:12:18.473Z\",\"permissions\":[\"view\",\"annotate\",\"manage_users\"]}}"
+                }
+            }
+        }
+    ]
+}

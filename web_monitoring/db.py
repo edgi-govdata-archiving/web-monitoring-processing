@@ -28,6 +28,10 @@ class WebMonitoringDbError(Exception):
     ...
 
 
+class UnauthorizedCredentials(Exception):
+    ...
+
+
 def _process_errors(res):
     # If the app gives us errors, raise a custom exception with those.
     # If not, fall back on requests, which will raise an HTTPError.
@@ -36,7 +40,10 @@ def _process_errors(res):
     try:
         errors = res.json()['errors']
     except Exception:
-        res.raise_for_status()
+        if res.status_code == 401:
+            raise UnauthorizedCredentials('Unauthorized credentials for Web Wonitoring DB')
+        else:
+            res.raise_for_status()
     else:
         raise WebMonitoringDbError(', '.join(map(repr, errors)))
 
@@ -137,6 +144,7 @@ class Client:
     """
     def __init__(self, email, password, url=DEFAULT_URL):
         self._api_url = f'{url}/api/v0'
+        self._base_url = url
         self._session = requests.Session()
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
@@ -147,10 +155,10 @@ class Client:
         Instantiate a :class:`Client` by obtaining its authentication info from
         these environment variables:
 
-            * ``WEB_MONITORING_DB_URL``
-            * ``WEB_MONITORING_DB_EMAIL``
-            * ``WEB_MONITORING_DB_PASSWORD`` (optional -- defaults to
+            * ``WEB_MONITORING_DB_URL`` (optional -- defaults to
               ``https://api.monitoring.envirodatagov.org``)
+            * ``WEB_MONITORING_DB_EMAIL``
+            * ``WEB_MONITORING_DB_PASSWORD``
         """
         try:
             url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
@@ -706,6 +714,19 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
+    ### USERS ###
+
+    def get_user_session(self):
+        """
+        Get the current user session.
+
+        Returns
+        -------
+        response : dict
+        """
+        user_session_url = f'{self._base_url}/users/session'
+        return self.request_json(GET, user_session_url)
+
     ### CONVENIENCE METHODS ###
 
     def get_version_content(self, version_id):
@@ -760,3 +781,16 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         # Make result look like the result of `get_version` rather than the
         # result of `list_versions`.
         return {'data': result['data'][0]}
+
+    def validate_credentials(self):
+        """
+        Validate that the DB Client is authorized for the provided host.
+        This function raises an exception if the credentials are invalid, so
+        it's intended to be used like an assert statement.
+
+        Raises
+        ------
+        UnauthorizedCredentials
+            If the credentials are not authorized for the provided host.
+        """
+        self.get_user_session()

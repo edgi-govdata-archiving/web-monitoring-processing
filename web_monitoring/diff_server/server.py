@@ -20,7 +20,7 @@ import traceback
 import web_monitoring
 from ..diff import differs, html_diff_render, links_diff
 from ..diff.diff_errors import UndiffableContentError, UndecodableContentError
-from ..utils import Signal
+from ..utils import shutdown_executor_in_loop, Signal
 
 logger = logging.getLogger(__name__)
 
@@ -200,10 +200,7 @@ class DiffServer(tornado.web.Application):
                 for child in differs._processes.values():
                     child.kill()
             else:
-                await tornado.ioloop.IOLoop.current().run_in_executor(
-                    None,
-                    lambda: differs.shutdown(wait=True)
-                )
+                await shutdown_executor_in_loop(differs)
 
     def handle_signal(self, signal_type, frame):
         """Handle a signal by shutting down the application and IO loop."""
@@ -365,15 +362,15 @@ class DiffHandler(BaseHandler):
                 # Unfortunately we get pretty ambiguous info if the connection
                 # was closed because we exceeded the max size. :(
                 message = f'The connection was closed while fetching "{url}"'
-                if MAX_BODY_SIZE:
+                if client.max_body_size:
                     message += (f' -- this may have been caused by a large '
                                 f'response (the maximum diffable response is '
-                                f'{MAX_BODY_SIZE} bytes)')
+                                f'{client.max_body_size} bytes)')
                 raise PublicError(502,
                                   message,
                                   'Connection closed while fetching upstream',
                                   extra={'url': url,
-                                         'max_size': MAX_BODY_SIZE})
+                                         'max_size': client.max_body_size})
             except tornado.httpclient.HTTPError as error:
                 # If the response is actually coming from a web archive,
                 # allow error codes. The Memento-Datetime header indicates
@@ -428,7 +425,9 @@ class DiffHandler(BaseHandler):
         if reset or not executor:
             if executor:
                 try:
-                    executor.shutdown(wait=False)
+                    # NOTE: we don't need await this; we just want to make sure
+                    # the old executor gets cleaned up.
+                    shutdown_executor_in_loop(executor)
                 except Exception:
                     pass
             executor = concurrent.futures.ProcessPoolExecutor(
