@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import pytest
-from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials
+from unittest.mock import patch
+from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials, DEFAULT_TIMEOUT
 import vcr
 
 
@@ -292,3 +293,11 @@ def test_validate_credentials_should_raise():
     cli = Client(**bad_auth)
     with pytest.raises(UnauthorizedCredentials):
         cli.validate_credentials()
+
+
+@patch('web_monitoring.db.requests.Session')
+def test_default_timeout(mock_session):
+    cli = Client(**AUTH)
+    cli.get_user_session()
+    mock_session.return_value.request.assert_called_with(
+        method='GET', url=f'{AUTH["url"]}/users/session', timeout=DEFAULT_TIMEOUT)

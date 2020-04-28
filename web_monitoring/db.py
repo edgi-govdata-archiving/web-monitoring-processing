@@ -12,6 +12,7 @@ import warnings
 
 
 DEFAULT_URL = 'https://api.monitoring.envirodatagov.org'
+DEFAULT_TIMEOUT = 30.5
 GET = 'GET'
 POST = 'POST'
 
@@ -148,12 +149,16 @@ class Client:
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     """
-    def __init__(self, email, password, url=DEFAULT_URL):
+    def __init__(self, email, password, url=DEFAULT_URL, timeout=DEFAULT_TIMEOUT):
         self._api_url = f'{url}/api/v0'
         self._base_url = url
         self._session = requests.Session()
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
+
+        if timeout is not None and timeout <= 0:
+            raise ValueError(timeout)
+        self._timeout = timeout
 
     @classmethod
     def from_env(cls):
@@ -182,9 +187,12 @@ variables:
 Alternatively, you can instaniate Client(user, password) directly.""")
         return cls(email=email, password=password, url=url)
 
-    def request(self, method, url, data=None, **kwargs):
+    def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
             url = f'{self._api_url}{url}'
+
+        if timeout is not None and timeout <= 0:
+            raise ValueError(timeout)
 
         if data is not None:
             headers = kwargs.setdefault('headers', {})
@@ -194,12 +202,15 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             else:
                 headers.update({'Content-Type': 'application/json'})
                 kwargs['data'] = json.dumps(data)
-        response = self._session.request(method=method, url=url, **kwargs)
+        response = self._session.request(method=method, 
+                                         url=url,
+                                         timeout=timeout if timeout is not None else self._timeout,
+                                         **kwargs)
         _process_errors(response)
         return response
 
-    def request_json(self, method, url, data=None, **kwargs):
-        response = self.request(method, url, data, **kwargs)
+    def request_json(self, method, url, data=None, timeout=None, **kwargs):
+        response = self.request(method, url, data, timeout, **kwargs)
         return response.json()
 
     ### PAGES ###
@@ -495,7 +506,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             If true, don't import versions of a page that have the same hash as
             the version captured immediately before them.
         batch_size : integer, optional
-            Default batch size is 50000 Versions.
+            Default batch size is 1000 Versions.
 
         Returns
         -------
@@ -548,7 +559,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         try:
             while import_ids and (stop is None or not stop.is_set()):
                 for import_id in tuple(import_ids):
-                    # We are mainly interrested in processing errors. We don't
+                    # We are mainly interested in processing errors. We don't
                     # expect HTTPErrors, so we'll just warn and hope that
                     # everything works in the second pass.
                     try:
