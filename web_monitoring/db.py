@@ -160,7 +160,7 @@ class Client:
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout: float, optional
-        A connection timeout in seconds to be used for all requests. 0 indcates 
+        A connection timeout in seconds to be used for all requests. `0` indcates 
         no timeout. Individual method calls may override this value if `timeout`
         can be provided as an argument. The default value is 30.5 seconds.
     """
