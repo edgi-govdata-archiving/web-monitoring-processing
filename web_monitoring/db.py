@@ -160,9 +160,9 @@ class Client:
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout: float, optional
-        A connection timeout in seconds to be used for all requests. `0` indcates 
-        no timeout. Individual method calls may override this value if `timeout`
-        can be provided as an argument. The default value is 30.5 seconds.
+        A connection timeout in seconds to be used for all requests. `0` indicates 
+        no timeout should be used. Individual method calls may override this value
+        if `timeout` can be provided as an argument. The default value is 30.5 seconds.
     """
     def __init__(self, email, password, url=DEFAULT_URL, timeout=DEFAULT_TIMEOUT):
         self._api_url = f'{url}/api/v0'
