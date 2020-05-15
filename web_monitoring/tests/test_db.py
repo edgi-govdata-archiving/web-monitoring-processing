@@ -36,7 +36,7 @@ VERSIONISTA_ID = '13708349'
 TIME = datetime(2017, 11, 15, tzinfo=timezone.utc)
 NEW_VERSION_ID = '06620776-d347-4abd-a423-a871620299a9'
 
-# The only matters when re-recording the tests for vcr.
+# This only matters when re-recording the tests for vcr.
 AUTH = {'url': "http://localhost:3000",
         'email': "seed-admin@example.com",
         'password': "PASSWORD"}
@@ -295,39 +295,25 @@ def test_validate_credentials_should_raise():
         cli.validate_credentials()
 
 
-@patch.dict('os.environ', clear=True)
 @patch('web_monitoring.db.requests.Session')
-def test_from_env_with_default_timeout(mock_session):
-    os.environ.update({'WEB_MONITORING_DB_URL': AUTH['url'],
-                       'WEB_MONITORING_DB_EMAIL': AUTH['email'],
-                       'WEB_MONITORING_DB_PASSWORD': AUTH['password']})
-    cli = Client.from_env()
+def test_client_with_default_timeout(mock_session):
+    cli = Client(**AUTH)
     cli.get_user_session()
     mock_session.return_value.request.assert_called_with(
         method='GET', url=f'{AUTH["url"]}/users/session', timeout=DEFAULT_TIMEOUT)
 
 
-@patch.dict('os.environ', clear=True)
 @patch('web_monitoring.db.requests.Session')
-def test_from_env_with_custom_timeout(mock_session):
-    os.environ.update({'WEB_MONITORING_DB_URL': AUTH['url'],
-                       'WEB_MONITORING_DB_EMAIL': AUTH['email'],
-                       'WEB_MONITORING_DB_PASSWORD': AUTH['password'],
-                       'WEB_MONITORING_DB_TIMEOUT': '7.5'})
-    cli = Client.from_env()
+def test_client_with_custom_timeout(mock_session):
+    cli = Client(**AUTH, timeout=7.5)
     cli.get_user_session()
     mock_session.return_value.request.assert_called_with(
         method='GET', url=f'{AUTH["url"]}/users/session', timeout=7.5)
 
 
-@patch.dict('os.environ', clear=True)
 @patch('web_monitoring.db.requests.Session')
-def test_from_env_with_no_timeout(mock_session):
-    os.environ.update({'WEB_MONITORING_DB_URL': AUTH['url'],
-                       'WEB_MONITORING_DB_EMAIL': AUTH['email'],
-                       'WEB_MONITORING_DB_PASSWORD': AUTH['password'],
-                       'WEB_MONITORING_DB_TIMEOUT': '0'})
-    cli = Client.from_env()
+def test_client_with_no_timeout(mock_session):
+    cli = Client(**AUTH, timeout=0)
     cli.get_user_session()
     mock_session.return_value.request.assert_called_with(
         method='GET', url=f'{AUTH["url"]}/users/session', timeout=None)

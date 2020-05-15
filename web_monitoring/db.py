@@ -128,6 +128,17 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
     return version
 
 
+def _validate_timeout(timeout, default=None):
+    if timeout is None:
+        return default
+    elif timeout is not None and timeout < 0:
+        raise ValueError(f'Timeout must be non-negative. "{timeout}" was provided.')
+    elif timeout == 0:
+        return None
+    else:
+        return timeout
+
+
 class MissingCredentials(RuntimeError):
     ...
 
@@ -149,7 +160,9 @@ class Client:
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout: float, optional
-        Default is 30.5.
+        A connection timeout in seconds to be used for all requests. 0 indcates 
+        no timeout. Individual method calls may override this value if `timeout`
+        can be provided as an argument. The default value is 30.5 seconds.
     """
     def __init__(self, email, password, url=DEFAULT_URL, timeout=DEFAULT_TIMEOUT):
         self._api_url = f'{url}/api/v0'
@@ -158,12 +171,10 @@ class Client:
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
 
-        if timeout is not None and timeout < 0:
-            raise ValueError(f'Timeout must be non-negative. "{timeout}" was provided.')
-        self._timeout = None if timeout == 0 else timeout
+        self._timeout = _validate_timeout(timeout)
 
     @classmethod
-    def from_env(cls):
+    def from_env(cls, **kwargs):
         """
         Instantiate a :class:`Client` by obtaining its authentication info from
         these environment variables:
@@ -172,13 +183,11 @@ class Client:
               ``https://api.monitoring.envirodatagov.org``)
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
-            * ``WEB_MONITORING_DB_TIMEOUT (optional -- defaults to 30.5)``
         """
         try:
             url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
             email = os.environ['WEB_MONITORING_DB_EMAIL']
             password = os.environ['WEB_MONITORING_DB_PASSWORD']
-            timeout_string = os.environ.get('WEB_MONITORING_DB_TIMEOUT')
         except KeyError:
             raise MissingCredentials("""
 Before using this method, database credentials must be set via environmental
@@ -187,30 +196,15 @@ variables:
    WEB_MONITORING_DB_URL (optional)
    WEB_MONITORING_DB_EMAIL
    WEB_MONITORING_DB_PASSWORD
-   WEB_MONITORING_DB_TIMEOUT (optional)
 
 Alternatively, you can instaniate Client(user, password) directly.""")
-        
-        if timeout_string is None:
-            return cls(email=email, password=password, url=url)
-
-        try:
-            timeout = float(timeout_string)
-            return cls(email=email, password=password, url=url, timeout=timeout)
-        except ValueError:
-            raise ValueError('Unable to parse WEB_MONITORING_DB_TIMEOUT as a float, '
-                             f'{timeout_string} provided')
+        return cls(email=email, password=password, url=url, **kwargs)
 
     def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
             url = f'{self._api_url}{url}'
 
-        if timeout is not None and timeout < 0:
-            raise ValueError(f'Timeout must be non-negative. "{timeout}" was provided.')
-        elif timeout == 0:
-            timeout = None
-        elif timeout is None:
-            timeout = self._timeout
+        timeout = _validate_timeout(timeout, default=self._timeout)
 
         if data is not None:
             headers = kwargs.setdefault('headers', {})
