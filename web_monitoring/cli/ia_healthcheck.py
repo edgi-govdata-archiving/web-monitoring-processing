@@ -117,7 +117,7 @@ def main():
         print(f'Sampling {LINKS_TO_CHECK} pages from Web Monitoring API...')
         links = sample_monitored_urls(LINKS_TO_CHECK)
         from_date = datetime.now() - MAX_CAPTURE_AGE
-        print(f'Checking for captures in Wayback Machine...')
+        print('Checking for captures in Wayback Machine...')
         capture_statuses = ((url, wayback_has_captures(url, from_date))
                             for url in links)
         output_results(capture_statuses)
