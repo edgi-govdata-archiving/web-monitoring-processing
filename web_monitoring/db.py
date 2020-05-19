@@ -131,7 +131,7 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
 def _validate_timeout(timeout, default=None):
     if timeout is None:
         return default
-    elif timeout is not None and timeout < 0:
+    elif timeout < 0:
         raise ValueError(f'Timeout must be non-negative. "{timeout}" was provided.')
     elif timeout == 0:
         return None
