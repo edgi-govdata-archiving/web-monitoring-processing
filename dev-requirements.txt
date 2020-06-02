@@ -8,5 +8,5 @@ ipython ~=7.15.0
 matplotlib ~=3.2.1
 numpydoc ~=1.0.0
 requests-mock ~=1.8.0
-sphinx ~=2.4.4
+sphinx ~=3.0.4
 sphinx_rtd_theme ~=0.4.3
