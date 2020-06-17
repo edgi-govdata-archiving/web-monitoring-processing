@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.gde733ad documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g8cc9544 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.50.gde733ad
+                0+untagged.50.g8cc9544
               </div>
             
           
@@ -152,15 +152,15 @@
             
   <h1>Source code for web_monitoring.db</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Functions for interacting with web-monitoring-db</span>
-<span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="kn">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">parse_timestamp</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">import</span> <span class="nn">dateutil.tz</span>
+<span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="kn">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">parse_timestamp</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">requests.exceptions</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">toolz</span>
-<span class="kn">import</span> <span class="nn">tzlocal</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
 
@@ -173,7 +173,7 @@
     <span class="sd">&quot;&quot;&quot;Express a datetime object in timezone-aware ISO format.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># This is naive. Assume they mean this time in the local timezone.</span>
-        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="o">.</span><span class="n">get_localzone</span><span class="p">())</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">dateutil</span><span class="o">.</span><span class="n">tz</span><span class="o">.</span><span class="n">gettz</span><span class="p">())</span>
     <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
 
 
