@@ -1,13 +1,13 @@
 # Functions for interacting with web-monitoring-db
-from dateutil.parser import parse as parse_timestamp
 from collections.abc import Sequence
+import dateutil.tz
+from dateutil.parser import parse as parse_timestamp
 import json
 import os
 import requests
 import requests.exceptions
 import time
 import toolz
-import tzlocal
 import warnings
 
 
@@ -20,7 +20,7 @@ def _tzaware_isoformat(dt):
     """Express a datetime object in timezone-aware ISO format."""
     if dt.tzinfo is None:
         # This is naive. Assume they mean this time in the local timezone.
-        dt = dt.replace(tzinfo=tzlocal.get_localzone())
+        dt = dt.replace(tzinfo=dateutil.tz.gettz())
     return dt.isoformat()
 
 
