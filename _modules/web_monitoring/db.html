@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.gbe2a017 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.gf19d094 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.50.gbe2a017
+                0+untagged.50.gf19d094
               </div>
             
           
@@ -229,7 +229,8 @@
 
 
 <span class="k">def</span> <span class="nf">_build_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">uuid</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">source_type</span><span class="p">,</span>
-                   <span class="n">title</span><span class="p">,</span> <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                   <span class="n">title</span><span class="p">,</span> <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">media_type_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Build a Version dict from parameters, performing some validation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -244,14 +245,17 @@
                <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">hash</span><span class="p">),</span>
                <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_type</span><span class="p">),</span>
                <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">title</span><span class="p">),</span>
-               <span class="s1">&#39;source_metadata&#39;</span><span class="p">:</span> <span class="n">source_metadata</span><span class="p">}</span>
+               <span class="s1">&#39;source_metadata&#39;</span><span class="p">:</span> <span class="n">source_metadata</span><span class="p">,</span>
+               <span class="s1">&#39;media_type&#39;</span><span class="p">:</span> <span class="n">media_type</span><span class="p">,</span>
+               <span class="s1">&#39;media_type_parameters&#39;</span><span class="p">:</span> <span class="n">media_type_parameters</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">version</span>
 
 
 <span class="k">def</span> <span class="nf">_build_importable_version</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page_url</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span>
                               <span class="n">version_hash</span><span class="p">,</span> <span class="n">source_type</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span>
                               <span class="n">page_maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">page_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                              <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                              <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                              <span class="n">media_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">media_type_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Build a Version dict from parameters, performing some validation.</span>
 
@@ -272,7 +276,9 @@
                <span class="s1">&#39;source_metadata&#39;</span><span class="p">:</span> <span class="n">source_metadata</span><span class="p">,</span>
                <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">status</span><span class="p">),</span>
                <span class="s1">&#39;page_maintainers&#39;</span><span class="p">:</span> <span class="n">page_maintainers</span><span class="p">,</span>
-               <span class="s1">&#39;page_tags&#39;</span><span class="p">:</span> <span class="n">page_tags</span><span class="p">}</span>
+               <span class="s1">&#39;page_tags&#39;</span><span class="p">:</span> <span class="n">page_tags</span><span class="p">,</span>
+               <span class="s1">&#39;media_type&#39;</span><span class="p">:</span> <span class="n">media_type</span><span class="p">,</span>
+               <span class="s1">&#39;media_type_parameters&#39;</span><span class="p">:</span> <span class="n">media_type_parameters</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">version</span>
 
 
