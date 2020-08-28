@@ -82,14 +82,13 @@ def test_format_memento():
         assert version['version_hash'] == 'ae433414499f91630983fc379d9bafae67250061178930b8779ee76c82485491'
         assert version['source_type'] == 'internet_archive'
         assert version['status'] == 200
+        assert version['media_type'] == 'text/html'
         assert version['source_metadata'] == {
-            'encoding': 'ISO-8859-1',
             'headers': {
                 'Date': 'Fri, 24 Nov 2017 15:13:14 GMT',
                 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
                 'Transfer-Encoding': 'chunked'
             },
-            'mime_type': 'text/html',
             'view_url': 'http://web.archive.org/web/20171124151315/https://www.fws.gov/birds/'
         }
 
