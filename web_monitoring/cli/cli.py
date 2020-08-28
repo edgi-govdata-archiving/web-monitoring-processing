@@ -602,7 +602,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
-            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, stop_event))
+            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, False, stop_event))
         uploader.start()
 
         cdx_thread.join()
