@@ -145,8 +145,8 @@ def _get_progress_meter(iterable):
     return tqdm(iterable, desc='importing', unit=' versions', **intervals)
 
 
-def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None):
-    cli = db.Client.from_env()  # will raise if env vars not set
+def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None, db_client=None):
+    cli = db_client or db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
     # TODO: create this on the main thread so we can update totals when we
     # discover them in CDX, but update progress here as we import.
@@ -547,6 +547,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         worker_count=worker_count,
         create_pages=False,
         unplaybackable_path=unplaybackable_path,
+        db_client=client,
         dry_run=dry_run)
 
 
@@ -557,7 +558,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                    skip_unchanged='resolved-response',
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
-                   dry_run=False):
+                   db_client=None, dry_run=False):
     if not all(_is_valid(url) for url in urls):
         raise ValueError("Invalid URL provided")
 
@@ -602,7 +603,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
-            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, stop_event))
+            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, False, stop_event))
         uploader.start()
 
         cdx_thread.join()
