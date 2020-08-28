@@ -123,10 +123,10 @@ def test_format_memento_handles_redirects():
 @patch.dict(os.environ, AUTH_ENVIRON)
 def test_complete_import_ia_db_urls():
     # The only real goal in this test is to make sure it doesn't raise.
-    import_ia_db_urls(from_date=datetime(2019, 1, 1, 3, 22, tzinfo=timezone.utc),
-                      to_date=datetime(2019, 1, 1, 3, 25, tzinfo=timezone.utc),
+    import_ia_db_urls(from_date=datetime(2019, 1, 1, 3, 0, tzinfo=timezone.utc),
+                      to_date=datetime(2019, 1, 2, 3, 0, tzinfo=timezone.utc),
                       skip_unchanged='resolved-response',
-                      url_pattern='*energy.gov/*')
+                      url_pattern='*epa.gov/hfstudy/epa*')
 
 
 @ia_vcr.use_cassette()
