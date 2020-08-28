@@ -338,9 +338,14 @@ class WaybackRecordsWorker(threading.Thread):
             if k.startswith(prefix)
         }
 
+        # Parse media type information.
+        media_type, *media_params = memento.headers.get('content-type', '').split(';')
+        # Clean up whitespace, remove empty parameters, etc.
+        stripped_params = (param.strip() for param in media_params)
+        media_params = [param for param in stripped_params if param]
+        media_type_parameters = '; '.join(media_params)
+
         metadata = {
-            'mime_type': memento.headers.get('content-type', '').split(';', 1)[0],
-            'encoding': memento.encoding,
             'headers': original_headers,
             'view_url': cdx_record.view_url
         }
@@ -369,6 +374,8 @@ class WaybackRecordsWorker(threading.Thread):
             # Version/memento-level info
             capture_time=iso_date,
             uri=cdx_record.raw_url,
+            media_type=media_type or None,
+            media_type_parameters=media_type_parameters or None,
             version_hash=utils.hash_content(memento.content),
             source_type='internet_archive',
             source_metadata=metadata,
