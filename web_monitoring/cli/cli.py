@@ -339,8 +339,6 @@ class WaybackRecordsWorker(threading.Thread):
         }
 
         metadata = {
-            'mime_type': memento.headers.get('content-type', '').split(';', 1)[0],
-            'encoding': memento.encoding,
             'headers': original_headers,
             'view_url': cdx_record.view_url
         }
@@ -359,6 +357,8 @@ class WaybackRecordsWorker(threading.Thread):
             metadata['redirects'] = [url for i, url in enumerate(redirects)
                                      if url not in redirects[:i]]
 
+        media_type, media_type_parameters = self.get_memento_media(memento)
+
         return dict(
             # Page-level info
             page_url=cdx_record.url,
@@ -369,11 +369,24 @@ class WaybackRecordsWorker(threading.Thread):
             # Version/memento-level info
             capture_time=iso_date,
             uri=cdx_record.raw_url,
+            media_type=media_type or None,
+            media_type_parameters=media_type_parameters or None,
             version_hash=utils.hash_content(memento.content),
             source_type='internet_archive',
             source_metadata=metadata,
             status=memento.status_code
         )
+
+    def get_memento_media(self, memento):
+        """Extract media type and media type parameters from a memento."""
+        media, *parameters = memento.headers.get('content-type', '').split(';')
+
+        # Clean up whitespace, remove empty parameters, etc.
+        clean_parameters = (param.strip() for param in parameters)
+        parameters = [param for param in clean_parameters if param]
+        parameter_string = '; '.join(parameters)
+
+        return media, parameter_string
 
     @classmethod
     def create_summary(cls):
