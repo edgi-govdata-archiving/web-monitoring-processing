@@ -122,8 +122,9 @@ def test_format_memento_pdf():
                                     to_date='20200430024232')
         record = next(cdx_records)
         memento = client.get_memento(record.raw_url, exact_redirects=False)
-        version = WaybackRecordsWorker.format_memento(None, memento, record,
-                                                      ['maintainer'], ['tag'])
+        worker = WaybackRecordsWorker(None, None, None, None, None)
+        version = worker.format_memento(memento, record, ['maintainer'],
+                                        ['tag'])
 
         assert isinstance(version, dict)
 
