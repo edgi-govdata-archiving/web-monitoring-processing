@@ -67,8 +67,9 @@ def test_format_memento():
                                     to_date='20171124151316')
         record = next(cdx_records)
         memento = client.get_memento(record.raw_url, exact_redirects=False)
-        version = WaybackRecordsWorker.format_memento(None, memento, record,
-                                                      ['maintainer'], ['tag'])
+        worker = WaybackRecordsWorker(None, None, None, None, None)
+        version = worker.format_memento(memento, record, ['maintainer'],
+                                        ['tag'])
 
         assert isinstance(version, dict)
 
@@ -103,8 +104,8 @@ def test_format_memento_handles_redirects():
                                     to_date='20180808094145')
         record = next(cdx_records)
         memento = client.get_memento(record.raw_url, exact_redirects=False)
-        version = WaybackRecordsWorker.format_memento(None, memento, record,
-                                                      None, None)
+        worker = WaybackRecordsWorker(None, None, None, None, None)
+        version = worker.format_memento(memento, record, None, None)
 
         assert isinstance(version, dict)
         assert version['source_metadata']['redirected_url'] == final_url
