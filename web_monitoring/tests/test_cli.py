@@ -114,6 +114,48 @@ def test_format_memento_handles_redirects():
         assert version['source_metadata']['redirects'][1] == final_url
 
 
+@ia_vcr.use_cassette()
+def test_format_memento_pdf():
+    with WaybackClient() as client:
+        url = 'https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf'
+        cdx_records = client.search(url, from_date='20200430024232',
+                                    to_date='20200430024232')
+        record = next(cdx_records)
+        memento = client.get_memento(record.raw_url, exact_redirects=False)
+        version = WaybackRecordsWorker.format_memento(None, memento, record,
+                                                      ['maintainer'], ['tag'])
+
+        assert isinstance(version, dict)
+
+        assert version['page_url'] == url
+        assert version['page_maintainers'] == ['maintainer']
+        assert version['page_tags'] == ['tag']
+        assert version['title'] == "EPA Office of Air and Radiation Climate Change Adaptation Implementation Plan, June 2014"
+        assert version['capture_time'] == '2020-04-30T02:42:32Z'
+        assert version['uri'] == f'http://web.archive.org/web/20200430024232id_/{url}'
+        assert version['version_hash'] == 'bdfd8c1ee22b70cd1b8bd513989822e066a9656f4578606ef3d5feb6204e3dc6'
+        assert version['source_type'] == 'internet_archive'
+        assert version['status'] == 200
+        assert version['media_type'] == 'application/pdf'
+        assert version['source_metadata'] == {
+            'headers': {
+                'Accept-Ranges': 'bytes',
+                'Cache-Control': 'max-age=572',
+                'Connection': 'close',
+                'Content-Length': '375909',
+                'Date': 'Thu, 30 Apr 2020 02:42:32 GMT',
+                'ETag': '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"',
+                'Expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
+                'Last-Modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
+                'Server': 'AkamaiNetStorage',
+                'Server-Timing': 'cdn-cache; desc=HIT, edge; dur=141',
+                'Strict-Transport-Security': 'max-age=31536000; preload;',
+                'X-Content-Type-Options': 'nosniff'
+            },
+            'view_url': 'http://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf'
+        }
+
+
 # TODO: this test covers some of the various error cases, but probably not all
 # of them, and has a pretty big cassette file. We should *probably* rewrite it
 # with mock db.client and wayback.WaybackCLient instances that exercise all the

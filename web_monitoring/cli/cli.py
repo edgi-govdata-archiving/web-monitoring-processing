@@ -126,6 +126,26 @@ try:
 except Exception:
     WAYBACK_RATE_LIMIT = 10
 
+# We do some parsing of HTML and PDF documents to extract the title before
+# importing the document. These media types are used to determine whether and
+# how to parse the document.
+HTML_MEDIA_TYPES = frozenset((
+    'application/html',
+    'application/xhtml',
+    'application/xhtml+xml',
+    'application/xml',
+    'application/xml+html',
+    'application/xml+xhtml',
+    'text/webviewhtml',
+    'text/html',
+    'text/x-server-parsed-html',
+    'text/xhtml',
+))
+PDF_MEDIA_TYPES = frozenset((
+    'application/pdf',
+    'application/x-pdf',
+))
+
 
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
@@ -359,12 +379,18 @@ class WaybackRecordsWorker(threading.Thread):
 
         media_type, media_type_parameters = self.get_memento_media(memento)
 
+        title = ''
+        if media_type in HTML_MEDIA_TYPES:
+            title = utils.extract_title(memento.content, memento.encoding or 'utf-8')
+        elif media_type in PDF_MEDIA_TYPES or memento.content.startswith(b'%PDF-'):
+            title = utils.extract_pdf_title(memento.content)
+
         return dict(
             # Page-level info
             page_url=cdx_record.url,
             page_maintainers=maintainers,
             page_tags=tags,
-            title=utils.extract_title(memento.content),
+            title=title,
 
             # Version/memento-level info
             capture_time=iso_date,
