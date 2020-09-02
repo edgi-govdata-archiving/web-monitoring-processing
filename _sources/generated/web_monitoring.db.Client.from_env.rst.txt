@@ -1,4 +1,4 @@
-web\_monitoring.db.Client.from\_env
+﻿web\_monitoring.db.Client.from\_env
 ===================================
 
 .. currentmodule:: web_monitoring.db

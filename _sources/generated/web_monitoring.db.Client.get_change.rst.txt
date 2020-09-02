@@ -1,4 +1,4 @@
-web\_monitoring.db.Client.get\_change
+﻿web\_monitoring.db.Client.get\_change
 =====================================
 
 .. currentmodule:: web_monitoring.db

@@ -1,4 +1,4 @@
-web\_monitoring.db.Client.add\_annotation
+﻿web\_monitoring.db.Client.add\_annotation
 =========================================
 
 .. currentmodule:: web_monitoring.db

@@ -1,4 +1,4 @@
-web\_monitoring.db.Client.add\_versions
+﻿web\_monitoring.db.Client.add\_versions
 =======================================
 
 .. currentmodule:: web_monitoring.db
