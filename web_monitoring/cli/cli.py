@@ -126,6 +126,26 @@ try:
 except Exception:
     WAYBACK_RATE_LIMIT = 10
 
+# We do some parsing of HTML and PDF documents to extract the title before
+# importing the document. These media types are used to determine whether and
+# how to parse the document.
+HTML_MEDIA_TYPES = frozenset((
+    'application/html',
+    'application/xhtml',
+    'application/xhtml+xml',
+    'application/xml',
+    'application/xml+html',
+    'application/xml+xhtml',
+    'text/webviewhtml',
+    'text/html',
+    'text/x-server-parsed-html',
+    'text/xhtml',
+))
+PDF_MEDIA_TYPES = frozenset((
+    'application/pdf',
+    'application/x-pdf',
+))
+
 
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
@@ -145,8 +165,8 @@ def _get_progress_meter(iterable):
     return tqdm(iterable, desc='importing', unit=' versions', **intervals)
 
 
-def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None):
-    cli = db.Client.from_env()  # will raise if env vars not set
+def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None, db_client=None):
+    cli = db_client or db.Client.from_env()  # will raise if env vars not set
     # Wrap verions in a progress bar.
     # TODO: create this on the main thread so we can update totals when we
     # discover them in CDX, but update progress here as we import.
@@ -339,8 +359,6 @@ class WaybackRecordsWorker(threading.Thread):
         }
 
         metadata = {
-            'mime_type': memento.headers.get('content-type', '').split(';', 1)[0],
-            'encoding': memento.encoding,
             'headers': original_headers,
             'view_url': cdx_record.view_url
         }
@@ -359,21 +377,42 @@ class WaybackRecordsWorker(threading.Thread):
             metadata['redirects'] = [url for i, url in enumerate(redirects)
                                      if url not in redirects[:i]]
 
+        media_type, media_type_parameters = self.get_memento_media(memento)
+
+        title = ''
+        if media_type in HTML_MEDIA_TYPES:
+            title = utils.extract_title(memento.content, memento.encoding or 'utf-8')
+        elif media_type in PDF_MEDIA_TYPES or memento.content.startswith(b'%PDF-'):
+            title = utils.extract_pdf_title(memento.content)
+
         return dict(
             # Page-level info
             page_url=cdx_record.url,
             page_maintainers=maintainers,
             page_tags=tags,
-            title=utils.extract_title(memento.content),
+            title=title,
 
             # Version/memento-level info
             capture_time=iso_date,
             uri=cdx_record.raw_url,
+            media_type=media_type or None,
+            media_type_parameters=media_type_parameters or None,
             version_hash=utils.hash_content(memento.content),
             source_type='internet_archive',
             source_metadata=metadata,
             status=memento.status_code
         )
+
+    def get_memento_media(self, memento):
+        """Extract media type and media type parameters from a memento."""
+        media, *parameters = memento.headers.get('content-type', '').split(';')
+
+        # Clean up whitespace, remove empty parameters, etc.
+        clean_parameters = (param.strip() for param in parameters)
+        parameters = [param for param in clean_parameters if param]
+        parameter_string = '; '.join(parameters)
+
+        return media, parameter_string
 
     @classmethod
     def create_summary(cls):
@@ -534,6 +573,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         worker_count=worker_count,
         create_pages=False,
         unplaybackable_path=unplaybackable_path,
+        db_client=client,
         dry_run=dry_run)
 
 
@@ -544,7 +584,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                    skip_unchanged='resolved-response',
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
-                   dry_run=False):
+                   db_client=None, dry_run=False):
     if not all(_is_valid(url) for url in urls):
         raise ValueError("Invalid URL provided")
 
@@ -589,7 +629,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
-            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, stop_event))
+            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, False, stop_event))
         uploader.start()
 
         cdx_thread.join()

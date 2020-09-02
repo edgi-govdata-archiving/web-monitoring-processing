@@ -1,4 +1,4 @@
-.. web-monitoring-processing documentation master file, created by
+.. web-monitoring-processing documentation main file, created by
    sphinx-quickstart on Wed Oct 11 15:53:30 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -12,7 +12,7 @@ to support the
 Website Monitoring project. This is in the very early stages of development. At
 this stage, the aim of this documentation is to support onboarding new
 developers. Contributions are welcome! See the
-`guidelines for contributing <https://github.com/edgi-govdata-archiving/overview/blob/master/CONTRIBUTING.md>`_.
+`guidelines for contributing <https://github.com/edgi-govdata-archiving/overview/blob/main/CONTRIBUTING.md>`_.
 
 
 .. toctree::

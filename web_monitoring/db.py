@@ -74,7 +74,8 @@ def _time_range_string(start_date, end_date):
 
 
 def _build_version(*, page_id, uuid, capture_time, uri, hash, source_type,
-                   title, source_metadata=None):
+                   title, source_metadata=None, media_type=None,
+                   media_type_parameters=None):
     """
     Build a Version dict from parameters, performing some validation.
     """
@@ -89,14 +90,17 @@ def _build_version(*, page_id, uuid, capture_time, uri, hash, source_type,
                'hash': str(hash),
                'source_type': str(source_type),
                'title': str(title),
-               'source_metadata': source_metadata}
+               'source_metadata': source_metadata,
+               'media_type': media_type,
+               'media_type_parameters': media_type_parameters}
     return version
 
 
 def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
                               version_hash, source_type, title,
                               page_maintainers=None, page_tags=None,
-                              source_metadata=None, status=None):
+                              source_metadata=None, status=None,
+                              media_type=None, media_type_parameters=None):
     """
     Build a Version dict from parameters, performing some validation.
 
@@ -117,7 +121,9 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
                'source_metadata': source_metadata,
                'status': str(status),
                'page_maintainers': page_maintainers,
-               'page_tags': page_tags}
+               'page_tags': page_tags,
+               'media_type': media_type,
+               'media_type_parameters': media_type_parameters}
     return version
 
 

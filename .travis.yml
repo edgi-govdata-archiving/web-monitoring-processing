@@ -18,4 +18,4 @@ script:
     - set -e
     - make -C docs html
     - pip install doctr
-    - doctr deploy --built-docs docs/build/html .
+    - doctr deploy --built-docs docs/build/html . --branch-whitelist main
