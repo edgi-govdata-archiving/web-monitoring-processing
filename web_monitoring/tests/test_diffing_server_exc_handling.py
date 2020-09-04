@@ -127,9 +127,6 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
             else:
                 os.environ['WEB_MONITORING_APP_ENV'] = original
 
-    # XXX: Need to fix this test (or add tighter URL validation to server)
-    # before merging.
-    @pytest.mark.skip(reason='cURL client supports no protocol on URLs')
     def test_invalid_url_a_format(self):
         response = self.fetch('/html_token?format=json&include=all&'
                               'a=example.org&b=https://example.org')
@@ -137,9 +134,6 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         self.assertEqual(response.code, 400)
         self.assertFalse(response.headers.get('Etag'))
 
-    # XXX: Need to fix this test (or add tighter URL validation to server)
-    # before merging.
-    @pytest.mark.skip(reason='cURL client supports no protocol on URLs')
     def test_invalid_url_b_format(self):
         response = self.fetch('/html_token?format=json&include=all&'
                               'a=https://example.org&b=example.org')
