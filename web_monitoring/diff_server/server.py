@@ -108,8 +108,9 @@ class LimitedCurlAsyncHTTPClient(CurlAsyncHTTPClient):
 
 
 # XXX: DO NOT MERGE WITH THIS
-USE_SIMPLE_CLIENT = os.getenv('USE_SIMPLE_CLIENT') or False
-tornado.httpclient.AsyncHTTPClient.configure(None if USE_SIMPLE_CLIENT else LimitedCurlAsyncHTTPClient,
+HTTP_CLIENT = LimitedCurlAsyncHTTPClient
+if os.getenv('USE_SIMPLE_HTTP_CLIENT'): HTTP_CLIENT = None
+tornado.httpclient.AsyncHTTPClient.configure(HTTP_CLIENT,
                                              max_body_size=MAX_BODY_SIZE)
 
 
@@ -390,7 +391,6 @@ class DiffHandler(BaseHandler):
                                   'Could not fetch upstream content',
                                   extra={'url': url, 'cause': str(error)})
             except tornado.simple_httpclient.HTTPTimeoutError:
-                # XXX: NO TEST FOR THIS!
                 raise PublicError(504,
                                   f'Timed out while fetching "{url}"',
                                   'Could not fetch upstream content',
@@ -434,6 +434,11 @@ class DiffHandler(BaseHandler):
                                       f'Could not fetch "{url}": {error}',
                                       'Could not fetch upstream content',
                                       extra={'url': url, 'cause': str(error)})
+                elif error.errno == pycurl.E_OPERATION_TIMEDOUT:
+                    raise PublicError(504,
+                                      f'Timed out while fetching "{url}"',
+                                      'Could not fetch upstream content',
+                                      extra={'url': url})
                 else:
                     raise PublicError(502,
                                       f'Unknown error fetching "{url}"',

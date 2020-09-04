@@ -1,8 +1,8 @@
+import asyncio
 import json
 import os
 import unittest
 from pathlib import Path
-import pytest
 import re
 import tempfile
 from tornado.testing import AsyncHTTPTestCase, bind_unused_port
@@ -16,6 +16,17 @@ from tornado.httpserver import HTTPServer
 from tornado.httputil import HTTPHeaders
 import tornado.web
 from io import BytesIO
+
+
+def patch_http_client(**kwargs):
+    """
+    Create HTTP clients in the diffing server with the specified parameters
+    during this patch. Can be a function decorator or context manager.
+    """
+    def get_client():
+        return tornado.httpclient.AsyncHTTPClient(force_instance=True,
+                                                  **kwargs)
+    return patch.object(df, 'get_http_client', get_client)
 
 
 class DiffingServerTestCase(AsyncHTTPTestCase):
@@ -176,6 +187,18 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
         self.assertEqual(response.code, 502)
         self.assertFalse(response.headers.get('Etag'))
 
+    @patch_http_client(defaults=dict(request_timeout=0.5))
+    def test_timeout_upstream(self):
+        async def responder(handler):
+            await asyncio.sleep(1)
+            handler.write('HELLO!'.encode('utf-8'))
+
+        with SimpleHttpServer(responder) as server:
+            response = self.fetch('/html_source_dmp?'
+                                  f'a={server.url("/whatever1")}&'
+                                  f'b={server.url("/whatever2")}')
+            assert response.code == 504
+
     def test_missing_params_caller_func(self):
         response = self.fetch('http://example.org/')
         with self.assertRaises(KeyError):
@@ -305,17 +328,6 @@ class DiffingServerExceptionHandlingTest(DiffingServerTestCase):
                               'b_hash=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
         assert response.code == 502
         assert 'hash' in json.loads(response.body)['error']
-
-
-def patch_http_client(**kwargs):
-    """
-    Create HTTP clients in the diffing server with the specified parameters
-    during this patch. Can be a function decorator or context manager.
-    """
-    def get_client():
-        return tornado.httpclient.AsyncHTTPClient(force_instance=True,
-                                                  **kwargs)
-    return patch.object(df, 'get_http_client', get_client)
 
 
 class DiffingServerResponseSizeTest(DiffingServerTestCase):
