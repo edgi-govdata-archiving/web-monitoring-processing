@@ -107,9 +107,9 @@ class LimitedCurlAsyncHTTPClient(CurlAsyncHTTPClient):
             curl.setopt(pycurl.MAXFILESIZE, self.max_body_size)
 
 
-# XXX: DO NOT MERGE WITH THIS
 HTTP_CLIENT = LimitedCurlAsyncHTTPClient
-if os.getenv('USE_SIMPLE_HTTP_CLIENT'): HTTP_CLIENT = None
+if os.getenv('USE_SIMPLE_HTTP_CLIENT'):
+    HTTP_CLIENT = None
 tornado.httpclient.AsyncHTTPClient.configure(HTTP_CLIENT,
                                              max_body_size=MAX_BODY_SIZE)
 
@@ -390,6 +390,8 @@ class DiffHandler(BaseHandler):
                                   f'Could not fetch "{url}": {error}',
                                   'Could not fetch upstream content',
                                   extra={'url': url, 'cause': str(error)})
+
+            # --- SIMPLE CLIENT ERRORS ----------------------------------------
             except tornado.simple_httpclient.HTTPTimeoutError:
                 raise PublicError(504,
                                   f'Timed out while fetching "{url}"',
@@ -408,6 +410,8 @@ class DiffHandler(BaseHandler):
                                   'Connection closed while fetching upstream',
                                   extra={'url': url,
                                          'max_size': client.max_body_size})
+
+            # --- CURL CLIENT ERRORS ------------------------------------------
             except CurlError as error:
                 # Documentation for cURL error codes:
                 #   https://curl.haxx.se/libcurl/c/libcurl-errors.html
@@ -444,6 +448,8 @@ class DiffHandler(BaseHandler):
                                       f'Unknown error fetching "{url}"',
                                       f'Unknown error fetching upstream content: {error}',
                                       extra={'url': url})
+
+            # --- COMMON ERRORS SUPPORTED BY ALL CLIENTS ----------------------
             except tornado.httpclient.HTTPError as error:
                 # If the response is actually coming from a web archive,
                 # allow error codes. The Memento-Datetime header indicates
