@@ -352,7 +352,8 @@ class WaybackRecordsWorker(threading.Thread):
         if cdx_record.timestamp.tzinfo is None:
             iso_date += 'Z'
         elif iso_date.endswith('+00:00'):
-            iso_date = '+'.join((iso_date.split('+', 1)[0], 'Z'))
+            no_tz_date = iso_date.split("+", 1)[0]
+            iso_date = f'{no_tz_date}Z'
 
         # Get all headers from the original response.
         prefix = 'X-Archive-Orig-'
