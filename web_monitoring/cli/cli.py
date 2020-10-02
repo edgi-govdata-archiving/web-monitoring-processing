@@ -348,8 +348,12 @@ class WaybackRecordsWorker(threading.Thread):
         Format a Wayback Memento response as a dict with import-ready info.
         """
         iso_date = cdx_record.timestamp.isoformat()
+        # Use compact representation for UTC
         if cdx_record.timestamp.tzinfo is None:
             iso_date += 'Z'
+        elif iso_date.endswith('+00:00'):
+            no_tz_date = iso_date.split("+", 1)[0]
+            iso_date = f'{no_tz_date}Z'
 
         # Get all headers from the original response.
         prefix = 'X-Archive-Orig-'
