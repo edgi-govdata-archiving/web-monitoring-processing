@@ -337,8 +337,7 @@ class WaybackRecordsWorker(threading.Thread):
         Load the actual Wayback memento for a CDX record and transform it to
         a Web Monitoring DB import record.
         """
-        memento = self.wayback.get_memento(record.raw_url,
-                                           exact_redirects=False)
+        memento = self.wayback.get_memento(record, exact_redirects=False)
         with memento:
             return self.format_memento(memento, record, self.maintainers,
                                        self.tags)
