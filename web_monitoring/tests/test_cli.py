@@ -86,6 +86,7 @@ def test_format_memento():
         assert version['media_type'] == 'text/html'
         assert version['source_metadata'] == {
             'headers': {
+                'Content-Type': 'text/html',
                 'Date': 'Fri, 24 Nov 2017 15:13:14 GMT',
                 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
                 'Transfer-Encoding': 'chunked'
@@ -144,6 +145,7 @@ def test_format_memento_pdf():
                 'Cache-Control': 'max-age=572',
                 'Connection': 'close',
                 'Content-Length': '375909',
+                'Content-Type': 'application/pdf',
                 'Date': 'Thu, 30 Apr 2020 02:42:32 GMT',
                 'ETag': '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"',
                 'Expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
