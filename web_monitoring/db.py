@@ -42,7 +42,8 @@ def _process_errors(res):
         errors = res.json()['errors']
     except Exception:
         if res.status_code == 401:
-            raise UnauthorizedCredentials('Unauthorized credentials for Web Wonitoring DB')
+            raise UnauthorizedCredentials('Unauthorized credentials for Web '
+                                          'Monitoring DB')
         else:
             res.raise_for_status()
     else:
@@ -132,7 +133,7 @@ def _validate_timeout(timeout, default=None):
     if timeout is None:
         return default
     elif timeout < 0:
-        raise ValueError(f'Timeout must be non-negative. "{timeout}" was provided.')
+        raise ValueError(f'Timeout must be non-negative. (Got: "{timeout}")')
     elif timeout == 0:
         return None
     else:
@@ -160,18 +161,17 @@ class Client:
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout: float, optional
-        A connection timeout in seconds to be used for all requests. `0` indicates 
-        no timeout should be used. Individual method calls may override this value
-        if `timeout` can be provided as an argument. The default value is 30.5 seconds.
+        A default connection timeout in seconds to be used for all requests.
+        ``0`` indicates no timeout should be used. Individual requests may
+        override this value. Default: 30.5 seconds.
     """
-    def __init__(self, email, password, url=DEFAULT_URL, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, email, password, url=DEFAULT_URL, timeout=None):
         self._api_url = f'{url}/api/v0'
         self._base_url = url
         self._session = requests.Session()
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
-
-        self._timeout = _validate_timeout(timeout)
+        self._timeout = _validate_timeout(timeout, DEFAULT_TIMEOUT)
 
     @classmethod
     def from_env(cls, **kwargs):
@@ -183,6 +183,9 @@ class Client:
               ``https://api.monitoring.envirodatagov.org``)
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
+
+        Any extra parameters (e.g. ``timeout``) are passed to the ``Client``
+        constructor.
         """
         try:
             url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
@@ -214,7 +217,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
             else:
                 headers.update({'Content-Type': 'application/json'})
                 kwargs['data'] = json.dumps(data)
-        response = self._session.request(method=method, 
+        response = self._session.request(method=method,
                                          url=url,
                                          timeout=timeout,
                                          **kwargs)
