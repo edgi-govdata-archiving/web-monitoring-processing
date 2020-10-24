@@ -1,1 +1,3 @@
 from web_monitoring_diff.html_render_diff import html_diff_render
+# Suppress Pyflakes Warnings
+assert html_diff_render
