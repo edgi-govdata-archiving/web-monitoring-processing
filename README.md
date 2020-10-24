@@ -12,8 +12,8 @@ This component is intended to hold various backend tools serving different tasks
 1. Query external sources of captured web pages (e.g. Internet Archive, Page
    Freezer, Sentry), and formulate a request for importing their version and
    page metadata into web-monitoring-db.
-2. Provide a web service that computes the "diff" between two versions of a page
-   in response to a query from web-monitoring-db.
+2. Run checks to ensure external sources of captured web pages are actually
+   capturing the pages we care about.
 3. Query web-monitoring-db for new Changes, analyze them in an automated
    pipeline to assign priority and/or filter out uninteresting ones, and submit
    this information back to web-monitoring-db.
@@ -26,10 +26,16 @@ Working and Under Active Development:
 * A Python API to the web-monitoring-db Rails app in ``web_monitoring.db``
 * Python functions and a command-line tool for importing snapshots from the
   Internet Archive into web-monitoring-db.
-* An HTTP API for diffing two documents according to a variety of algorithms.
-  (Uses the Tornado web framework.)
+
+(Re)moved:
+
+* Diffing tools and an HTTP API for running them have been graduated out into a
+  separate package due to their broad applicability and use by others:
+  https://github.com/edgi-govdata-archiving/web-monitoring-diff
+  🥳 🎉
 
 Legacy projects that may be revisited:
+
 * [Example HTML](https://github.com/edgi-govdata-archiving/web-monitoring-processing/tree/main/archives) providing useful test cases.
 
 
@@ -173,7 +179,7 @@ This project wouldn’t exist without a lot of amazing people’s help. Thanks t
 
 ## License & Copyright
 
-Copyright (C) 2017-2019 Environmental Data and Governance Initiative (EDGI)
+Copyright (C) 2017-2020 Environmental Data and Governance Initiative (EDGI)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.0.
 
