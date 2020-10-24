@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import io
 import logging
@@ -7,8 +6,6 @@ import os
 from PyPDF2 import PdfFileReader
 import queue
 import re
-import requests
-import requests.adapters
 import signal
 import threading
 import time
@@ -45,37 +42,6 @@ def extract_pdf_title(content_bytes):
 def hash_content(content_bytes):
     "Create a version_hash for the content of a snapshot."
     return hashlib.sha256(content_bytes).hexdigest()
-
-
-def shutdown_executor_in_loop(executor):
-    """
-    Safely and asynchronously shut down a ProcessPoolExecutor from within an
-    event loop.
-
-    This returns an awaitable future, but is not a coroutine itself, so it's
-    safe to *not* await the result if you don't need to know when the shutdown
-    is complete.
-
-    The executor documentation suggests that calling ``shutdown(wait=False)``
-    won't actually trash the executor until all pending futures are done, but
-    this isn't actually true (at least not for ``ProcessPoolExecutor`` -- it
-    will raise ``OSError`` moments later in an internal polling function where
-    it can not be caught). To safely shutdown in an event loop, you *must* set
-    ``wait=True``. This handles that for you in an easy-to-use awaitable form.
-
-    See also: https://docs.python.org/3.7/library/concurrent.futures.html#concurrent.futures.Executor.shutdown
-
-    Parameters
-    ----------
-    executor : concurrent.futures.Executor
-
-    Returns
-    -------
-    shutdown : Awaitable
-    """
-    return asyncio.get_event_loop().run_in_executor(
-        None,
-        lambda: executor.shutdown(wait=True))
 
 
 class RateLimit:
@@ -128,23 +94,6 @@ class RateLimit:
 
     def __exit__(self, type, value, traceback):
         pass
-
-
-def get_color_palette():
-    """
-    Read and return the CSS color env variables that indicate the colors in
-    html_diff_render, differs and links_diff.
-
-    Returns
-    ------
-    palette: Dictionary
-        A dictionary containing the differ_insertion and differ_deletion css
-        color codes
-    """
-    differ_insertion = os.environ.get('DIFFER_COLOR_INSERTION', '#a1d76a')
-    differ_deletion = os.environ.get('DIFFER_COLOR_DELETION', '#e8a4c8')
-    return {'differ_insertion': differ_insertion,
-            'differ_deletion': differ_deletion}
 
 
 def iterate_into_queue(queue, iterable):
@@ -212,66 +161,6 @@ class FiniteQueue(queue.SimpleQueue):
                 yield self.__next__(timeout)
             except StopIteration:
                 return
-
-
-class DepthCountedContext:
-    """
-    DepthCountedContext is a mixin or base class for context managers that need
-    to be perform special operations only when all nested contexts they might
-    be used in have exited.
-
-    Override the `__exit_all__(self, type, value, traceback)` method to get a
-    version of `__exit__` that is only called when exiting the top context.
-
-    As a convenience, the built-in `__enter__` returns `self`, which is fairly
-    common, so in many cases you don't need to author your own `__enter__` or
-    `__exit__` methods.
-    """
-    _context_depth = 0
-
-    def __enter__(self):
-        self._context_depth += 1
-        return self
-
-    def __exit__(self, type, value, traceback):
-        if self._context_depth > 0:
-            self._context_depth -= 1
-        if self._context_depth == 0:
-            return self.__exit_all__(type, value, traceback)
-
-    def __exit_all__(self, type, value, traceback):
-        """
-        A version of the normal `__exit__` context manager method that only
-        gets called when the top level context is exited. This is meant to be
-        overridden in your class.
-        """
-        pass
-
-
-class SessionClosedError(Exception):
-    ...
-
-
-class DisableAfterCloseSession(requests.Session):
-    """
-    A custom session object raises a :class:`SessionClosedError` if you try to
-    use it after closing it, to help identify and avoid potentially dangerous
-    code patterns. (Standard session objects continue to be usable after
-    closing, even if they may not work exactly as expected.)
-    """
-    _closed = False
-
-    def close(self, disable=True):
-        super().close()
-        if disable:
-            self._closed = True
-
-    def send(self, *args, **kwargs):
-        if self._closed:
-            raise SessionClosedError('This session has already been closed '
-                                     'and cannot send new HTTP requests.')
-
-        return super().send(*args, **kwargs)
 
 
 class Signal:

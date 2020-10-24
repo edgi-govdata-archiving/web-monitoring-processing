@@ -41,7 +41,9 @@ Legacy projects that may be revisited:
    privileges to install or use it, and it won't interfere with any other
    installations of Python already on your system.)
 
-2. Install libxml2, libxslt, and openssl. (This package uses lxml, which requires your system to have the libxml2 and libxslt libraries, and pycurl, which requires libcurl [built-in on MacOS] and openssl.)
+2. Install libxml2, and libxslt, and openssl. (This package uses lxml, which requires your system to have the libxml2 and libxslt libraries, and pycurl, which requires libcurl [built-in on MacOS] and openssl.)
+    <!-- TODO: When we drop the compatibility layer for web_monitoring_diff,
+         drop openssl and libcurl from this section. -->
 
     On MacOS, use Homebrew:
 

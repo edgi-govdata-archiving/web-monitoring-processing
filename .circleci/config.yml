@@ -88,11 +88,15 @@ workflows:
     jobs:
       - build
       - build_docker
-      - publish_docker:
-          requires:
-            - build
-            - build_docker
-          filters:
-            branches:
-              only:
-                - release
+      # The docker image is currently focused on the diff server, which now
+      # lives in the web-monitoring-diff project and will be published there.
+      # We're keeping this code around for future images based around the other
+      # scripts here for possible use with things like AWS Batch.
+      # - publish_docker:
+      #     requires:
+      #       - build
+      #       - build_docker
+      #     filters:
+      #       branches:
+      #         only:
+      #           - release

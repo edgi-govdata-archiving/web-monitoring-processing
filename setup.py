@@ -47,9 +47,7 @@ setup(name='web_monitoring',
                 'web_monitoring.cli',
                 'web_monitoring.diff',
                 'web_monitoring.diff_server'],
-      package_data={'web_monitoring': ['example_data/*',
-                                       'web_monitoring/tests/cassettes/*']},
+      package_data={'web_monitoring': ['web_monitoring/tests/cassettes/*']},
       scripts=glob.glob('scripts/*'),
       install_requires=requirements,
-      long_description=read('README.md'),
-     )
+      long_description=read('README.md'))
