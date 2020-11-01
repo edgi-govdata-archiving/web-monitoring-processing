@@ -1,4 +1,16 @@
+# -------- DEPRECATED -----------
+#
+# This package has been deprecated and will be removed soon. Everything in it
+# is now part of web-monitoring-diff.
+#
+#   https://github.com/edgi-govdata-archiving/web-monitoring-diff
+#   https://pypi.org/project/web-monitoring-diff/
+#
+# See also: https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/638
+#
+
 from bs4 import Comment
+from .deprecation import warn_deprecation
 from diff_match_patch import diff, diff_bytes
 from ..utils import get_color_palette
 from htmldiffer.diff import HTMLDiffer
@@ -19,11 +31,13 @@ REPEATED_BLANK_LINES = re.compile(r'([^\S\n]*\n\s*){2,}')
 
 def compare_length(a_body, b_body):
     "Compute difference in response body lengths. (Does not compare contents.)"
+    warn_deprecation()
     return {'diff': len(b_body) - len(a_body)}
 
 
 def identical_bytes(a_body, b_body):
     "Compute whether response bodies are exactly identical."
+    warn_deprecation()
     return {'diff': a_body == b_body}
 
 
@@ -56,6 +70,7 @@ def _get_visible_text(html):
 
 def side_by_side_text(a_text, b_text):
     "Extract the visible text from both response bodies."
+    warn_deprecation()
     return {'diff': {'a_text': _get_visible_text(a_text),
                      'b_text': _get_visible_text(b_text)}}
 
@@ -83,6 +98,7 @@ def html_text_diff(a_text, b_text):
     ...                '<p>Added</p><p>Unchanged</p>')
     [[-1, 'Delet'], [1, 'Add'], [0, 'ed Unchanged']]
     """
+    warn_deprecation()
 
     t1 = _get_visible_text(a_text)
     t2 = _get_visible_text(b_text)
@@ -103,6 +119,7 @@ def html_source_diff(a_text, b_text):
     ...                  '<p>Added</p><p>Unchanged</p>')
     [[0, '<p>'], [-1, 'Delet'], [1, 'Add'], [0, 'ed</p><p>Unchanged</p>']]
     """
+    warn_deprecation()
     TIMELIMIT = 2  # seconds
     res = compute_dmp_diff(a_text, b_text, timelimit=TIMELIMIT)
     count = len([[type_, string_] for type_, string_ in res if type_])
@@ -137,6 +154,7 @@ def insert_style(html, css):
 
 
 def html_tree_diff(a_text, b_text):
+    warn_deprecation()
     color_palette = get_color_palette()
     css = f'''
 diffins {{text-decoration : none; background-color:
@@ -156,6 +174,7 @@ diffdel * {{text-decoration : none; background-color:
 
 
 def html_differ(a_text, b_text):
+    warn_deprecation()
     color_palette = get_color_palette()
     css = f'''
 .htmldiffer_insert {{text-decoration : none; background-color:

@@ -1,3 +1,13 @@
+# -------- DEPRECATED -----------
+#
+# This package has been deprecated and will be removed soon. Everything in it
+# is now part of web-monitoring-diff.
+#
+#   https://github.com/edgi-govdata-archiving/web-monitoring-diff
+#   https://pypi.org/project/web-monitoring-diff/
+#
+# See also: https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/638
+#
 import asyncio
 import codecs
 import concurrent.futures
@@ -20,6 +30,7 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.web
 import traceback
+import warnings
 import web_monitoring
 from ..diff import differs, html_diff_render, links_diff
 from ..diff.diff_errors import UndiffableContentError, UndecodableContentError
@@ -704,6 +715,10 @@ class HealthCheckHandler(BaseHandler):
 
 
 def make_app():
+    warnings.warn('The web_monitoring.diff_server package has been '
+                  'deprecated! Please switch to the new `web-monitoring-diff` '
+                  'package at: https://pypi.org/project/web-monitoring-diff/',
+                  DeprecationWarning)
     class BoundDiffHandler(DiffHandler):
         differs = DIFF_ROUTES
 
@@ -724,6 +739,17 @@ def start_app(port):
 
 
 def cli():
+    print("""
+**** WARNING: this diff server has been deprecated! ****
+
+No new versions of this server will be released, and it will eventually be
+removed entirely. You should switch to the new `web-monitoring-diff` package,
+which includes a similar server and improved diffing functionality.
+
+    https://pypi.org/project/web-monitoring-diff/
+    https://github.com/edgi-govdata-archiving/web-monitoring-diff
+    """, file=sys.stderr)
+
     doc = """Start a diffing server.
 
 Usage:

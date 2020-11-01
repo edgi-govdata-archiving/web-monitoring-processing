@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import pytest
-from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials
+from unittest.mock import patch
+from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials, DEFAULT_TIMEOUT
 import vcr
 
 
@@ -35,7 +36,7 @@ VERSIONISTA_ID = '13708349'
 TIME = datetime(2017, 11, 15, tzinfo=timezone.utc)
 NEW_VERSION_ID = '06620776-d347-4abd-a423-a871620299a9'
 
-# The only matters when re-recording the tests for vcr.
+# This only matters when re-recording the tests for vcr.
 AUTH = {'url': "http://localhost:3000",
         'email': "seed-admin@example.com",
         'password': "PASSWORD"}
@@ -292,3 +293,27 @@ def test_validate_credentials_should_raise():
     cli = Client(**bad_auth)
     with pytest.raises(UnauthorizedCredentials):
         cli.validate_credentials()
+
+
+@patch('web_monitoring.db.requests.Session')
+def test_client_with_default_timeout(mock_session):
+    cli = Client(**AUTH)
+    cli.get_user_session()
+    mock_session.return_value.request.assert_called_with(
+        method='GET', url=f'{AUTH["url"]}/users/session', timeout=DEFAULT_TIMEOUT)
+
+
+@patch('web_monitoring.db.requests.Session')
+def test_client_with_custom_timeout(mock_session):
+    cli = Client(**AUTH, timeout=7.5)
+    cli.get_user_session()
+    mock_session.return_value.request.assert_called_with(
+        method='GET', url=f'{AUTH["url"]}/users/session', timeout=7.5)
+
+
+@patch('web_monitoring.db.requests.Session')
+def test_client_with_no_timeout(mock_session):
+    cli = Client(**AUTH, timeout=0)
+    cli.get_user_session()
+    mock_session.return_value.request.assert_called_with(
+        method='GET', url=f'{AUTH["url"]}/users/session', timeout=None)

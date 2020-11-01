@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build:
     working_directory: ~/web-monitoring-processing
@@ -83,16 +83,22 @@ jobs:
             docker push envirodgi/processing:latest
 
 workflows:
-  version: 2
   build:
     jobs:
       - build
-      - build_docker
-      - publish_docker:
-          requires:
-            - build
-            - build_docker
-          filters:
-            branches:
-              only:
-                - release
+      # The docker image is currently focused on the diff server, which now
+      # lives in the web-monitoring-diff project and will be published there.
+      # The current docker image should be considered deprecated and will no
+      # longer be updated.
+      #
+      # We're keeping this code around for future images based around the other
+      # scripts here for possible use with things like AWS Batch.
+      # - build_docker
+      # - publish_docker:
+      #     requires:
+      #       - build
+      #       - build_docker
+      #     filters:
+      #       branches:
+      #         only:
+      #           - release

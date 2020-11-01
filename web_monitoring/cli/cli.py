@@ -173,6 +173,9 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
     versions = _get_progress_meter(versions)
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
+    if len(import_ids) == 0:
+        return
+
     print('Import job IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids, stop_event)
@@ -337,8 +340,7 @@ class WaybackRecordsWorker(threading.Thread):
         Load the actual Wayback memento for a CDX record and transform it to
         a Web Monitoring DB import record.
         """
-        memento = self.wayback.get_memento(record.raw_url,
-                                           exact_redirects=False)
+        memento = self.wayback.get_memento(record, exact_redirects=False)
         with memento:
             return self.format_memento(memento, record, self.maintainers,
                                        self.tags)
@@ -349,37 +351,22 @@ class WaybackRecordsWorker(threading.Thread):
         """
         iso_date = cdx_record.timestamp.isoformat()
         # Use compact representation for UTC
-        if cdx_record.timestamp.tzinfo is None:
-            iso_date += 'Z'
-        elif iso_date.endswith('+00:00'):
+        if iso_date.endswith('+00:00'):
             no_tz_date = iso_date.split("+", 1)[0]
             iso_date = f'{no_tz_date}Z'
 
-        # Get all headers from the original response.
-        prefix = 'X-Archive-Orig-'
-        original_headers = {
-            k[len(prefix):]: v for k, v in memento.headers.items()
-            if k.startswith(prefix)
-        }
-
         metadata = {
-            'headers': original_headers,
+            'headers': memento.headers,
             'view_url': cdx_record.view_url
         }
 
-        if memento.status_code >= 400:
-            metadata['error_code'] = memento.status_code
-
         # If there were redirects, list every URL in the chain of requests.
-        if memento.url != cdx_record.raw_url:
-            redirects = list(map(
-                lambda response: wayback.memento_url_data(response.url)[0],
-                memento.history))
-            redirected_url = wayback.memento_url_data(memento.url)[0]
-            redirects.append(redirected_url)
-            metadata['redirected_url'] = redirected_url
-            metadata['redirects'] = [url for i, url in enumerate(redirects)
-                                     if url not in redirects[:i]]
+        if memento.url != cdx_record.url:
+            metadata['redirected_url'] = memento.url
+            metadata['redirects'] = [
+                *map(lambda item: item.url, memento.history),
+                memento.url
+            ]
 
         media_type, media_type_parameters = self.get_memento_media(memento)
 
@@ -409,7 +396,7 @@ class WaybackRecordsWorker(threading.Thread):
 
     def get_memento_media(self, memento):
         """Extract media type and media type parameters from a memento."""
-        media, *parameters = memento.headers.get('content-type', '').split(';')
+        media, *parameters = memento.headers.get('Content-Type', '').split(';')
 
         # Clean up whitespace, remove empty parameters, etc.
         clean_parameters = (param.strip() for param in parameters)
@@ -545,7 +532,12 @@ class WaybackRecordsWorker(threading.Thread):
             else:
                 retry_queue = utils.FiniteQueue()
 
-            workers.extend(cls.parallel(count, records, results_queue, *args, **kwargs))
+            workers.extend(cls.parallel(count,
+                                        records,
+                                        results_queue,
+                                        *args,
+                                        failure_queue=retry_queue,
+                                        **kwargs))
 
         summary.update(cls.summarize(workers, summary))
         results_queue.end()
@@ -621,10 +613,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             maintainers,
             tags,
             stop_event,
-            unplaybackable,
+            unplaybackable=unplaybackable,
             tries=(None,
-                   dict(retries=3, backoff=4, timeout=(30.5, 2)),
-                   dict(retries=7, backoff=4, timeout=60.5))))
+                   dict(retries=3, backoff=4, timeout=(30.5, 2)))))
         memento_thread.start()
 
         uploadable_versions = versions_queue
@@ -651,6 +642,10 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if not dry_run:
             print('Saving list of non-playbackable URLs...')
             save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
+
+        if summary['success'] == 0:
+            print('------------------------------')
+            print('No new versions were imported!')
 
 
 def _filter_unchanged_versions(versions):

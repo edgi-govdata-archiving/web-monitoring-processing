@@ -1,3 +1,14 @@
+# -------- DEPRECATED -----------
+#
+# This package has been deprecated and will be removed soon. Everything in it
+# is now part of web-monitoring-diff.
+#
+#   https://github.com/edgi-govdata-archiving/web-monitoring-diff
+#   https://pypi.org/project/web-monitoring-diff/
+#
+# See also: https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/638
+#
+
 """
 This HTML-diffing implementation is based on LXML’s `html.diff` module. It is
 meant to create HTML documents that can be viewed in a browser to highlight
@@ -26,6 +37,7 @@ import html5_parser
 import logging
 import re
 from .content_type import raise_if_not_diffable_html
+from .deprecation import warn_deprecation
 from .differs import compute_dmp_diff
 
 # Imports only used in forked tokenization code; may be ripe for removal:
@@ -362,6 +374,8 @@ def html_diff_render(a_text, b_text, a_headers=None, b_headers=None,
     text2 = '<!DOCTYPE html><html><head></head><body><h1>Header</h1></body></html>'
     test_diff_render = html_diff_render(text1,text2)
     """
+    warn_deprecation()
+
     raise_if_not_diffable_html(
         a_text,
         b_text,
