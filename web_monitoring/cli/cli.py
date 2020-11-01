@@ -173,6 +173,9 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
     versions = _get_progress_meter(versions)
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
+    if len(import_ids) == 0:
+        return
+
     print('Import job IDs: {}'.format(import_ids))
     print('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids, stop_event)
@@ -529,7 +532,12 @@ class WaybackRecordsWorker(threading.Thread):
             else:
                 retry_queue = utils.FiniteQueue()
 
-            workers.extend(cls.parallel(count, records, results_queue, *args, **kwargs))
+            workers.extend(cls.parallel(count,
+                                        records,
+                                        results_queue,
+                                        *args,
+                                        failure_queue=retry_queue,
+                                        **kwargs))
 
         summary.update(cls.summarize(workers, summary))
         results_queue.end()
@@ -605,10 +613,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             maintainers,
             tags,
             stop_event,
-            unplaybackable,
+            unplaybackable=unplaybackable,
             tries=(None,
-                   dict(retries=3, backoff=4, timeout=(30.5, 2)),
-                   dict(retries=7, backoff=4, timeout=60.5))))
+                   dict(retries=3, backoff=4, timeout=(30.5, 2)))))
         memento_thread.start()
 
         uploadable_versions = versions_queue
@@ -635,6 +642,10 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if not dry_run:
             print('Saving list of non-playbackable URLs...')
             save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
+
+        if summary['success'] == 0:
+            print('------------------------------')
+            print('No new versions were imported!')
 
 
 def _filter_unchanged_versions(versions):
