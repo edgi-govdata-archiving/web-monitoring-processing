@@ -1,5 +1,16 @@
+# -------- DEPRECATED -----------
+#
+# This package has been deprecated and will be removed soon. Everything in it
+# is now part of web-monitoring-diff.
+#
+#   https://github.com/edgi-govdata-archiving/web-monitoring-diff
+#   https://pypi.org/project/web-monitoring-diff/
+#
+# See also: https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/638
+#
 import html5_parser
 from .content_type import raise_if_not_diffable_html
+from .deprecation import warn_deprecation
 from .differs import compute_dmp_diff
 from ..utils import get_color_palette
 from difflib import SequenceMatcher
@@ -22,6 +33,7 @@ def links_diff(a_text, b_text, a_headers=None, b_headers=None,
     as an internal link, but not:
         <a href="http://this.domain.com/this/page#anchor-in-this-page">Text</a>
     """
+    warn_deprecation()
     raise_if_not_diffable_html(
         a_text,
         b_text,
@@ -57,6 +69,7 @@ def links_diff_json(a_text, b_text, a_headers=None, b_headers=None,
     Generate a diff of all outgoing links (see `links_diff()`) where the `diff`
     property is formatted as a list of change codes and values.
     """
+    warn_deprecation()
     diff = links_diff(a_text, b_text, a_headers, b_headers,
                       content_type_options)
     return {
@@ -71,6 +84,7 @@ def links_diff_html(a_text, b_text, a_headers=None, b_headers=None,
     Generate a diff of all outgoing links (see `links_diff()`) where the `diff`
     property is an HTML string. Note the actual return type is still JSON.
     """
+    warn_deprecation()
     diff = links_diff(a_text, b_text, a_headers, b_headers,
                       content_type_options)
     soup = _render_html_diff(diff['diff'])

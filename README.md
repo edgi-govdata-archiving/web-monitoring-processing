@@ -12,9 +12,7 @@ This component is intended to hold various backend tools serving different tasks
 1. Query external sources of captured web pages (e.g. Internet Archive, Page
    Freezer, Sentry), and formulate a request for importing their version and
    page metadata into web-monitoring-db.
-2. Provide a web service that computes the "diff" between two versions of a page
-   in response to a query from web-monitoring-db.
-3. Query web-monitoring-db for new Changes, analyze them in an automated
+2. Query web-monitoring-db for new Changes, analyze them in an automated
    pipeline to assign priority and/or filter out uninteresting ones, and submit
    this information back to web-monitoring-db.
 
@@ -26,8 +24,6 @@ Working and Under Active Development:
 * A Python API to the web-monitoring-db Rails app in ``web_monitoring.db``
 * Python functions and a command-line tool for importing snapshots from the
   Internet Archive into web-monitoring-db.
-* An HTTP API for diffing two documents according to a variety of algorithms.
-  (Uses the Tornado web framework.)
 
 Legacy projects that may be revisited:
 * [Example HTML](https://github.com/edgi-govdata-archiving/web-monitoring-processing/tree/main/archives) providing useful test cases.
@@ -112,24 +108,15 @@ Legacy projects that may be revisited:
    Any additional arguments are passed through to `py.test`.
 
 
-## Docker
-
-The Dockerfile runs ``wm-diffing-server`` on port 80 in the container. To build
-and run:
-
-```
-docker build -t processing .
-docker run -p 4000:80 processing
-```
-
-Point your browser or ``curl`` at ``http://localhost:4000``.
-
-
 ## Releases
 
-New releases of the diffing server are published automatically as Docker images by CircleCI when someone pushes to the `release` branch. They are availble at https://hub.docker.com/r/envirodgi/ui. See [web-monitoring-ops](https://github.com/edgi-govdata-archiving/web-monitoring-ops) for how we deploy releases to actual web servers. We do not yet publish releases of the library-style tools in this repo (e.g. `db.py`).
+We try to make sure the code in this repo’s `main` branch is always in a stable, usable state, but occasionally coordinated functionality may be written across multiple commits. If you are depending on this package from another Python program, you may wish to install from the `release` branch instead:
 
-Images are tagged with the SHA-1 of the git commit they were built from. For example, the image `envirodgi/processing:446ae83e121ec8c2207b2bca563364cafbdf8ce0` was built from [commit `446ae83e121ec8c2207b2bca563364cafbdf8ce0`](https://github.com/edgi-govdata-archiving/web-monitoring-processing/commit/446ae83e121ec8c2207b2bca563364cafbdf8ce0) in web-monitoring-processing.
+```sh
+$ pip install git+https://github.com/edgi-govdata-archiving/web-monitoring-processing@release
+```
+
+You can also list the `git+https:` URL above in a pip *requirements* file.
 
 We usually create *merge commits* on the `release` branch that note the PRs included in the release or any other relevant notes (e.g. [`Release #302 and #313.`](https://github.com/edgi-govdata-archiving/web-monitoring-processing/commit/446ae83e121ec8c2207b2bca563364cafbdf8ce0)).
 
