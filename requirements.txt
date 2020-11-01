@@ -12,6 +12,6 @@ PyPDF2 ~=1.26.0
 sentry-sdk ~=0.19.1
 requests ~=2.24.0
 toolz ~=0.11.1
-tornado ~=6.0.4
+tornado ~=6.1
 tqdm ~=4.51.0
 wayback ~=0.3.0a1
