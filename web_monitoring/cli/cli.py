@@ -640,7 +640,6 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         uploader.join()
 
         if not dry_run:
-            print('Saving list of non-playbackable URLs...')
             save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
         if summary['success'] == 0:
@@ -724,6 +723,8 @@ def load_unplaybackable_mementos(path):
 def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
     if path is None:
         return
+
+    print('Saving list of non-playbackable URLs...')
 
     threshold = datetime.utcnow() - timedelta(seconds=expiration)
     urls = list(mementos.keys())
