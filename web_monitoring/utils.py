@@ -36,9 +36,20 @@ def extract_title(content_bytes, encoding='utf-8'):
     return WHITESPACE_PATTERN.sub(' ', title.text.strip())
 
 
-def extract_pdf_title(content_bytes):
+def extract_pdf_title(content_bytes, password=''):
     pdf = PdfFileReader(io.BytesIO(content_bytes))
-    info = pdf.getDocumentInfo()
+    # Lots of PDFs turn out to be encrypted with an empty password. ¯\_(ツ)_/¯
+    if pdf.isEncrypted:
+        try:
+            pdf.decrypt(password)
+        except Exception:
+            return None
+
+    try:
+        info = pdf.getDocumentInfo()
+    except Exception:
+        return None
+
     return info.title
 
 
