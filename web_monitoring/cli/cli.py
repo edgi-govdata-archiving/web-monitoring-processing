@@ -374,7 +374,7 @@ class WaybackRecordsWorker(threading.Thread):
         if media_type in HTML_MEDIA_TYPES:
             title = utils.extract_title(memento.content, memento.encoding or 'utf-8')
         elif media_type in PDF_MEDIA_TYPES or memento.content.startswith(b'%PDF-'):
-            title = utils.extract_pdf_title(memento.content)
+            title = utils.extract_pdf_title(memento.content) or title
 
         return dict(
             # Page-level info
