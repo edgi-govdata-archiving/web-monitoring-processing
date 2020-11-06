@@ -47,10 +47,9 @@ def extract_pdf_title(content_bytes, password=''):
 
     try:
         info = pdf.getDocumentInfo()
+        return info.title
     except Exception:
         return None
-
-    return info.title
 
 
 def hash_content(content_bytes):
