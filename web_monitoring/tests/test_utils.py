@@ -1,8 +1,16 @@
 from datetime import datetime
 import pytest
 import queue
+from pathlib import Path
 import threading
-from web_monitoring.utils import extract_title, RateLimit, FiniteQueue
+from web_monitoring.utils import (extract_title, extract_pdf_title, RateLimit,
+                                  FiniteQueue)
+
+
+def get_fixture_bytes(filename):
+    filepath = Path(__file__).parent / 'fixtures' / filename
+    with filepath.open('rb') as file:
+        return file.read()
 
 
 def test_extract_title():
@@ -34,6 +42,48 @@ def test_extract_title_handles_whitespace():
         <body>Blah</body>
     </html>''')
     assert title == 'THIS IS THE TITLE'
+
+
+def test_extract_pdf_title():
+    pdf_bytes = get_fixture_bytes('basic_title.pdf')
+    title = extract_pdf_title(pdf_bytes)
+    assert title == 'Basic PDF Title'
+
+
+def test_extract_pdf_title_malformed_pdf():
+    title = extract_pdf_title(b'This is not a PDF.')
+    assert title is None
+
+
+def test_extract_pdf_title_encrypted_no_password():
+    """
+    Get the title of a PDF that's encrypted with an empty password. This should
+    successfully decrypt the PDF and get the title.
+    """
+    pdf_bytes = get_fixture_bytes('encrypted_with_empty_password.pdf')
+    title = extract_pdf_title(pdf_bytes)
+    assert title == 'Empty Password Title Field'
+
+
+def test_extract_pdf_title_encrypted_unsupported_algorithm():
+    """
+    Get the title of a PDF that's encrypted with an unsupported algorithm. This
+    should return `None` since the PDF can not be read.
+    """
+    pdf_bytes = get_fixture_bytes('encrypted_with_unsupported_algorithm.pdf')
+    title = extract_pdf_title(pdf_bytes)
+    assert title is None
+
+
+def test_extract_pdf_title_no_eof():
+    """
+    Get the title of a PDF that has no end-of-file marker. We don't [currently]
+    supported PDFs that are malformed in this way, but we should not raise an
+    error -- instead, return None.
+    """
+    pdf_bytes = get_fixture_bytes('no_eof_marker.pdf')
+    title = extract_pdf_title(pdf_bytes)
+    assert title is None
 
 
 class TestRateLimit:
