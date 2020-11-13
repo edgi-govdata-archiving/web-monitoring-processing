@@ -4,6 +4,7 @@ import dateutil.tz
 from dateutil.parser import parse as parse_timestamp
 import json
 import os
+import re
 import requests
 import requests.exceptions
 from urllib3.util import Retry
@@ -19,6 +20,24 @@ DEFAULT_BACKOFF = 2
 GET = 'GET'
 POST = 'POST'
 
+# The DB only uses W3C-style ISO 8601 datetimes, so we can check with a regex.
+# https://www.w3.org/TR/NOTE-datetime
+W3C_ISO_DATETIME = re.compile(r'''
+    ^\d{4}-\d\d-\d\d         # Starts with a date
+    (T                       # Times optional, but with standard delimiter
+        \d\d:\d\d            # Times must have minute resolution at minimum
+        (
+            :\d\d            # Optional second resolution
+            (\.\d+)?         # Optional sub-second resolution
+        )?
+        (                    # Optional timezone
+            Z                # Z is for UTC (Zulu time)
+            |[+\-]\d\d:\d\d  # or offset, e.g. "+08:00" (MUST have colon)
+        )?
+    )?
+    $
+''', re.VERBOSE)
+
 
 def _tzaware_isoformat(dt):
     """Express a datetime object in timezone-aware ISO format."""
@@ -33,6 +52,9 @@ class WebMonitoringDbError(Exception):
 
 
 class UnauthorizedCredentials(Exception):
+    ...
+
+class MissingCredentials(RuntimeError):
     ...
 
 
@@ -129,8 +151,23 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
     return version
 
 
-class MissingCredentials(RuntimeError):
-    ...
+class DbJsonDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, object_hook=self.object_hook, **kwargs)
+
+    def object_hook(self, data):
+        for key, value in data.items():
+            if (
+                (key == 'time' or key.endswith('_time') or key.endswith('_at'))
+                and self.is_datetime(value)
+            ):
+                data[key] = parse_timestamp(value)
+
+        return data
+
+    @staticmethod
+    def is_datetime(value):
+        return isinstance(value, str) and W3C_ISO_DATETIME.match(value)
 
 
 class DbSession(requests.Session):
@@ -268,7 +305,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     def request_json(self, method, url, data=None, timeout=None, **kwargs):
         response = self.request(method, url, data, timeout, **kwargs)
-        return response.json()
+        return response.json(cls=DbJsonDecoder)
 
     ### PAGES ###
 
@@ -330,30 +367,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'include_total': include_total or None}
         url = '/pages'
         result = self.request_json(GET, url, params=params)
-        data = result['data']
-        # In place, replace datetime strings with datetime objects.
-        for page in data:
-            page['created_at'] = parse_timestamp(page['created_at'])
-            page['updated_at'] = parse_timestamp(page['updated_at'])
-            if 'earliest' in page:
-                page['earliest']['capture_time'] = parse_timestamp(
-                    page['earliest']['capture_time'])
-                page['earliest']['created_at'] = parse_timestamp(
-                    page['earliest']['created_at'])
-                page['earliest']['updated_at'] = parse_timestamp(
-                    page['earliest']['updated_at'])
-            if 'latest' in page:
-                page['latest']['capture_time'] = parse_timestamp(
-                    page['latest']['capture_time'])
-                page['latest']['created_at'] = parse_timestamp(
-                    page['latest']['created_at'])
-                page['latest']['updated_at'] = parse_timestamp(
-                    page['latest']['updated_at'])
-            if 'versions' in page:
-                for v in page['versions']:
-                    v['created_at'] = parse_timestamp(v['created_at'])
-                    v['updated_at'] = parse_timestamp(v['updated_at'])
-                    v['capture_time'] = parse_timestamp(v['capture_time'])
         return result
 
     def get_page(self, page_id):
@@ -370,14 +383,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         url = f'/pages/{page_id}'
         result = self.request_json(GET, url)
-        # In place, replace datetime strings with datetime objects.
-        data = result['data']
-        data['created_at'] = parse_timestamp(data['created_at'])
-        data['updated_at'] = parse_timestamp(data['updated_at'])
-        for v in data['versions']:
-            v['created_at'] = parse_timestamp(v['created_at'])
-            v['updated_at'] = parse_timestamp(v['updated_at'])
-            v['capture_time'] = parse_timestamp(v['capture_time'])
         return result
 
 
@@ -453,11 +458,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         else:
             url = f'/pages/{page_id}/versions'
         result = self.request_json(GET, url, params=params)
-        # In place, replace datetime strings with datetime objects.
-        for v in result['data']:
-            v['created_at'] = parse_timestamp(v['created_at'])
-            v['updated_at'] = parse_timestamp(v['updated_at'])
-            v['capture_time'] = parse_timestamp(v['capture_time'])
         return result
 
     def get_version(self, version_id, include_change_from_previous=None,
@@ -485,10 +485,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         params = {'include_change_from_previous': include_change_from_previous,
                   'include_change_from_earliest': include_change_from_earliest}
         result = self.request_json(GET, url, params=params)
-        data = result['data']
-        data['capture_time'] = parse_timestamp(data['capture_time'])
-        data['updated_at'] = parse_timestamp(data['updated_at'])
-        data['created_at'] = parse_timestamp(data['created_at'])
         return result
 
     def add_version(self, *, page_id, capture_time, uri, hash,
@@ -672,10 +668,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         url = f'/pages/{page_id}/changes/'
         result = self.request_json(
             GET, url, params={'include_total': include_total or None})
-        # In place, replace datetime strings with datetime objects.
-        for change in result['data']:
-            change['created_at'] = parse_timestamp(change['created_at'])
-            change['updated_at'] = parse_timestamp(change['updated_at'])
         return result
 
     def get_change(self, *, page_id, to_version_id, from_version_id=''):
@@ -697,13 +689,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
         result = self.request_json(GET, url)
-        # In place, replace datetime strings with datetime objects.
-        data = result['data']
-        # For changes which were created just-in-time to fulfill this API request,
-        # created/updated_at will be None, and that's OK.
-        if data['created_at'] and data['updated_at']:
-            data['created_at'] = parse_timestamp(data['created_at'])
-            data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
     def list_annotations(self, *, page_id, to_version_id, from_version_id='',
@@ -732,10 +717,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                f'{from_version_id}..{to_version_id}/annotations')
         result = self.request_json(
             GET, url, params={'include_total': include_total or None})
-        # In place, replace datetime strings with datetime objects.
-        for a in result['data']:
-            a['created_at'] = parse_timestamp(a['created_at'])
-            a['updated_at'] = parse_timestamp(a['updated_at'])
         return result
 
     def add_annotation(self, *, annotation, page_id, to_version_id,
@@ -782,10 +763,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                f'{from_version_id}..{to_version_id}/annotations/'
                f'{annotation_id}')
         result = self.request_json(GET, url)
-        # In place, replace datetime strings with datetime objects.
-        data = result['data']
-        data['created_at'] = parse_timestamp(data['created_at'])
-        data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
     ### USERS ###
@@ -845,13 +822,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         # There should not be more than one match.
         data = result['data']
         if len(data) == 0:
-            raise ValueError("No match found for versionista_id {}"
-                             "".format(versionista_id))
+            raise ValueError(f'No match found for versionista_id {versionista_id}')
         elif len(data) > 1:
-            raise Exception("Multiple Versions match the versionista_id {}."
-                            "Their web-monitoring-db version_ids are: {}"
-                            "".format(versionista_id,
-                                      [v['uuid'] for v in data]))
+            raise Exception(f'Multiple Versions match the versionista_id {versionista_id}. '
+                            f'Their web-monitoring-db version_ids are: {[v["uuid"] for v in data]}')
         # Make result look like the result of `get_version` rather than the
         # result of `list_versions`.
         return {'data': result['data'][0]}

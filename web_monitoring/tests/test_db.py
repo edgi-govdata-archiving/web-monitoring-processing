@@ -68,6 +68,10 @@ def test_list_pages():
     res = cli.list_pages()
     assert res['data']
 
+    # Test datetimes are parsed correctly.
+    assert isinstance(res['data'][0]['created_at'], datetime)
+    assert isinstance(res['data'][0]['updated_at'], datetime)
+
     # Test chunk query parameters.
     res = cli.list_pages(chunk_size=2)
     assert len(res['data']) == 2
@@ -91,8 +95,12 @@ def test_list_pages():
     # Test relations
     res = cli.list_pages(include_earliest=True)
     assert all(['earliest' in page for page in res['data']]) is True
+    assert isinstance(res['data'][0]['earliest']['created_at'], datetime)
+    assert isinstance(res['data'][0]['earliest']['updated_at'], datetime)
     res = cli.list_pages(include_latest=True)
     assert all(['latest' in page for page in res['data']]) is True
+    assert isinstance(res['data'][0]['latest']['created_at'], datetime)
+    assert isinstance(res['data'][0]['latest']['updated_at'], datetime)
 
 
 @db_vcr.use_cassette()
