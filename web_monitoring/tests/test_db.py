@@ -62,6 +62,7 @@ def test_missing_creds():
         os.environ.update(env)
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_pages():
     cli = Client(**AUTH)
@@ -104,12 +105,76 @@ def test_list_pages():
 
 
 @db_vcr.use_cassette()
+def test_get_pages():
+    cli = Client(**AUTH)
+    pages = list(cli.get_pages())
+    assert len(pages) > 0
+    assert isinstance(pages[0]['created_at'], datetime)
+    assert isinstance(pages[0]['updated_at'], datetime)
+
+
+def test_get_pages_chunk_size(requests_mock):
+    requests_mock.get('/api/v0/pages?chunk_size=3', json={"data": [{'fake': 'page'}]})
+    cli = Client(**AUTH)
+    pages = cli.get_pages(chunk_size=3)
+    next(pages)
+
+
+@db_vcr.use_cassette()
+def test_get_pages_can_filter_url():
+    cli = Client(**AUTH)
+
+    pages = cli.get_pages(url='__nonexistent__')
+    assert len(list(pages)) == 0
+
+    pages = cli.get_pages(url=URL)
+    assert len(list(pages)) > 0
+
+
+@db_vcr.use_cassette()
+def test_get_pages_can_filter_tags():
+    cli = Client(**AUTH)
+
+    pages = cli.get_pages(tags=['__nonexistent__'])
+    assert len(list(pages)) == 0
+
+    pages = cli.get_pages(tags=[SITE])
+    assert len(list(pages)) > 0
+
+
+@db_vcr.use_cassette()
+def test_get_pages_can_filter_maintainers():
+    cli = Client(**AUTH)
+
+    pages = cli.get_pages(maintainers=['__nonexistent__'])
+    assert len(list(pages)) == 0
+
+    pages = cli.get_pages(maintainers=[AGENCY])
+    assert len(list(pages)) > 0
+
+
+@db_vcr.use_cassette()
+def test_get_pages_includes_relations():
+    cli = Client(**AUTH)
+    pages = list(cli.get_pages(include_earliest=True))
+    assert all(['earliest' in page for page in pages]) is True
+    assert isinstance(pages[0]['earliest']['created_at'], datetime)
+    assert isinstance(pages[0]['earliest']['updated_at'], datetime)
+
+    pages = list(cli.get_pages(include_latest=True))
+    assert all(['latest' in page for page in pages]) is True
+    assert isinstance(pages[0]['latest']['created_at'], datetime)
+    assert isinstance(pages[0]['latest']['updated_at'], datetime)
+
+
+@db_vcr.use_cassette()
 def test_get_page():
     cli = Client(**AUTH)
     res = cli.get_page(PAGE_ID)
     assert res['data']['uuid'] == PAGE_ID
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_page_versions():
     cli = Client(**AUTH)
@@ -117,6 +182,14 @@ def test_list_page_versions():
     assert all([v['page_uuid'] == PAGE_ID for v in res['data']])
 
 
+@db_vcr.use_cassette()
+def test_get_versions_for_page():
+    cli = Client(**AUTH)
+    versions = cli.get_versions(page_id=PAGE_ID)
+    assert all(v['page_uuid'] == PAGE_ID for v in versions)
+
+
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_versions():
     cli = Client(**AUTH)
@@ -128,6 +201,27 @@ def test_list_versions():
     assert all(['change_from_previous' in item for item in res['data']]) is True
     res = cli.list_versions(include_change_from_earliest=True)
     assert all(['change_from_earliest' in item for item in res['data']]) is True
+
+
+@db_vcr.use_cassette()
+def test_get_versions():
+    cli = Client(**AUTH)
+    versions = cli.get_versions()
+    first = next(versions)
+    assert 'uuid' in first
+
+
+@db_vcr.use_cassette()
+def test_get_versions_includes_changes():
+    cli = Client(**AUTH)
+
+    versions = cli.get_versions(include_change_from_previous=True)
+    first = next(versions)
+    assert 'change_from_previous' in first
+
+    versions = cli.get_versions(include_change_from_earliest=True)
+    first = next(versions)
+    assert 'change_from_earliest' in first
 
 
 @db_vcr.use_cassette()
@@ -240,11 +334,22 @@ def test_monitor_import_statuses_returns_errors():
                            "not match expected hash (hash_placeholder)"]}
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_changes():
     cli = Client(**AUTH)
     # smoke test
     cli.list_changes(PAGE_ID)
+
+
+@db_vcr.use_cassette()
+def test_get_changes():
+    cli = Client(**AUTH)
+    # smoke test
+    changes = cli.get_changes(PAGE_ID)
+    first = next(changes)
+    assert 'uuid_from' in first
+    assert 'uuid_to' in first
 
 
 @db_vcr.use_cassette()
@@ -255,12 +360,23 @@ def test_get_change():
                    to_version_id=TO_VERSION_ID)
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_annotations():
     cli = Client(**AUTH)
     # smoke test
     cli.list_annotations(page_id=PAGE_ID,
                          to_version_id=TO_VERSION_ID)
+
+
+@db_vcr.use_cassette()
+def test_get_annotations():
+    cli = Client(**AUTH)
+    # smoke test
+    annotations = cli.get_annotations(page_id=PAGE_ID,
+                                      to_version_id=TO_VERSION_ID)
+    first = next(annotations)
+    assert 'uuid' in first
 
 
 @db_vcr.use_cassette()
