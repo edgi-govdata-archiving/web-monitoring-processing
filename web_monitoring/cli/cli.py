@@ -146,6 +146,9 @@ PDF_MEDIA_TYPES = frozenset((
     'application/x-pdf',
 ))
 
+# Identifies a bare media type (that is, one without parameters)
+MEDIA_TYPE_EXPRESSION = re.compile(r'^\w+/\w[\w+_\-.]+$')
+
 
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
@@ -387,7 +390,6 @@ class WaybackRecordsWorker(threading.Thread):
             capture_time=iso_date,
             uri=cdx_record.raw_url,
             media_type=media_type or None,
-            media_type_parameters=media_type_parameters or None,
             version_hash=utils.hash_content(memento.content),
             source_type='internet_archive',
             source_metadata=metadata,
@@ -397,6 +399,13 @@ class WaybackRecordsWorker(threading.Thread):
     def get_memento_media(self, memento):
         """Extract media type and media type parameters from a memento."""
         media, *parameters = memento.headers.get('Content-Type', '').split(';')
+
+        # Clean up media type
+        media = media.strip().lower()
+        if not MEDIA_TYPE_EXPRESSION.match(media):
+            original = memento.history[0] if memento.history else memento
+            logger.info('Unknown media type "%s" for "%s"', media, original.memento_url)
+            media = ''
 
         # Clean up whitespace, remove empty parameters, etc.
         clean_parameters = (param.strip() for param in parameters)
