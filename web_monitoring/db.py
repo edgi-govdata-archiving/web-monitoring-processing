@@ -370,6 +370,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_pages() has been deprecated. Please use '
+                      'db.client.get_pages().',
+                      DeprecationWarning)
+
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
                   'sort': sort and ','.join(sort) or None,
@@ -532,6 +536,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_versions() has been deprecated. Please '
+                      'use db.client.get_versions().',
+                      DeprecationWarning)
+
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
                   'sort': sort and ','.join(sort) or None,
@@ -840,6 +848,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_changes() has been deprecated. Please '
+                      'use db.client.get_changes().',
+                      DeprecationWarning)
+
         url = f'/pages/{page_id}/changes/'
         result = self.request_json(
             GET, url, params={'include_total': include_total or None})
@@ -909,6 +921,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_annotations() has been deprecated. '
+                      'Please use db.client.get_annotations().',
+                      DeprecationWarning)
+
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
         result = self.request_json(
