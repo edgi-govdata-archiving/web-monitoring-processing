@@ -772,7 +772,9 @@ def _get_db_page_url_info(client, url_pattern=None):
     domains = defaultdict(lambda: {'query_domain': False, 'urls': []})
 
     domains_without_url_keys = set()
-    for page in _list_all_db_pages(client, url_pattern):
+    pages = client.get_pages(url=url_pattern, active=True,
+                             sort=['created_at:asc'], chunk_size=1000)
+    for page in pages:
         domain = HOST_EXPRESSION.match(page['url']).group(1)
         data = domains[domain]
         if not data['query_domain']:
@@ -831,18 +833,6 @@ def _is_page(version):
     """
     return (version.mime_type not in SUBRESOURCE_MIME_TYPES and
             splitext(urlparse(version.url).path)[1] not in SUBRESOURCE_EXTENSIONS)
-
-
-# TODO: this should probably be a method on db.Client, but db.Client could also
-# do well to transform the `links` into callables, e.g:
-#     more_pages = pages['links']['next']()
-def _list_all_db_pages(client, url_pattern=None):
-    chunk = 1
-    while chunk > 0:
-        pages = client.list_pages(sort=['created_at:asc'], chunk_size=1000,
-                                  chunk=chunk, url=url_pattern, active=True)
-        yield from pages['data']
-        chunk = pages['links']['next'] and (chunk + 1) or -1
 
 
 def _parse_date_argument(date_string):
