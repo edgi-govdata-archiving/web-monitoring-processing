@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import pytest
-import requests
 from unittest.mock import patch
 import urllib3.util
 from web_monitoring.db import (Client,
