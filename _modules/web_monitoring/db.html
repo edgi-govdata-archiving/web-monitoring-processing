@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.g06e3e51 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.49.ga5e0029 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.50.g06e3e51
+                0+untagged.49.ga5e0029
               </div>
             
           
@@ -161,6 +161,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">requests.exceptions</span>
+<span class="kn">from</span> <span class="nn">urllib3.util</span> <span class="kn">import</span> <span class="n">Retry</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">toolz</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
@@ -168,6 +169,8 @@
 
 <span class="n">DEFAULT_URL</span> <span class="o">=</span> <span class="s1">&#39;https://api.monitoring.envirodatagov.org&#39;</span>
 <span class="n">DEFAULT_TIMEOUT</span> <span class="o">=</span> <span class="mf">30.5</span>
+<span class="n">DEFAULT_RETRIES</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">DEFAULT_BACKOFF</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">GET</span> <span class="o">=</span> <span class="s1">&#39;GET&#39;</span>
 <span class="n">POST</span> <span class="o">=</span> <span class="s1">&#39;POST&#39;</span>
 
@@ -281,19 +284,56 @@
     <span class="k">return</span> <span class="n">version</span>
 
 
-<span class="k">def</span> <span class="nf">_validate_timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">default</span>
-    <span class="k">elif</span> <span class="n">timeout</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Timeout must be non-negative. (Got: &quot;</span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s1">&quot;)&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">timeout</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">timeout</span>
-
-
 <span class="k">class</span> <span class="nc">MissingCredentials</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
     <span class="o">...</span>
+
+
+<span class="k">class</span> <span class="nc">DbSession</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
+    <span class="n">retry_statuses</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="mi">408</span><span class="p">,</span> <span class="mi">413</span><span class="p">,</span> <span class="mi">429</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">,</span> <span class="mi">599</span><span class="p">))</span>
+    <span class="n">timeout</span> <span class="o">=</span> <span class="n">DEFAULT_TIMEOUT</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">retry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retry_configuration</span><span class="p">(</span><span class="n">retries</span><span class="p">)</span>
+        <span class="n">adapter</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">adapters</span><span class="o">.</span><span class="n">HTTPAdapter</span><span class="p">(</span><span class="n">max_retries</span><span class="o">=</span><span class="n">retry</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;http://&#39;</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;https://&#39;</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_retry_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">retries</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">retries</span><span class="p">,</span> <span class="n">Retry</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">retries</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">retries</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">retry_count</span><span class="p">,</span> <span class="n">backoff</span> <span class="o">=</span> <span class="n">retries</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">retries</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">retry_count</span> <span class="o">=</span> <span class="n">retries</span>
+            <span class="n">backoff</span> <span class="o">=</span> <span class="n">DEFAULT_BACKOFF</span>
+        <span class="k">elif</span> <span class="n">retries</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">retry_count</span> <span class="o">=</span> <span class="n">DEFAULT_RETRIES</span>
+            <span class="n">backoff</span> <span class="o">=</span> <span class="n">DEFAULT_BACKOFF</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Retries must an int, tuple of (int, float), or &#39;</span>
+                             <span class="s1">&#39;a urllib3.util.Retry instance&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Retry</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">retry_count</span><span class="p">,</span>
+                     <span class="n">read</span><span class="o">=</span><span class="n">retry_count</span><span class="p">,</span>
+                     <span class="n">connect</span><span class="o">=</span><span class="n">retry_count</span><span class="p">,</span>
+                     <span class="n">backoff_factor</span><span class="o">=</span><span class="n">backoff</span><span class="p">,</span>
+                     <span class="n">status_forcelist</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">retry_statuses</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_validate_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span>
+        <span class="k">elif</span> <span class="n">timeout</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Timeout must be non-negative. (Got: &quot;</span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s1">&quot;)&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">timeout</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">timeout</span>
 
 
 <div class="viewcode-block" id="Client"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client">[docs]</a><span class="k">class</span> <span class="nc">Client</span><span class="p">:</span>
@@ -312,18 +352,25 @@
 <span class="sd">    password : string</span>
 <span class="sd">    url : string, optional</span>
 <span class="sd">        Default is ``https://api.monitoring.envirodatagov.org``.</span>
-<span class="sd">    timeout: float, optional</span>
+<span class="sd">    timeout : float, optional</span>
 <span class="sd">        A default connection timeout in seconds to be used for all requests.</span>
 <span class="sd">        ``0`` indicates no timeout should be used. Individual requests may</span>
 <span class="sd">        override this value. Default: 30.5 seconds.</span>
+<span class="sd">    retries : int or tuple of (int, float) or urllib3.util.Retry, optional</span>
+<span class="sd">        How to handle retrying failed requests. If an int, indictes the number</span>
+<span class="sd">        of retries. If a tuple, the first item is the number of retries and the</span>
+<span class="sd">        second is the backoff factor. For details about how those work, see the</span>
+<span class="sd">        urllib3 ``Retry`` documentation:</span>
+<span class="sd">        https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry</span>
+<span class="sd">        Default: ``(2, 2)``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="Client.__init__"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">DEFAULT_URL</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Client.__init__"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.html#web_monitoring.db.Client.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">DEFAULT_URL</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_api_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">/api/v0&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span> <span class="o">=</span> <span class="n">url</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">DbSession</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">_validate_timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">DEFAULT_TIMEOUT</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span></div>
 
 <div class="viewcode-block" id="Client.from_env"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.from_env.html#web_monitoring.db.Client.from_env">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_env</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -358,8 +405,6 @@
     <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http://&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;https://&#39;</span><span class="p">):</span>
             <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_url</span><span class="si">}{</span><span class="n">url</span><span class="si">}</span><span class="s1">&#39;</span>
-
-        <span class="n">timeout</span> <span class="o">=</span> <span class="n">_validate_timeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">headers</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;headers&#39;</span><span class="p">,</span> <span class="p">{})</span>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client &mdash; web-monitoring-processing 0+untagged.50.g06e3e51 documentation</title>
+  <title>web_monitoring.db.Client &mdash; web-monitoring-processing 0+untagged.49.ga5e0029 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0+untagged.50.g06e3e51
+                0+untagged.49.ga5e0029
               </div>
             
           
@@ -181,7 +181,7 @@
 <h1>web_monitoring.db.Client<a class="headerlink" href="#web-monitoring-db-client" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="web_monitoring.db.Client">
-<em class="property">class </em><code class="sig-prename descclassname">web_monitoring.db.</code><code class="sig-name descname">Client</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span></em>, <em class="sig-param"><span class="n">password</span></em>, <em class="sig-param"><span class="n">url</span><span class="o">=</span><span class="default_value">'https://api.monitoring.envirodatagov.org'</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">web_monitoring.db.</code><code class="sig-name descname">Client</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span></em>, <em class="sig-param"><span class="n">password</span></em>, <em class="sig-param"><span class="n">url</span><span class="o">=</span><span class="default_value">'https://api.monitoring.envirodatagov.org'</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">retries</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client" title="Permalink to this definition">¶</a></dt>
 <dd><p>Communicate with web-monitoring-db via its REST API.</p>
 <p>This object encapsulates authentication information and provides
 methods corresponding to the REST API.</p>
@@ -194,16 +194,23 @@ class method <a class="reference internal" href="web_monitoring.db.Client.from_e
 <dt><strong>password</strong><span class="classifier">string</span></dt><dd></dd>
 <dt><strong>url</strong><span class="classifier">string, optional</span></dt><dd><p>Default is <code class="docutils literal notranslate"><span class="pre">https://api.monitoring.envirodatagov.org</span></code>.</p>
 </dd>
-<dt><strong>timeout: float, optional</strong></dt><dd><p>A default connection timeout in seconds to be used for all requests.
+<dt><strong>timeout</strong><span class="classifier">float, optional</span></dt><dd><p>A default connection timeout in seconds to be used for all requests.
 <code class="docutils literal notranslate"><span class="pre">0</span></code> indicates no timeout should be used. Individual requests may
 override this value. Default: 30.5 seconds.</p>
+</dd>
+<dt><strong>retries</strong><span class="classifier">int or tuple of (int, float) or urllib3.util.Retry, optional</span></dt><dd><p>How to handle retrying failed requests. If an int, indictes the number
+of retries. If a tuple, the first item is the number of retries and the
+second is the backoff factor. For details about how those work, see the
+urllib3 <code class="docutils literal notranslate"><span class="pre">Retry</span></code> documentation:
+<a class="reference external" href="https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry">https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry</a>
+Default: <code class="docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">2)</span></code></p>
 </dd>
 </dl>
 </dd>
 </dl>
 <dl class="py method">
 <dt id="web_monitoring.db.Client.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span></em>, <em class="sig-param"><span class="n">password</span></em>, <em class="sig-param"><span class="n">url</span><span class="o">=</span><span class="default_value">'https://api.monitoring.envirodatagov.org'</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">email</span></em>, <em class="sig-param"><span class="n">password</span></em>, <em class="sig-param"><span class="n">url</span><span class="o">=</span><span class="default_value">'https://api.monitoring.envirodatagov.org'</span></em>, <em class="sig-param"><span class="n">timeout</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">retries</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
 </dd></dl>
 
@@ -214,7 +221,7 @@ override this value. Default: 30.5 seconds.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#web_monitoring.db.Client.__init__" title="web_monitoring.db.Client.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(email, password[, url, timeout])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#web_monitoring.db.Client.__init__" title="web_monitoring.db.Client.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(email, password[, url, timeout, …])</p></td>
 <td><p>Initialize self.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.add_annotation.html#web_monitoring.db.Client.add_annotation" title="web_monitoring.db.Client.add_annotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_annotation</span></code></a>(*, annotation, page_id, …)</p></td>
