@@ -6,6 +6,7 @@ import json
 import os
 import requests
 import requests.exceptions
+from urllib3.util import Retry
 import time
 import toolz
 import warnings
@@ -13,6 +14,8 @@ import warnings
 
 DEFAULT_URL = 'https://api.monitoring.envirodatagov.org'
 DEFAULT_TIMEOUT = 30.5
+DEFAULT_RETRIES = 2
+DEFAULT_BACKOFF = 2
 GET = 'GET'
 POST = 'POST'
 
@@ -126,19 +129,56 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
     return version
 
 
-def _validate_timeout(timeout, default=None):
-    if timeout is None:
-        return default
-    elif timeout < 0:
-        raise ValueError(f'Timeout must be non-negative. (Got: "{timeout}")')
-    elif timeout == 0:
-        return None
-    else:
-        return timeout
-
-
 class MissingCredentials(RuntimeError):
     ...
+
+
+class DbSession(requests.Session):
+    retry_statuses = frozenset((408, 413, 429, 502, 503, 504, 599))
+    timeout = DEFAULT_TIMEOUT
+
+    def __init__(self, *args, retries=None, timeout=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timeout = self._validate_timeout(timeout)
+        retry = self._retry_configuration(retries)
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry)
+        self.mount('http://', adapter)
+        self.mount('https://', adapter)
+
+    def request(self, *args, timeout=None, **kwargs):
+        timeout = self._validate_timeout(timeout)
+        return super().request(*args, timeout=timeout, **kwargs)
+
+    def _retry_configuration(self, retries):
+        if isinstance(retries, Retry):
+            return retries
+        elif isinstance(retries, (list, tuple)):
+            retry_count, backoff = retries
+        elif isinstance(retries, int):
+            retry_count = retries
+            backoff = DEFAULT_BACKOFF
+        elif retries is None:
+            retry_count = DEFAULT_RETRIES
+            backoff = DEFAULT_BACKOFF
+        else:
+            raise ValueError('Retries must an int, tuple of (int, float), or '
+                             'a urllib3.util.Retry instance')
+
+        return Retry(total=retry_count,
+                     read=retry_count,
+                     connect=retry_count,
+                     backoff_factor=backoff,
+                     status_forcelist=self.retry_statuses)
+
+    def _validate_timeout(self, timeout):
+        if timeout is None:
+            return self.timeout
+        elif timeout < 0:
+            raise ValueError(f'Timeout must be non-negative. (Got: "{timeout}")')
+        elif timeout == 0:
+            return None
+        else:
+            return timeout
 
 
 class Client:
@@ -157,18 +197,25 @@ class Client:
     password : string
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
-    timeout: float, optional
+    timeout : float, optional
         A default connection timeout in seconds to be used for all requests.
         ``0`` indicates no timeout should be used. Individual requests may
         override this value. Default: 30.5 seconds.
+    retries : int or tuple of (int, float) or urllib3.util.Retry, optional
+        How to handle retrying failed requests. If an int, indictes the number
+        of retries. If a tuple, the first item is the number of retries and the
+        second is the backoff factor. For details about how those work, see the
+        urllib3 ``Retry`` documentation:
+        https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry
+        Default: ``(2, 2)``
     """
-    def __init__(self, email, password, url=DEFAULT_URL, timeout=None):
+    def __init__(self, email, password, url=DEFAULT_URL, timeout=None,
+                 retries=None):
         self._api_url = f'{url}/api/v0'
         self._base_url = url
-        self._session = requests.Session()
+        self._session = DbSession(retries=retries, timeout=timeout)
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
-        self._timeout = _validate_timeout(timeout, DEFAULT_TIMEOUT)
 
     @classmethod
     def from_env(cls, **kwargs):
@@ -203,8 +250,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
     def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
             url = f'{self._api_url}{url}'
-
-        timeout = _validate_timeout(timeout, default=self._timeout)
 
         if data is not None:
             headers = kwargs.setdefault('headers', {})
