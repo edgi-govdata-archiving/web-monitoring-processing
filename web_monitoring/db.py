@@ -4,6 +4,7 @@ import dateutil.tz
 from dateutil.parser import parse as parse_timestamp
 import json
 import os
+import re
 import requests
 import requests.exceptions
 from urllib3.util import Retry
@@ -19,6 +20,24 @@ DEFAULT_BACKOFF = 2
 GET = 'GET'
 POST = 'POST'
 
+# The DB only uses W3C-style ISO 8601 datetimes, so we can check with a regex.
+# https://www.w3.org/TR/NOTE-datetime
+W3C_ISO_DATETIME = re.compile(r'''
+    ^\d{4}-\d\d-\d\d         # Starts with a date
+    (T                       # Times optional, but with standard delimiter
+        \d\d:\d\d            # Times must have minute resolution at minimum
+        (
+            :\d\d            # Optional second resolution
+            (\.\d+)?         # Optional sub-second resolution
+        )?
+        (                    # Optional timezone
+            Z                # Z is for UTC (Zulu time)
+            |[+\-]\d\d:\d\d  # or offset, e.g. "+08:00" (MUST have colon)
+        )?
+    )?
+    $
+''', re.VERBOSE)
+
 
 def _tzaware_isoformat(dt):
     """Express a datetime object in timezone-aware ISO format."""
@@ -33,6 +52,10 @@ class WebMonitoringDbError(Exception):
 
 
 class UnauthorizedCredentials(Exception):
+    ...
+
+
+class MissingCredentials(RuntimeError):
     ...
 
 
@@ -129,8 +152,23 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
     return version
 
 
-class MissingCredentials(RuntimeError):
-    ...
+class DbJsonDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, object_hook=self.object_hook, **kwargs)
+
+    def object_hook(self, data):
+        for key, value in data.items():
+            if (
+                (key == 'time' or key.endswith('_time') or key.endswith('_at'))
+                and self.is_datetime(value)
+            ):
+                data[key] = parse_timestamp(value)
+
+        return data
+
+    @staticmethod
+    def is_datetime(value):
+        return isinstance(value, str) and W3C_ISO_DATETIME.match(value)
 
 
 class DbSession(requests.Session):
@@ -268,7 +306,27 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
     def request_json(self, method, url, data=None, timeout=None, **kwargs):
         response = self.request(method, url, data, timeout, **kwargs)
-        return response.json()
+        return response.json(cls=DbJsonDecoder)
+
+    def iterate_requests(self, method, url, data=None, timeout=None, **kwargs):
+        chunk = self.request_json(method, url, data=data, timeout=timeout, **kwargs)
+        while True:
+            yield chunk
+            links = chunk.get('links', {})
+            next_url = links.get('next')
+            if next_url:
+                chunk = self.request_json(GET, next_url, timeout=timeout)
+            else:
+                return
+
+    def _iterate_chunk_items(self, method, url, data=None, timeout=None, **kwargs):
+        for chunk in self.iterate_requests(method, url, data=data, timeout=timeout, **kwargs):
+            meta = chunk.get('meta', {})
+            links = chunk.get('links', {})
+            for item in chunk['data']:
+                item['_list_meta'] = meta
+                item['_list_links'] = links
+                yield item
 
     ### PAGES ###
 
@@ -313,6 +371,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_pages() has been deprecated. Please use '
+                      'db.client.get_pages().',
+                      DeprecationWarning)
+
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
                   'sort': sort and ','.join(sort) or None,
@@ -330,31 +392,79 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                   'include_total': include_total or None}
         url = '/pages'
         result = self.request_json(GET, url, params=params)
-        data = result['data']
-        # In place, replace datetime strings with datetime objects.
-        for page in data:
-            page['created_at'] = parse_timestamp(page['created_at'])
-            page['updated_at'] = parse_timestamp(page['updated_at'])
-            if 'earliest' in page:
-                page['earliest']['capture_time'] = parse_timestamp(
-                    page['earliest']['capture_time'])
-                page['earliest']['created_at'] = parse_timestamp(
-                    page['earliest']['created_at'])
-                page['earliest']['updated_at'] = parse_timestamp(
-                    page['earliest']['updated_at'])
-            if 'latest' in page:
-                page['latest']['capture_time'] = parse_timestamp(
-                    page['latest']['capture_time'])
-                page['latest']['created_at'] = parse_timestamp(
-                    page['latest']['created_at'])
-                page['latest']['updated_at'] = parse_timestamp(
-                    page['latest']['updated_at'])
-            if 'versions' in page:
-                for v in page['versions']:
-                    v['created_at'] = parse_timestamp(v['created_at'])
-                    v['updated_at'] = parse_timestamp(v['updated_at'])
-                    v['capture_time'] = parse_timestamp(v['capture_time'])
         return result
+
+    def get_pages(self, *, chunk=None, chunk_size=None, sort=None,
+                  tags=None, maintainers=None, url=None, title=None,
+                  include_versions=None, include_earliest=None,
+                  include_latest=None, source_type=None, hash=None,
+                  start_date=None, end_date=None, active=None,
+                  include_total=False):
+        """
+        Get an iterable of all pages, optionally filtered by search criteria.
+
+        Any metadata about each paginated chunk of results is available on the
+        "_list_meta" field of each page, e.g:
+
+        >>> pages = client.get_pages(include_total=True)
+        >>> next(pages)['_list_meta']
+        {'total_results': 123456}
+
+        Parameters
+        ----------
+        chunk : integer, optional
+            Pagination chunk to start iterating from. If unset, starts at the
+            beginning of the result set. (Under the hood, results are retrieved
+            in "chunks"; using this to skip partway into the results is more
+            optimized that skipping over the first few items in the iterable.)
+        chunk_size : integer, optional
+            Number of items per chunk. (Under the hood, results are retrieved
+            in "chunks"; this specifies how big those chunks are.)
+        sort : list of string, optional
+            Fields to sort by in `{field}:{order}` format, e.g. `title:asc`.
+        tags : list of string, optional
+        maintainers : list of string, optional
+        url : string, optional
+        title : string, optional
+        include_versions : boolean, optional
+        include_earliest : boolean, optional
+        include_latest : boolean, optional
+        source_type : string, optional
+            Only include pages that have versions from a given source, e.g.
+            'versionista' or 'internet_archive'.
+        hash : string, optional
+            Only include pages that have versions whose response body has a
+            given SHA-256 hash.
+        start_date : datetime, optional
+        end_date : datetime, optional
+        active : boolean, optional
+        include_total : boolean, optional
+            Whether to include a `meta.total_results` field in the response.
+            If not set, `links.last` will usually be empty unless you are on
+            the last chunk. Setting this option runs a pretty expensive query,
+            so use it sparingly. (Default: False)
+
+        Yields
+        ------
+        page : dict
+            Data about a page.
+        """
+        params = {'chunk': chunk,
+                  'chunk_size': chunk_size,
+                  'sort': sort and ','.join(sort) or None,
+                  'tags[]': tags,
+                  'maintainers[]': maintainers,
+                  'url': url,
+                  'title': title,
+                  'include_versions': include_versions,
+                  'include_earliest': include_earliest,
+                  'include_latest': include_latest,
+                  'source_type': source_type,
+                  'hash': hash,
+                  'capture_time': _time_range_string(start_date, end_date),
+                  'active': active,
+                  'include_total': include_total or None}
+        yield from self._iterate_chunk_items(GET, '/pages', params=params)
 
     def get_page(self, page_id):
         """
@@ -370,14 +480,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         """
         url = f'/pages/{page_id}'
         result = self.request_json(GET, url)
-        # In place, replace datetime strings with datetime objects.
-        data = result['data']
-        data['created_at'] = parse_timestamp(data['created_at'])
-        data['updated_at'] = parse_timestamp(data['updated_at'])
-        for v in data['versions']:
-            v['created_at'] = parse_timestamp(v['created_at'])
-            v['updated_at'] = parse_timestamp(v['updated_at'])
-            v['capture_time'] = parse_timestamp(v['capture_time'])
         return result
 
 
@@ -435,6 +537,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_versions() has been deprecated. Please '
+                      'use db.client.get_versions().',
+                      DeprecationWarning)
+
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
                   'sort': sort and ','.join(sort) or None,
@@ -453,12 +559,90 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         else:
             url = f'/pages/{page_id}/versions'
         result = self.request_json(GET, url, params=params)
-        # In place, replace datetime strings with datetime objects.
-        for v in result['data']:
-            v['created_at'] = parse_timestamp(v['created_at'])
-            v['updated_at'] = parse_timestamp(v['updated_at'])
-            v['capture_time'] = parse_timestamp(v['capture_time'])
         return result
+
+    def get_versions(self, *, page_id=None, chunk=None, chunk_size=None,
+                     sort=None, start_date=None, end_date=None,
+                     source_type=None, hash=None,
+                     source_metadata=None, different=None,
+                     include_change_from_previous=None,
+                     include_change_from_earliest=None, include_total=False):
+        """
+        Iterate over a set of versions, optionally filtered by search criteria.
+
+        Any metadata about each paginated chunk of results is available on the
+        "_list_meta" field of each version, e.g:
+
+        >>> pages = client.get_versions(include_total=True)
+        >>> next(pages)['_list_meta']
+        {'total_results': 123456}
+
+        Parameters
+        ----------
+        page_id : string, optional
+            Restricts serach to Versions of a specific Page
+        chunk : integer, optional
+            Pagination chunk to start iterating from. If unset, starts at the
+            beginning of the result set. (Under the hood, results are retrieved
+            in "chunks"; using this to skip partway into the results is more
+            optimized that skipping over the first few items in the iterable.)
+        chunk_size : integer, optional
+            Number of items per chunk. (Under the hood, results are retrieved
+            in "chunks"; this specifies how big those chunks are.)
+        sort : list of string, optional
+            Fields to sort by in `{field}:{order}` format,
+            e.g. `capture_time:asc`
+        start_date : datetime, optional
+        end_date : datetime, optional
+        source_type : string, optional
+            Such as 'versionista' or 'internetarchive'
+        hash : string, optional
+            SHA-256 hash of Version content
+        source_metadata : dict, optional
+            Examples:
+
+            * ``{'version_id': 12345678}``
+            * ``{'account': 'versionista1', 'has_content': True}``
+        different : boolean, optional
+            If False, include versions that aren't actually different from the
+            previous version of the same page in the response.
+        include_change_from_previous : boolean, optional
+            If True, include a `change_from_previous` field in each version
+            that represents a change object between it and the previous version
+            of the same page.
+        include_change_from_earliest : boolean, optional
+            If True, include a `change_from_earliest` field in each version
+            that represents a change object between it and the earliest version
+            of the same page.
+        include_total : boolean, optional
+            Whether to include a `meta.total_results` field in the response.
+            If not set, `links.last` will usually be empty unless you are on
+            the last chunk. Setting this option runs a pretty expensive query,
+            so use it sparingly. (Default: False)
+
+        Yields
+        ------
+        version : dict
+            Data about each found version.
+        """
+        params = {'chunk': chunk,
+                  'chunk_size': chunk_size,
+                  'sort': sort and ','.join(sort) or None,
+                  'capture_time': _time_range_string(start_date, end_date),
+                  'source_type': source_type,
+                  'hash': hash,
+                  'different': different,
+                  'include_change_from_previous': include_change_from_previous,
+                  'include_change_from_earliest': include_change_from_earliest,
+                  'include_total': include_total or None}
+        if source_metadata is not None:
+            for k, v in source_metadata.items():
+                params[f'source_metadata[{k}]'] = v
+        if page_id is None:
+            url = '/versions'
+        else:
+            url = f'/pages/{page_id}/versions'
+        yield from self._iterate_chunk_items(GET, url, params=params)
 
     def get_version(self, version_id, include_change_from_previous=None,
                     include_change_from_earliest=None):
@@ -485,10 +669,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         params = {'include_change_from_previous': include_change_from_previous,
                   'include_change_from_earliest': include_change_from_earliest}
         result = self.request_json(GET, url, params=params)
-        data = result['data']
-        data['capture_time'] = parse_timestamp(data['capture_time'])
-        data['updated_at'] = parse_timestamp(data['updated_at'])
-        data['created_at'] = parse_timestamp(data['created_at'])
         return result
 
     def add_version(self, *, page_id, capture_time, uri, hash,
@@ -669,14 +849,35 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_changes() has been deprecated. Please '
+                      'use db.client.get_changes().',
+                      DeprecationWarning)
+
         url = f'/pages/{page_id}/changes/'
         result = self.request_json(
             GET, url, params={'include_total': include_total or None})
-        # In place, replace datetime strings with datetime objects.
-        for change in result['data']:
-            change['created_at'] = parse_timestamp(change['created_at'])
-            change['updated_at'] = parse_timestamp(change['updated_at'])
         return result
+
+    def get_changes(self, page_id, include_total=False):
+        """
+        Iterate through a set of changes between any two versions of a page.
+
+        Parameters
+        ----------
+        page_id : string
+        include_total : boolean, optional
+            Whether to include a `_list_meta.total_results` field in each
+            change. (Default: False)
+
+        Yields
+        ------
+        change : dict
+            Information about the change between versions of the page.
+        """
+        url = f'/pages/{page_id}/changes/'
+        yield from self._iterate_chunk_items(GET, url, params={
+            'include_total': include_total or None
+        })
 
     def get_change(self, *, page_id, to_version_id, from_version_id=''):
         """
@@ -697,13 +898,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
         result = self.request_json(GET, url)
-        # In place, replace datetime strings with datetime objects.
-        data = result['data']
-        # For changes which were created just-in-time to fulfill this API request,
-        # created/updated_at will be None, and that's OK.
-        if data['created_at'] and data['updated_at']:
-            data['created_at'] = parse_timestamp(data['created_at'])
-            data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
     def list_annotations(self, *, page_id, to_version_id, from_version_id='',
@@ -728,15 +922,42 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
+        warnings.warn('db.client.list_annotations() has been deprecated. '
+                      'Please use db.client.get_annotations().',
+                      DeprecationWarning)
+
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
         result = self.request_json(
             GET, url, params={'include_total': include_total or None})
-        # In place, replace datetime strings with datetime objects.
-        for a in result['data']:
-            a['created_at'] = parse_timestamp(a['created_at'])
-            a['updated_at'] = parse_timestamp(a['updated_at'])
         return result
+
+    def get_annotations(self, *, page_id, to_version_id, from_version_id='',
+                        include_total=False):
+        """
+        Iterate through Annotations for a Change between two Versions.
+
+        Parameters
+        ----------
+        page_id : string
+        to_version_id : string
+        from_version_id : string, optional
+            If from_version_id is not given, it will be treated as version
+            immediately prior to ``to_version``.
+        include_total : boolean, optional
+            Whether to include a `_list_meta.total_results` field in each
+            annotation. (Default: False)
+
+        Yields
+        ------
+        annotation : dict
+            Data about the annotion.
+        """
+        url = (f'/pages/{page_id}/changes/'
+               f'{from_version_id}..{to_version_id}/annotations')
+        yield from self._iterate_chunk_items(GET, url, params={
+            'include_total': include_total or None
+        })
 
     def add_annotation(self, *, annotation, page_id, to_version_id,
                        from_version_id=''):
@@ -782,10 +1003,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                f'{from_version_id}..{to_version_id}/annotations/'
                f'{annotation_id}')
         result = self.request_json(GET, url)
-        # In place, replace datetime strings with datetime objects.
-        data = result['data']
-        data['created_at'] = parse_timestamp(data['created_at'])
-        data['updated_at'] = parse_timestamp(data['updated_at'])
         return result
 
     ### USERS ###
@@ -839,22 +1056,18 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         response : dict
         """
-        result = self.list_versions(
+        versions = list(self.get_versions(
             source_type='versionista',
-            source_metadata={'version_id': versionista_id})
-        # There should not be more than one match.
-        data = result['data']
-        if len(data) == 0:
-            raise ValueError("No match found for versionista_id {}"
-                             "".format(versionista_id))
-        elif len(data) > 1:
-            raise Exception("Multiple Versions match the versionista_id {}."
-                            "Their web-monitoring-db version_ids are: {}"
-                            "".format(versionista_id,
-                                      [v['uuid'] for v in data]))
+            source_metadata={'version_id': versionista_id}))
+        if len(versions) == 0:
+            raise ValueError(f'No match found for versionista_id {versionista_id}')
+        elif len(versions) > 1:
+            matches = [v["uuid"] for v in versions]
+            raise Exception(f'Multiple Versions match the versionista_id {versionista_id}. '
+                            f'Their web-monitoring-db IDs are: {matches}')
         # Make result look like the result of `get_version` rather than the
-        # result of `list_versions`.
-        return {'data': result['data'][0]}
+        # result of `get_versions`.
+        return {'data': versions[0]}
 
     def validate_credentials(self):
         """
