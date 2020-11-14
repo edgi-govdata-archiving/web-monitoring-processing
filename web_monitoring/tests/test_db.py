@@ -7,8 +7,15 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import pytest
+import requests
 from unittest.mock import patch
-from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials, DEFAULT_TIMEOUT
+import urllib3.util
+from web_monitoring.db import (Client,
+                               MissingCredentials,
+                               UnauthorizedCredentials,
+                               DEFAULT_RETRIES,
+                               DEFAULT_BACKOFF,
+                               DEFAULT_TIMEOUT)
 import vcr
 
 
@@ -295,7 +302,49 @@ def test_validate_credentials_should_raise():
         cli.validate_credentials()
 
 
-@patch('web_monitoring.db.requests.Session')
+def test_retry_defaults():
+    """
+    This test is pretty minimal; it only checks that a correctly configured
+    Retry object is making it into requests. The retries themselves happen down
+    in urllib3, which is below the level at which requests-mock functions, and
+    hand-coding a VCR cassette is not a great idea. So it's tough to get a
+    better test.
+    """
+    client = Client(**AUTH)
+    adapter = client._session.adapters['https://']
+    assert DEFAULT_RETRIES == adapter.max_retries.total
+    assert DEFAULT_BACKOFF == adapter.max_retries.backoff_factor
+
+
+def test_retries_tuple():
+    """
+    This test is pretty minimal; it only checks that a correctly configured
+    Retry object is making it into requests. The retries themselves happen down
+    in urllib3, which is below the level at which requests-mock functions, and
+    hand-coding a VCR cassette is not a great idea. So it's tough to get a
+    better test.
+    """
+    hard_working_client = Client(**AUTH, retries=(8, 5))
+    adapter = hard_working_client._session.adapters['https://']
+    assert 8 == adapter.max_retries.total
+    assert 5 == adapter.max_retries.backoff_factor
+
+
+def test_retries_object():
+    """
+    This test is pretty minimal; it only checks that a correctly configured
+    Retry object is making it into requests. The retries themselves happen down
+    in urllib3, which is below the level at which requests-mock functions, and
+    hand-coding a VCR cassette is not a great idea. So it's tough to get a
+    better test.
+    """
+    fancy_retries = urllib3.util.Retry()
+    fancy_client = Client(**AUTH, retries=fancy_retries)
+    adapter = fancy_client._session.adapters['https://']
+    assert fancy_retries == adapter.max_retries
+
+
+@patch('web_monitoring.db.DbSession')
 def test_client_with_default_timeout(mock_session):
     cli = Client(**AUTH)
     cli.get_user_session()
@@ -303,7 +352,7 @@ def test_client_with_default_timeout(mock_session):
         method='GET', url=f'{AUTH["url"]}/users/session', timeout=DEFAULT_TIMEOUT)
 
 
-@patch('web_monitoring.db.requests.Session')
+@patch('web_monitoring.db.DbSession')
 def test_client_with_custom_timeout(mock_session):
     cli = Client(**AUTH, timeout=7.5)
     cli.get_user_session()
@@ -311,7 +360,7 @@ def test_client_with_custom_timeout(mock_session):
         method='GET', url=f'{AUTH["url"]}/users/session', timeout=7.5)
 
 
-@patch('web_monitoring.db.requests.Session')
+@patch('web_monitoring.db.DbSession')
 def test_client_with_no_timeout(mock_session):
     cli = Client(**AUTH, timeout=0)
     cli.get_user_session()
