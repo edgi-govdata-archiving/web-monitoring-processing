@@ -567,7 +567,8 @@ class WaybackRecordsWorker(threading.Thread):
 def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                       tags=None, skip_unchanged='resolved-response',
                       url_pattern=None, worker_count=0,
-                      unplaybackable_path=None, dry_run=False):
+                      unplaybackable_path=None, dry_run=False,
+                      precheck_versions=False):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     urls, version_filter = _get_db_page_url_info(client, url_pattern)
@@ -578,6 +579,36 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
 
     logger.info(f'Found {len(urls)} CDX-queryable URLs')
     logger.debug('\n  '.join(urls))
+
+    # TODO: should probably move most of this to a separate function
+    if precheck_versions:
+        # TODO: truncate the timeframe if it's too large, or load a max number
+        # of versions, e.g. 200,000 or something.
+        print('Pre-checking known versions...')
+
+        def memento_key(time, url):
+            return f'{time.strftime("%Y%m%d%H%M%S")}|{url}'
+
+        versions = client.get_versions(start_date=from_date,
+                                       end_date=to_date,
+                                       different=False,
+                                       sort=['capture_time:asc'],
+                                       chunk_size=1000)
+        known_mementos = set(memento_key(v["capture_time"], v["capture_url"])
+                             for v in versions)
+        logger.debug(f'  Found {len(known_mementos)} known versions')
+
+        # wrap version_filter in this filter
+        _filter = version_filter
+        def precheck_filter(cdx_record):
+            key = memento_key(cdx_record.timestamp, cdx_record.url)
+            logger.info(f'Prechecking {key}')
+            if memento_key(cdx_record.timestamp, cdx_record.url) in known_mementos:
+                logger.info(f'  SKIPPING {key}')
+                return False
+            return _filter(cdx_record)
+
+        version_filter = precheck_filter
 
     return import_ia_urls(
         urls=urls,
@@ -933,6 +964,8 @@ Options:
                               list of unplaybackable mementos will be written
                               to this file. If it exists before importing,
                               memento URLs listed in it will be skipped.
+--precheck                    Check the list of versions in web-monitoring-db
+                              and avoid re-importing duplicates.
 --dry-run                     Don't upload data to web-monitoring-db.
 """
     arguments = docopt(doc, version='0.0.1')
@@ -964,7 +997,8 @@ Options:
                 url_pattern=arguments.get('--pattern'),
                 worker_count=int(arguments.get('--parallel')),
                 unplaybackable_path=arguments.get('--unplaybackable'),
-                dry_run=arguments.get('--dry-run'))
+                dry_run=arguments.get('--dry-run'),
+                precheck_versions=arguments.get('--precheck'))
 
 
 if __name__ == '__main__':
