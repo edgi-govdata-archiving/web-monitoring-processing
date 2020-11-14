@@ -1,0 +1,6 @@
+﻿web\_monitoring.db.Client.get\_annotations
+==========================================
+
+.. currentmodule:: web_monitoring.db
+
+.. automethod:: Client.get_annotations

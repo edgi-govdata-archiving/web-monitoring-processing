@@ -1,6 +1,0 @@
-﻿web\_monitoring.db.Client.list\_pages
-=====================================
-
-.. currentmodule:: web_monitoring.db
-
-.. automethod:: Client.list_pages

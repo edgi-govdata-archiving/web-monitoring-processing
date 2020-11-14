@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.list_pages &mdash; web-monitoring-processing 0+untagged.49.ga5e0029 documentation</title>
+  <title>web_monitoring.db.Client.get_pages &mdash; web-monitoring-processing 0+untagged.50.geb62913 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0+untagged.49.ga5e0029
+                0+untagged.50.geb62913
               </div>
             
           
@@ -94,15 +94,15 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../db_api.html#api-documentation">API Documentation</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.html">web_monitoring.db.Client</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.from_env.html">web_monitoring.db.Client.from_env</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">web_monitoring.db.Client.list_pages</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">web_monitoring.db.Client.get_pages</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_page.html">web_monitoring.db.Client.get_page</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_versions.html">web_monitoring.db.Client.list_versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_versions.html">web_monitoring.db.Client.get_versions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_version.html">web_monitoring.db.Client.get_version</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_version.html">web_monitoring.db.Client.add_version</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_versions.html">web_monitoring.db.Client.add_versions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_changes.html">web_monitoring.db.Client.list_changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_changes.html">web_monitoring.db.Client.get_changes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_change.html">web_monitoring.db.Client.get_change</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_annotations.html">web_monitoring.db.Client.list_annotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_annotations.html">web_monitoring.db.Client.get_annotations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_annotation.html">web_monitoring.db.Client.get_annotation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_annotation.html">web_monitoring.db.Client.add_annotation</a></li>
 </ul>
@@ -158,13 +158,13 @@
         
           <li><a href="../db_api.html">Python API to web-monitoring-db</a> &raquo;</li>
         
-      <li>web_monitoring.db.Client.list_pages</li>
+      <li>web_monitoring.db.Client.get_pages</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/generated/web_monitoring.db.Client.list_pages.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/generated/web_monitoring.db.Client.get_pages.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -177,20 +177,31 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="web-monitoring-db-client-list-pages">
-<h1>web_monitoring.db.Client.list_pages<a class="headerlink" href="#web-monitoring-db-client-list-pages" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="web-monitoring-db-client-get-pages">
+<h1>web_monitoring.db.Client.get_pages<a class="headerlink" href="#web-monitoring-db-client-get-pages" title="Permalink to this headline">¶</a></h1>
 <dl class="py method">
-<dt id="web_monitoring.db.Client.list_pages">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_pages</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">chunk</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunk_size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">maintainers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">url</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_versions</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_earliest</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_latest</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">source_type</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hash</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">start_date</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">end_date</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">active</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_total</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_pages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_pages" title="Permalink to this definition">¶</a></dt>
-<dd><p>List all Pages, optionally filtered by search criteria.</p>
+<dt id="web_monitoring.db.Client.get_pages">
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">get_pages</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">chunk</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunk_size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tags</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">maintainers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">url</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_versions</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_earliest</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_latest</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">source_type</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hash</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">start_date</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">end_date</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">active</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_total</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.get_pages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.get_pages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an iterable of all pages, optionally filtered by search criteria.</p>
+<p>Any metadata about each paginated chunk of results is available on the
+“_list_meta” field of each page, e.g:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pages</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_pages</span><span class="p">(</span><span class="n">include_total</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">next</span><span class="p">(</span><span class="n">pages</span><span class="p">)[</span><span class="s1">&#39;_list_meta&#39;</span><span class="p">]</span>
+<span class="go">{&#39;total_results&#39;: 123456}</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>chunk</strong><span class="classifier">integer, optional</span></dt><dd><p>pagination parameter</p>
+<dt><strong>chunk</strong><span class="classifier">integer, optional</span></dt><dd><p>Pagination chunk to start iterating from. If unset, starts at the
+beginning of the result set. (Under the hood, results are retrieved
+in “chunks”; using this to skip partway into the results is more
+optimized that skipping over the first few items in the iterable.)</p>
 </dd>
-<dt><strong>chunk_size</strong><span class="classifier">integer, optional</span></dt><dd><p>number of items per chunk</p>
+<dt><strong>chunk_size</strong><span class="classifier">integer, optional</span></dt><dd><p>Number of items per chunk. (Under the hood, results are retrieved
+in “chunks”; this specifies how big those chunks are.)</p>
 </dd>
-<dt><strong>sort</strong><span class="classifier">list of string, optional</span></dt><dd><p>fields to sort by in <cite>{field}:{order}</cite> format, e.g. <cite>title:asc</cite></p>
+<dt><strong>sort</strong><span class="classifier">list of string, optional</span></dt><dd><p>Fields to sort by in <cite>{field}:{order}</cite> format, e.g. <cite>title:asc</cite>.</p>
 </dd>
 <dt><strong>tags</strong><span class="classifier">list of string, optional</span></dt><dd></dd>
 <dt><strong>maintainers</strong><span class="classifier">list of string, optional</span></dt><dd></dd>
@@ -199,9 +210,11 @@
 <dt><strong>include_versions</strong><span class="classifier">boolean, optional</span></dt><dd></dd>
 <dt><strong>include_earliest</strong><span class="classifier">boolean, optional</span></dt><dd></dd>
 <dt><strong>include_latest</strong><span class="classifier">boolean, optional</span></dt><dd></dd>
-<dt><strong>source_type</strong><span class="classifier">string, optional</span></dt><dd><p>such as ‘versionista’ or ‘internet_archive’</p>
+<dt><strong>source_type</strong><span class="classifier">string, optional</span></dt><dd><p>Only include pages that have versions from a given source, e.g.
+‘versionista’ or ‘internet_archive’.</p>
 </dd>
-<dt><strong>hash</strong><span class="classifier">string, optional</span></dt><dd><p>SHA256 hash of Version content</p>
+<dt><strong>hash</strong><span class="classifier">string, optional</span></dt><dd><p>Only include pages that have versions whose response body has a
+given SHA-256 hash.</p>
 </dd>
 <dt><strong>start_date</strong><span class="classifier">datetime, optional</span></dt><dd></dd>
 <dt><strong>end_date</strong><span class="classifier">datetime, optional</span></dt><dd></dd>
@@ -213,9 +226,10 @@ so use it sparingly. (Default: False)</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Yields</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>response</strong><span class="classifier">dict</span></dt><dd></dd>
+<dt><strong>page</strong><span class="classifier">dict</span></dt><dd><p>Data about a page.</p>
+</dd>
 </dl>
 </dd>
 </dl>

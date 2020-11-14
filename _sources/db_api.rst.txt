@@ -20,14 +20,14 @@ API Documentation
 
     Client
     Client.from_env
-    Client.list_pages
+    Client.get_pages
     Client.get_page
-    Client.list_versions
+    Client.get_versions
     Client.get_version
     Client.add_version
     Client.add_versions
-    Client.list_changes
+    Client.get_changes
     Client.get_change
-    Client.list_annotations
+    Client.get_annotations
     Client.get_annotation
     Client.add_annotation

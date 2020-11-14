@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client &mdash; web-monitoring-processing 0+untagged.49.ga5e0029 documentation</title>
+  <title>web_monitoring.db.Client &mdash; web-monitoring-processing 0+untagged.50.geb62913 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0+untagged.49.ga5e0029
+                0+untagged.50.geb62913
               </div>
             
           
@@ -94,15 +94,15 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../db_api.html#api-documentation">API Documentation</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">web_monitoring.db.Client</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.from_env.html">web_monitoring.db.Client.from_env</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_pages.html">web_monitoring.db.Client.list_pages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_pages.html">web_monitoring.db.Client.get_pages</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_page.html">web_monitoring.db.Client.get_page</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_versions.html">web_monitoring.db.Client.list_versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_versions.html">web_monitoring.db.Client.get_versions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_version.html">web_monitoring.db.Client.get_version</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_version.html">web_monitoring.db.Client.add_version</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_versions.html">web_monitoring.db.Client.add_versions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_changes.html">web_monitoring.db.Client.list_changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_changes.html">web_monitoring.db.Client.get_changes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_change.html">web_monitoring.db.Client.get_change</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_annotations.html">web_monitoring.db.Client.list_annotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_annotations.html">web_monitoring.db.Client.get_annotations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_annotation.html">web_monitoring.db.Client.get_annotation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_annotation.html">web_monitoring.db.Client.add_annotation</a></li>
 </ul>
@@ -239,8 +239,14 @@ Default: <code class="docutils literal notranslate"><span class="pre">(2,</span>
 <tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_annotation.html#web_monitoring.db.Client.get_annotation" title="web_monitoring.db.Client.get_annotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_annotation</span></code></a>(*, annotation_id, page_id, …)</p></td>
 <td><p>Get a specific Annontation.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_change.html#web_monitoring.db.Client.get_change" title="web_monitoring.db.Client.get_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_change</span></code></a>(*, page_id, to_version_id[, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_annotations.html#web_monitoring.db.Client.get_annotations" title="web_monitoring.db.Client.get_annotations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_annotations</span></code></a>(*, page_id, to_version_id[, …])</p></td>
+<td><p>Iterate through Annotations for a Change between two Versions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_change.html#web_monitoring.db.Client.get_change" title="web_monitoring.db.Client.get_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_change</span></code></a>(*, page_id, to_version_id[, …])</p></td>
 <td><p>Get a Changes between two Versions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_changes.html#web_monitoring.db.Client.get_changes" title="web_monitoring.db.Client.get_changes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_changes</span></code></a>(page_id[, include_total])</p></td>
+<td><p>Iterate through a set of changes between any two versions of a page.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_import_status</span></code>(import_id)</p></td>
 <td><p>Check on the status of a batch Version import job.</p></td>
@@ -248,40 +254,49 @@ Default: <code class="docutils literal notranslate"><span class="pre">(2,</span>
 <tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_page.html#web_monitoring.db.Client.get_page" title="web_monitoring.db.Client.get_page"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_page</span></code></a>(page_id)</p></td>
 <td><p>Lookup a specific Page by ID.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_user_session</span></code>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_pages.html#web_monitoring.db.Client.get_pages" title="web_monitoring.db.Client.get_pages"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_pages</span></code></a>(*[, chunk, chunk_size, sort, …])</p></td>
+<td><p>Get an iterable of all pages, optionally filtered by search criteria.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_user_session</span></code>()</p></td>
 <td><p>Get the current user session.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_version.html#web_monitoring.db.Client.get_version" title="web_monitoring.db.Client.get_version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_version</span></code></a>(version_id[, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_version.html#web_monitoring.db.Client.get_version" title="web_monitoring.db.Client.get_version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_version</span></code></a>(version_id[, …])</p></td>
 <td><p>Lookup a specific Version by ID.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_version_by_versionista_id</span></code>(versionista_id)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_version_by_versionista_id</span></code>(versionista_id)</p></td>
 <td><p>Look up a Version by its Verisonista-issued ID.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_version_content</span></code>(version_id)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_version_content</span></code>(version_id)</p></td>
 <td><p>Download the saved content from a given Version.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.list_annotations.html#web_monitoring.db.Client.list_annotations" title="web_monitoring.db.Client.list_annotations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_annotations</span></code></a>(*, page_id, to_version_id)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.get_versions.html#web_monitoring.db.Client.get_versions" title="web_monitoring.db.Client.get_versions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_versions</span></code></a>(*[, page_id, chunk, …])</p></td>
+<td><p>Iterate over a set of versions, optionally filtered by search criteria.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">iterate_requests</span></code>(method, url[, data, timeout])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_annotations</span></code>(*, page_id, to_version_id)</p></td>
 <td><p>List Annotations for a Change between two Versions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.list_changes.html#web_monitoring.db.Client.list_changes" title="web_monitoring.db.Client.list_changes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_changes</span></code></a>(page_id[, include_total])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_changes</span></code>(page_id[, include_total])</p></td>
 <td><p>List Changes between two Versions on a Page.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="web_monitoring.db.Client.list_pages.html#web_monitoring.db.Client.list_pages" title="web_monitoring.db.Client.list_pages"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_pages</span></code></a>(*[, chunk, chunk_size, sort, …])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_pages</span></code>(*[, chunk, chunk_size, sort, …])</p></td>
 <td><p>List all Pages, optionally filtered by search criteria.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="web_monitoring.db.Client.list_versions.html#web_monitoring.db.Client.list_versions" title="web_monitoring.db.Client.list_versions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_versions</span></code></a>(*[, page_id, chunk, …])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_versions</span></code>(*[, page_id, chunk, …])</p></td>
 <td><p>List Versions, optionally filtered by serach criteria, including Page.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor_import_statuses</span></code>(import_ids[, stop])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor_import_statuses</span></code>(import_ids[, stop])</p></td>
 <td><p>Poll status of Version import jobs until all complete.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request</span></code>(method, url[, data, timeout])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request</span></code>(method, url[, data, timeout])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_json</span></code>(method, url[, data, timeout])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_json</span></code>(method, url[, data, timeout])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_credentials</span></code>()</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_credentials</span></code>()</p></td>
 <td><p>Validate that the DB Client is authorized for the provided host.</p></td>
 </tr>
 </tbody>

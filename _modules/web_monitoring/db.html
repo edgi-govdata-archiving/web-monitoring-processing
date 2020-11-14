@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.49.ga5e0029 documentation</title>
+  <title>web_monitoring.db &mdash; web-monitoring-processing 0+untagged.50.geb62913 documentation</title>
   
 
   
@@ -59,7 +59,7 @@
             
             
               <div class="version">
-                0+untagged.49.ga5e0029
+                0+untagged.50.geb62913
               </div>
             
           
@@ -159,6 +159,7 @@
 <span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="kn">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">parse_timestamp</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">requests.exceptions</span>
 <span class="kn">from</span> <span class="nn">urllib3.util</span> <span class="kn">import</span> <span class="n">Retry</span>
@@ -174,6 +175,24 @@
 <span class="n">GET</span> <span class="o">=</span> <span class="s1">&#39;GET&#39;</span>
 <span class="n">POST</span> <span class="o">=</span> <span class="s1">&#39;POST&#39;</span>
 
+<span class="c1"># The DB only uses W3C-style ISO 8601 datetimes, so we can check with a regex.</span>
+<span class="c1"># https://www.w3.org/TR/NOTE-datetime</span>
+<span class="n">W3C_ISO_DATETIME</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    ^\d</span><span class="si">{4}</span><span class="s1">-\d\d-\d\d         # Starts with a date</span>
+<span class="s1">    (T                       # Times optional, but with standard delimiter</span>
+<span class="s1">        \d\d:\d\d            # Times must have minute resolution at minimum</span>
+<span class="s1">        (</span>
+<span class="s1">            :\d\d            # Optional second resolution</span>
+<span class="s1">            (\.\d+)?         # Optional sub-second resolution</span>
+<span class="s1">        )?</span>
+<span class="s1">        (                    # Optional timezone</span>
+<span class="s1">            Z                # Z is for UTC (Zulu time)</span>
+<span class="s1">            |[+\-]\d\d:\d\d  # or offset, e.g. &quot;+08:00&quot; (MUST have colon)</span>
+<span class="s1">        )?</span>
+<span class="s1">    )?</span>
+<span class="s1">    $</span>
+<span class="s1">&#39;&#39;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span><span class="p">)</span>
+
 
 <span class="k">def</span> <span class="nf">_tzaware_isoformat</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Express a datetime object in timezone-aware ISO format.&quot;&quot;&quot;</span>
@@ -188,6 +207,10 @@
 
 
 <span class="k">class</span> <span class="nc">UnauthorizedCredentials</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="k">class</span> <span class="nc">MissingCredentials</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
     <span class="o">...</span>
 
 
@@ -284,8 +307,23 @@
     <span class="k">return</span> <span class="n">version</span>
 
 
-<span class="k">class</span> <span class="nc">MissingCredentials</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
-    <span class="o">...</span>
+<span class="k">class</span> <span class="nc">DbJsonDecoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecoder</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">object_hook</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">object_hook</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">object_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;time&#39;</span> <span class="ow">or</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;_time&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;_at&#39;</span><span class="p">))</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">W3C_ISO_DATETIME</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">DbSession</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
@@ -423,11 +461,31 @@
 
     <span class="k">def</span> <span class="nf">request_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="n">DbJsonDecoder</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">iterate_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">chunk</span>
+            <span class="n">links</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;links&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">next_url</span> <span class="o">=</span> <span class="n">links</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;next&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">next_url</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">next_url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">_iterate_chunk_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterate_requests</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;meta&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">links</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;links&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+                <span class="n">item</span><span class="p">[</span><span class="s1">&#39;_list_meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meta</span>
+                <span class="n">item</span><span class="p">[</span><span class="s1">&#39;_list_links&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">links</span>
+                <span class="k">yield</span> <span class="n">item</span>
 
     <span class="c1">### PAGES ###</span>
 
-<div class="viewcode-block" id="Client.list_pages"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_pages.html#web_monitoring.db.Client.list_pages">[docs]</a>    <span class="k">def</span> <span class="nf">list_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">list_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -468,6 +526,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;db.client.list_pages() has been deprecated. Please use &#39;</span>
+                      <span class="s1">&#39;db.client.get_pages().&#39;</span><span class="p">,</span>
+                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
                   <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
                   <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="n">sort</span> <span class="ow">and</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
@@ -485,31 +547,79 @@
                   <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">}</span>
         <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;/pages&#39;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="n">page</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">page</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-            <span class="n">page</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">page</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s1">&#39;earliest&#39;</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
-                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;earliest&#39;</span><span class="p">][</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
-                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;earliest&#39;</span><span class="p">][</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
-                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;earliest&#39;</span><span class="p">][</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
-                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;earliest&#39;</span><span class="p">][</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;earliest&#39;</span><span class="p">][</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
-                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;earliest&#39;</span><span class="p">][</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s1">&#39;latest&#39;</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
-                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
-                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
-                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
-                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-                <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span>
-                    <span class="n">page</span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">][</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s1">&#39;versions&#39;</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">page</span><span class="p">[</span><span class="s1">&#39;versions&#39;</span><span class="p">]:</span>
-                    <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-                    <span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-                    <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Client.get_pages"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_pages.html#web_monitoring.db.Client.get_pages">[docs]</a>    <span class="k">def</span> <span class="nf">get_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maintainers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">include_versions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">include_latest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get an iterable of all pages, optionally filtered by search criteria.</span>
+
+<span class="sd">        Any metadata about each paginated chunk of results is available on the</span>
+<span class="sd">        &quot;_list_meta&quot; field of each page, e.g:</span>
+
+<span class="sd">        &gt;&gt;&gt; pages = client.get_pages(include_total=True)</span>
+<span class="sd">        &gt;&gt;&gt; next(pages)[&#39;_list_meta&#39;]</span>
+<span class="sd">        {&#39;total_results&#39;: 123456}</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        chunk : integer, optional</span>
+<span class="sd">            Pagination chunk to start iterating from. If unset, starts at the</span>
+<span class="sd">            beginning of the result set. (Under the hood, results are retrieved</span>
+<span class="sd">            in &quot;chunks&quot;; using this to skip partway into the results is more</span>
+<span class="sd">            optimized that skipping over the first few items in the iterable.)</span>
+<span class="sd">        chunk_size : integer, optional</span>
+<span class="sd">            Number of items per chunk. (Under the hood, results are retrieved</span>
+<span class="sd">            in &quot;chunks&quot;; this specifies how big those chunks are.)</span>
+<span class="sd">        sort : list of string, optional</span>
+<span class="sd">            Fields to sort by in `{field}:{order}` format, e.g. `title:asc`.</span>
+<span class="sd">        tags : list of string, optional</span>
+<span class="sd">        maintainers : list of string, optional</span>
+<span class="sd">        url : string, optional</span>
+<span class="sd">        title : string, optional</span>
+<span class="sd">        include_versions : boolean, optional</span>
+<span class="sd">        include_earliest : boolean, optional</span>
+<span class="sd">        include_latest : boolean, optional</span>
+<span class="sd">        source_type : string, optional</span>
+<span class="sd">            Only include pages that have versions from a given source, e.g.</span>
+<span class="sd">            &#39;versionista&#39; or &#39;internet_archive&#39;.</span>
+<span class="sd">        hash : string, optional</span>
+<span class="sd">            Only include pages that have versions whose response body has a</span>
+<span class="sd">            given SHA-256 hash.</span>
+<span class="sd">        start_date : datetime, optional</span>
+<span class="sd">        end_date : datetime, optional</span>
+<span class="sd">        active : boolean, optional</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `meta.total_results` field in the response.</span>
+<span class="sd">            If not set, `links.last` will usually be empty unless you are on</span>
+<span class="sd">            the last chunk. Setting this option runs a pretty expensive query,</span>
+<span class="sd">            so use it sparingly. (Default: False)</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        page : dict</span>
+<span class="sd">            Data about a page.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
+                  <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
+                  <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="n">sort</span> <span class="ow">and</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="s1">&#39;tags[]&#39;</span><span class="p">:</span> <span class="n">tags</span><span class="p">,</span>
+                  <span class="s1">&#39;maintainers[]&#39;</span><span class="p">:</span> <span class="n">maintainers</span><span class="p">,</span>
+                  <span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                  <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+                  <span class="s1">&#39;include_versions&#39;</span><span class="p">:</span> <span class="n">include_versions</span><span class="p">,</span>
+                  <span class="s1">&#39;include_earliest&#39;</span><span class="p">:</span> <span class="n">include_earliest</span><span class="p">,</span>
+                  <span class="s1">&#39;include_latest&#39;</span><span class="p">:</span> <span class="n">include_latest</span><span class="p">,</span>
+                  <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
+                  <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
+                  <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
+                  <span class="s1">&#39;active&#39;</span><span class="p">:</span> <span class="n">active</span><span class="p">,</span>
+                  <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iterate_chunk_items</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="s1">&#39;/pages&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Client.get_page"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_page.html#web_monitoring.db.Client.get_page">[docs]</a>    <span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -525,20 +635,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;versions&#39;</span><span class="p">]:</span>
-            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 
     <span class="c1">### VERSIONS ###</span>
 
-<div class="viewcode-block" id="Client.list_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_versions.html#web_monitoring.db.Client.list_versions">[docs]</a>    <span class="k">def</span> <span class="nf">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">different</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -590,6 +692,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;db.client.list_versions() has been deprecated. Please &#39;</span>
+                      <span class="s1">&#39;use db.client.get_versions().&#39;</span><span class="p">,</span>
+                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
                   <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
                   <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="n">sort</span> <span class="ow">and</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
@@ -608,12 +714,90 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/versions&#39;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
-            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-            <span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Client.get_versions"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_versions.html#web_monitoring.db.Client.get_versions">[docs]</a>    <span class="k">def</span> <span class="nf">get_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">sort</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">source_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">hash</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">source_metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">different</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">include_change_from_previous</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">include_change_from_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate over a set of versions, optionally filtered by search criteria.</span>
+
+<span class="sd">        Any metadata about each paginated chunk of results is available on the</span>
+<span class="sd">        &quot;_list_meta&quot; field of each version, e.g:</span>
+
+<span class="sd">        &gt;&gt;&gt; pages = client.get_versions(include_total=True)</span>
+<span class="sd">        &gt;&gt;&gt; next(pages)[&#39;_list_meta&#39;]</span>
+<span class="sd">        {&#39;total_results&#39;: 123456}</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string, optional</span>
+<span class="sd">            Restricts serach to Versions of a specific Page</span>
+<span class="sd">        chunk : integer, optional</span>
+<span class="sd">            Pagination chunk to start iterating from. If unset, starts at the</span>
+<span class="sd">            beginning of the result set. (Under the hood, results are retrieved</span>
+<span class="sd">            in &quot;chunks&quot;; using this to skip partway into the results is more</span>
+<span class="sd">            optimized that skipping over the first few items in the iterable.)</span>
+<span class="sd">        chunk_size : integer, optional</span>
+<span class="sd">            Number of items per chunk. (Under the hood, results are retrieved</span>
+<span class="sd">            in &quot;chunks&quot;; this specifies how big those chunks are.)</span>
+<span class="sd">        sort : list of string, optional</span>
+<span class="sd">            Fields to sort by in `{field}:{order}` format,</span>
+<span class="sd">            e.g. `capture_time:asc`</span>
+<span class="sd">        start_date : datetime, optional</span>
+<span class="sd">        end_date : datetime, optional</span>
+<span class="sd">        source_type : string, optional</span>
+<span class="sd">            Such as &#39;versionista&#39; or &#39;internetarchive&#39;</span>
+<span class="sd">        hash : string, optional</span>
+<span class="sd">            SHA-256 hash of Version content</span>
+<span class="sd">        source_metadata : dict, optional</span>
+<span class="sd">            Examples:</span>
+
+<span class="sd">            * ``{&#39;version_id&#39;: 12345678}``</span>
+<span class="sd">            * ``{&#39;account&#39;: &#39;versionista1&#39;, &#39;has_content&#39;: True}``</span>
+<span class="sd">        different : boolean, optional</span>
+<span class="sd">            If False, include versions that aren&#39;t actually different from the</span>
+<span class="sd">            previous version of the same page in the response.</span>
+<span class="sd">        include_change_from_previous : boolean, optional</span>
+<span class="sd">            If True, include a `change_from_previous` field in each version</span>
+<span class="sd">            that represents a change object between it and the previous version</span>
+<span class="sd">            of the same page.</span>
+<span class="sd">        include_change_from_earliest : boolean, optional</span>
+<span class="sd">            If True, include a `change_from_earliest` field in each version</span>
+<span class="sd">            that represents a change object between it and the earliest version</span>
+<span class="sd">            of the same page.</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `meta.total_results` field in the response.</span>
+<span class="sd">            If not set, `links.last` will usually be empty unless you are on</span>
+<span class="sd">            the last chunk. Setting this option runs a pretty expensive query,</span>
+<span class="sd">            so use it sparingly. (Default: False)</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        version : dict</span>
+<span class="sd">            Data about each found version.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="n">chunk</span><span class="p">,</span>
+                  <span class="s1">&#39;chunk_size&#39;</span><span class="p">:</span> <span class="n">chunk_size</span><span class="p">,</span>
+                  <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="n">sort</span> <span class="ow">and</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sort</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="s1">&#39;capture_time&#39;</span><span class="p">:</span> <span class="n">_time_range_string</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">),</span>
+                  <span class="s1">&#39;source_type&#39;</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
+                  <span class="s1">&#39;hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="p">,</span>
+                  <span class="s1">&#39;different&#39;</span><span class="p">:</span> <span class="n">different</span><span class="p">,</span>
+                  <span class="s1">&#39;include_change_from_previous&#39;</span><span class="p">:</span> <span class="n">include_change_from_previous</span><span class="p">,</span>
+                  <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">,</span>
+                  <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">source_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">source_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">params</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;source_metadata[</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">]&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">if</span> <span class="n">page_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;/versions&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/versions&#39;</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iterate_chunk_items</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Client.get_version"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_version.html#web_monitoring.db.Client.get_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version_id</span><span class="p">,</span> <span class="n">include_change_from_previous</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">include_change_from_earliest</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -640,10 +824,6 @@
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;include_change_from_previous&#39;</span><span class="p">:</span> <span class="n">include_change_from_previous</span><span class="p">,</span>
                   <span class="s1">&#39;include_change_from_earliest&#39;</span><span class="p">:</span> <span class="n">include_change_from_earliest</span><span class="p">}</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;capture_time&#39;</span><span class="p">])</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 <div class="viewcode-block" id="Client.add_version"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_version.html#web_monitoring.db.Client.add_version">[docs]</a>    <span class="k">def</span> <span class="nf">add_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">capture_time</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span>
@@ -807,7 +987,7 @@
 
     <span class="c1">### CHANGES AND ANNOTATIONS ###</span>
 
-<div class="viewcode-block" id="Client.list_changes"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_changes.html#web_monitoring.db.Client.list_changes">[docs]</a>    <span class="k">def</span> <span class="nf">list_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">list_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List Changes between two Versions on a Page.</span>
 
@@ -824,14 +1004,35 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;db.client.list_changes() has been deprecated. Please &#39;</span>
+                      <span class="s1">&#39;use db.client.get_changes().&#39;</span><span class="p">,</span>
+                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+
         <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/changes/&#39;</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span>
             <span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">})</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
-            <span class="n">change</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">change</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-            <span class="n">change</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">change</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Client.get_changes"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_changes.html#web_monitoring.db.Client.get_changes">[docs]</a>    <span class="k">def</span> <span class="nf">get_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate through a set of changes between any two versions of a page.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `_list_meta.total_results` field in each</span>
+<span class="sd">            change. (Default: False)</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        change : dict</span>
+<span class="sd">            Information about the change between versions of the page.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/changes/&#39;</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iterate_chunk_items</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Client.get_change"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_change.html#web_monitoring.db.Client.get_change">[docs]</a>    <span class="k">def</span> <span class="nf">get_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -852,16 +1053,9 @@
         <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/changes/&#39;</span>
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">from_version_id</span><span class="si">}</span><span class="s1">..</span><span class="si">{</span><span class="n">to_version_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="c1"># For changes which were created just-in-time to fulfill this API request,</span>
-        <span class="c1"># created/updated_at will be None, and that&#39;s OK.</span>
-        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]:</span>
-            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="Client.list_annotations"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.list_annotations.html#web_monitoring.db.Client.list_annotations">[docs]</a>    <span class="k">def</span> <span class="nf">list_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">list_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
                          <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List Annotations for a Change between two Versions.</span>
@@ -883,15 +1077,42 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;db.client.list_annotations() has been deprecated. &#39;</span>
+                      <span class="s1">&#39;Please use db.client.get_annotations().&#39;</span><span class="p">,</span>
+                      <span class="ne">DeprecationWarning</span><span class="p">)</span>
+
         <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/changes/&#39;</span>
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">from_version_id</span><span class="si">}</span><span class="s1">..</span><span class="si">{</span><span class="n">to_version_id</span><span class="si">}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span>
             <span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">})</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
-            <span class="n">a</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-            <span class="n">a</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Client.get_annotations"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.get_annotations.html#web_monitoring.db.Client.get_annotations">[docs]</a>    <span class="k">def</span> <span class="nf">get_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span> <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                        <span class="n">include_total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate through Annotations for a Change between two Versions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        page_id : string</span>
+<span class="sd">        to_version_id : string</span>
+<span class="sd">        from_version_id : string, optional</span>
+<span class="sd">            If from_version_id is not given, it will be treated as version</span>
+<span class="sd">            immediately prior to ``to_version``.</span>
+<span class="sd">        include_total : boolean, optional</span>
+<span class="sd">            Whether to include a `_list_meta.total_results` field in each</span>
+<span class="sd">            annotation. (Default: False)</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        annotation : dict</span>
+<span class="sd">            Data about the annotion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;/pages/</span><span class="si">{</span><span class="n">page_id</span><span class="si">}</span><span class="s1">/changes/&#39;</span>
+               <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">from_version_id</span><span class="si">}</span><span class="s1">..</span><span class="si">{</span><span class="n">to_version_id</span><span class="si">}</span><span class="s1">/annotations&#39;</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iterate_chunk_items</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;include_total&#39;</span><span class="p">:</span> <span class="n">include_total</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Client.add_annotation"><a class="viewcode-back" href="../../generated/web_monitoring.db.Client.add_annotation.html#web_monitoring.db.Client.add_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">add_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">annotation</span><span class="p">,</span> <span class="n">page_id</span><span class="p">,</span> <span class="n">to_version_id</span><span class="p">,</span>
                        <span class="n">from_version_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
@@ -937,10 +1158,6 @@
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">from_version_id</span><span class="si">}</span><span class="s1">..</span><span class="si">{</span><span class="n">to_version_id</span><span class="si">}</span><span class="s1">/annotations/&#39;</span>
                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">annotation_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_json</span><span class="p">(</span><span class="n">GET</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="c1"># In place, replace datetime strings with datetime objects.</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;created_at&#39;</span><span class="p">])</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_timestamp</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
     <span class="c1">### USERS ###</span>
@@ -994,22 +1211,18 @@
 <span class="sd">        -------</span>
 <span class="sd">        response : dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_versions</span><span class="p">(</span>
+        <span class="n">versions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_versions</span><span class="p">(</span>
             <span class="n">source_type</span><span class="o">=</span><span class="s1">&#39;versionista&#39;</span><span class="p">,</span>
-            <span class="n">source_metadata</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;version_id&#39;</span><span class="p">:</span> <span class="n">versionista_id</span><span class="p">})</span>
-        <span class="c1"># There should not be more than one match.</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No match found for versionista_id </span><span class="si">{}</span><span class="s2">&quot;</span>
-                             <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">versionista_id</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Multiple Versions match the versionista_id </span><span class="si">{}</span><span class="s2">.&quot;</span>
-                            <span class="s2">&quot;Their web-monitoring-db version_ids are: </span><span class="si">{}</span><span class="s2">&quot;</span>
-                            <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">versionista_id</span><span class="p">,</span>
-                                      <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;uuid&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]))</span>
+            <span class="n">source_metadata</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;version_id&#39;</span><span class="p">:</span> <span class="n">versionista_id</span><span class="p">}))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">versions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No match found for versionista_id </span><span class="si">{</span><span class="n">versionista_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">versions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;uuid&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">versions</span><span class="p">]</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Multiple Versions match the versionista_id </span><span class="si">{</span><span class="n">versionista_id</span><span class="si">}</span><span class="s1">. &#39;</span>
+                            <span class="sa">f</span><span class="s1">&#39;Their web-monitoring-db IDs are: </span><span class="si">{</span><span class="n">matches</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="c1"># Make result look like the result of `get_version` rather than the</span>
-        <span class="c1"># result of `list_versions`.</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="c1"># result of `get_versions`.</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">versions</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
 
     <span class="k">def</span> <span class="nf">validate_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

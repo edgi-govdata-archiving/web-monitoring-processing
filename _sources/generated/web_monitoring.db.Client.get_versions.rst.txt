@@ -1,6 +1,6 @@
-﻿web\_monitoring.db.Client.list\_changes
+﻿web\_monitoring.db.Client.get\_versions
 =======================================
 
 .. currentmodule:: web_monitoring.db
 
-.. automethod:: Client.list_changes
+.. automethod:: Client.get_versions

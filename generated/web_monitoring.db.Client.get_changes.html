@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>web_monitoring.db.Client.list_changes &mdash; web-monitoring-processing 0+untagged.49.ga5e0029 documentation</title>
+  <title>web_monitoring.db.Client.get_changes &mdash; web-monitoring-processing 0+untagged.50.geb62913 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                0+untagged.49.ga5e0029
+                0+untagged.50.geb62913
               </div>
             
           
@@ -94,15 +94,15 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../db_api.html#api-documentation">API Documentation</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.html">web_monitoring.db.Client</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.from_env.html">web_monitoring.db.Client.from_env</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_pages.html">web_monitoring.db.Client.list_pages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_pages.html">web_monitoring.db.Client.get_pages</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_page.html">web_monitoring.db.Client.get_page</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_versions.html">web_monitoring.db.Client.list_versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_versions.html">web_monitoring.db.Client.get_versions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_version.html">web_monitoring.db.Client.get_version</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_version.html">web_monitoring.db.Client.add_version</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_versions.html">web_monitoring.db.Client.add_versions</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">web_monitoring.db.Client.list_changes</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">web_monitoring.db.Client.get_changes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_change.html">web_monitoring.db.Client.get_change</a></li>
-<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.list_annotations.html">web_monitoring.db.Client.list_annotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_annotations.html">web_monitoring.db.Client.get_annotations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.get_annotation.html">web_monitoring.db.Client.get_annotation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="web_monitoring.db.Client.add_annotation.html">web_monitoring.db.Client.add_annotation</a></li>
 </ul>
@@ -158,13 +158,13 @@
         
           <li><a href="../db_api.html">Python API to web-monitoring-db</a> &raquo;</li>
         
-      <li>web_monitoring.db.Client.list_changes</li>
+      <li>web_monitoring.db.Client.get_changes</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../_sources/generated/web_monitoring.db.Client.list_changes.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/generated/web_monitoring.db.Client.get_changes.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -177,26 +177,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="web-monitoring-db-client-list-changes">
-<h1>web_monitoring.db.Client.list_changes<a class="headerlink" href="#web-monitoring-db-client-list-changes" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="web-monitoring-db-client-get-changes">
+<h1>web_monitoring.db.Client.get_changes<a class="headerlink" href="#web-monitoring-db-client-get-changes" title="Permalink to this headline">¶</a></h1>
 <dl class="py method">
-<dt id="web_monitoring.db.Client.list_changes">
-<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">list_changes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">page_id</span></em>, <em class="sig-param"><span class="n">include_total</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.list_changes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.list_changes" title="Permalink to this definition">¶</a></dt>
-<dd><p>List Changes between two Versions on a Page.</p>
+<dt id="web_monitoring.db.Client.get_changes">
+<code class="sig-prename descclassname">Client.</code><code class="sig-name descname">get_changes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">page_id</span></em>, <em class="sig-param"><span class="n">include_total</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/web_monitoring/db.html#Client.get_changes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#web_monitoring.db.Client.get_changes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate through a set of changes between any two versions of a page.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>page_id</strong><span class="classifier">string</span></dt><dd></dd>
-<dt><strong>include_total</strong><span class="classifier">boolean, optional</span></dt><dd><p>Whether to include a <cite>meta.total_results</cite> field in the response.
-If not set, <cite>links.last</cite> will usually be empty unless you are on
-the last chunk. Setting this option runs a pretty expensive query,
-so use it sparingly. (Default: False)</p>
+<dt><strong>include_total</strong><span class="classifier">boolean, optional</span></dt><dd><p>Whether to include a <cite>_list_meta.total_results</cite> field in each
+change. (Default: False)</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Yields</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>response</strong><span class="classifier">dict</span></dt><dd></dd>
+<dt><strong>change</strong><span class="classifier">dict</span></dt><dd><p>Information about the change between versions of the page.</p>
+</dd>
 </dl>
 </dd>
 </dl>

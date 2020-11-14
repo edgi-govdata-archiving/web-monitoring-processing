@@ -19,13 +19,18 @@
       ~Client.add_versions
       ~Client.from_env
       ~Client.get_annotation
+      ~Client.get_annotations
       ~Client.get_change
+      ~Client.get_changes
       ~Client.get_import_status
       ~Client.get_page
+      ~Client.get_pages
       ~Client.get_user_session
       ~Client.get_version
       ~Client.get_version_by_versionista_id
       ~Client.get_version_content
+      ~Client.get_versions
+      ~Client.iterate_requests
       ~Client.list_annotations
       ~Client.list_changes
       ~Client.list_pages
