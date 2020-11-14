@@ -13,7 +13,7 @@ interactions:
       accept:
       - application/json
     method: GET
-    uri: https://api-staging.monitoring.envirodatagov.org/api/v0/pages?chunk=1&chunk_size=1000&sort=created_at%3Aasc&url=%2Aepa.gov%2Fhfstudy%2Fepa%2A&active=True
+    uri: https://api-staging.monitoring.envirodatagov.org/api/v0/pages?chunk_size=1000&sort=created_at%3Aasc&url=%2Aepa.gov%2Fhfstudy%2Fepa%2A&active=True
   response:
     body:
       string: "{\"links\":{\"first\":\"https://api-staging.monitoring.envirodatagov.org/api/v0/pages?active=True\\u0026chunk=1\\u0026chunk_size=1000\\u0026sort=created_at%3Aasc\\u0026url=%2Aepa.gov%2Fhfstudy%2Fepa%2A\",\"last\":\"https://api-staging.monitoring.envirodatagov.org/api/v0/pages?chunk=1\\u0026chunk_size=1000\\u0026sort=created_at%3Aasc\\u0026url=%2Aepa.gov%2Fhfstudy%2Fepa%2A\\u0026active=True\",\"prev\":null,\"next\":null},\"meta\":{},\"data\":[{\"uuid\":\"0b795ece-683b-4bde-ae8b-e45a427708ec\",\"url\":\"https://www.epa.gov/hfstudy/epa-published-research-related-hydraulic-fracturing-study\",\"title\":\"EPA
