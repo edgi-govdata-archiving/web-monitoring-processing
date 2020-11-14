@@ -54,6 +54,7 @@ class WebMonitoringDbError(Exception):
 class UnauthorizedCredentials(Exception):
     ...
 
+
 class MissingCredentials(RuntimeError):
     ...
 
