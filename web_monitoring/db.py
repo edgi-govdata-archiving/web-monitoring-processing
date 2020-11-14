@@ -129,30 +129,25 @@ def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
     return version
 
 
-def _validate_timeout(timeout, default=None):
-    if timeout is None:
-        return default
-    elif timeout < 0:
-        raise ValueError(f'Timeout must be non-negative. (Got: "{timeout}")')
-    elif timeout == 0:
-        return None
-    else:
-        return timeout
-
-
 class MissingCredentials(RuntimeError):
     ...
 
 
 class DbSession(requests.Session):
     retry_statuses = frozenset((408, 413, 429, 502, 503, 504, 599))
+    timeout = DEFAULT_TIMEOUT
 
-    def __init__(self, *args, retries=None, **kwargs):
+    def __init__(self, *args, retries=None, timeout=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.timeout = self._validate_timeout(timeout)
         retry = self._retry_configuration(retries)
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
         self.mount('http://', adapter)
         self.mount('https://', adapter)
+
+    def request(self, *args, timeout=None, **kwargs):
+        timeout = self._validate_timeout(timeout)
+        return super().request(*args, timeout=timeout, **kwargs)
 
     def _retry_configuration(self, retries):
         if isinstance(retries, Retry):
@@ -174,6 +169,16 @@ class DbSession(requests.Session):
                      connect=retry_count,
                      backoff_factor=backoff,
                      status_forcelist=self.retry_statuses)
+
+    def _validate_timeout(self, timeout):
+        if timeout is None:
+            return self.timeout
+        elif timeout < 0:
+            raise ValueError(f'Timeout must be non-negative. (Got: "{timeout}")')
+        elif timeout == 0:
+            return None
+        else:
+            return timeout
 
 
 class Client:
@@ -208,10 +213,9 @@ class Client:
                  retries=None):
         self._api_url = f'{url}/api/v0'
         self._base_url = url
-        self._session = DbSession(retries=retries)
+        self._session = DbSession(retries=retries, timeout=timeout)
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
-        self._timeout = _validate_timeout(timeout, DEFAULT_TIMEOUT)
 
     @classmethod
     def from_env(cls, **kwargs):
@@ -246,8 +250,6 @@ Alternatively, you can instaniate Client(user, password) directly.""")
     def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
             url = f'{self._api_url}{url}'
-
-        timeout = _validate_timeout(timeout, default=self._timeout)
 
         if data is not None:
             headers = kwargs.setdefault('headers', {})

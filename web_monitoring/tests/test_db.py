@@ -289,7 +289,7 @@ def test_get_user_session():
 
 @db_vcr.use_cassette()
 def test_validate_credentials():
-    cli = Client(**AUTH) 
+    cli = Client(**AUTH)
     cli.validate_credentials()
 
 
@@ -344,25 +344,28 @@ def test_retries_object():
     assert fancy_retries == adapter.max_retries
 
 
-@patch('web_monitoring.db.DbSession')
-def test_client_with_default_timeout(mock_session):
+@patch('web_monitoring.db.requests.Session.request')
+def test_client_with_default_timeout(mock_request):
     cli = Client(**AUTH)
     cli.get_user_session()
-    mock_session.return_value.request.assert_called_with(
-        method='GET', url=f'{AUTH["url"]}/users/session', timeout=DEFAULT_TIMEOUT)
+    mock_request.assert_called_with(method='GET',
+                                    url=f'{AUTH["url"]}/users/session',
+                                    timeout=DEFAULT_TIMEOUT)
 
 
-@patch('web_monitoring.db.DbSession')
-def test_client_with_custom_timeout(mock_session):
+@patch('web_monitoring.db.requests.Session.request')
+def test_client_with_custom_timeout(mock_request):
     cli = Client(**AUTH, timeout=7.5)
     cli.get_user_session()
-    mock_session.return_value.request.assert_called_with(
-        method='GET', url=f'{AUTH["url"]}/users/session', timeout=7.5)
+    mock_request.assert_called_with(method='GET',
+                                    url=f'{AUTH["url"]}/users/session',
+                                    timeout=7.5)
 
 
-@patch('web_monitoring.db.DbSession')
-def test_client_with_no_timeout(mock_session):
+@patch('web_monitoring.db.requests.Session.request')
+def test_client_with_no_timeout(mock_request):
     cli = Client(**AUTH, timeout=0)
     cli.get_user_session()
-    mock_session.return_value.request.assert_called_with(
-        method='GET', url=f'{AUTH["url"]}/users/session', timeout=None)
+    mock_request.assert_called_with(method='GET',
+                                    url=f'{AUTH["url"]}/users/session',
+                                    timeout=None)
