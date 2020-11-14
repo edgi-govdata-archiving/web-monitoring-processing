@@ -602,9 +602,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         _filter = version_filter
         def precheck_filter(cdx_record):
             key = memento_key(cdx_record.timestamp, cdx_record.url)
-            logger.info(f'Prechecking {key}')
             if memento_key(cdx_record.timestamp, cdx_record.url) in known_mementos:
-                logger.info(f'  SKIPPING {key}')
                 return False
             return _filter(cdx_record)
 
