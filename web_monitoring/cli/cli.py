@@ -280,7 +280,7 @@ class WaybackRecordsWorker(threading.Thread):
             except StopIteration:
                 break
 
-            self.handle_record(record, retry_connection_failures=True)
+            self.handle_record(record)
 
         # Only close the client if it's using an adapter we created, instead of
         # one some other piece of code owns.
@@ -288,7 +288,7 @@ class WaybackRecordsWorker(threading.Thread):
             self.wayback.close()
         return self.summary
 
-    def handle_record(self, record, retry_connection_failures=False):
+    def handle_record(self, record):
         """
         Handle a single CDX record.
         """
@@ -298,14 +298,19 @@ class WaybackRecordsWorker(threading.Thread):
             return
 
         try:
-            version = self.process_record(record, retry_connection_failures=True)
+            version = self.process_record(record)
             self.results_queue.put(version)
             self.summary['success'] += 1
         except MementoPlaybackError as error:
             self.summary['playback'] += 1
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
-            logger.info(f'  {error}')
+            # Log this at debug instead of info level: we know now that memento
+            # playback failures are normal and common (by design, in fact).
+            # This is especially true when there are many mementos in a short
+            # timeframe, which is not unusual for our highly monitored, very
+            # public URLs.
+            logger.debug(f'  {error}')
         except requests.exceptions.HTTPError as error:
             if error.response.status_code == 404:
                 logger.info(f'  Missing memento: {record.raw_url}')
@@ -338,7 +343,7 @@ class WaybackRecordsWorker(threading.Thread):
             else:
                 self.summary['unknown'] += 1
 
-    def process_record(self, record, retry_connection_failures=False):
+    def process_record(self, record):
         """
         Load the actual Wayback memento for a CDX record and transform it to
         a Web Monitoring DB import record.
@@ -546,6 +551,7 @@ class WaybackRecordsWorker(threading.Thread):
                                         results_queue,
                                         *args,
                                         failure_queue=retry_queue,
+                                        session_options=try_setting,
                                         **kwargs))
 
         summary.update(cls.summarize(workers, summary))
@@ -590,8 +596,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
                    db_client=None, dry_run=False):
-    if not all(_is_valid(url) for url in urls):
-        raise ValueError("Invalid URL provided")
+    for url in urls:
+        if not _is_valid(url):
+            raise ValueError(f'Invalid URL: "{url}"')
 
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
@@ -623,8 +630,10 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             tags,
             stop_event,
             unplaybackable=unplaybackable,
+            # Use the default retries on the first round, then no retries with
+            # *really* long timeouts on the second, final round.
             tries=(None,
-                   dict(retries=3, backoff=4, timeout=(30.5, 2)))))
+                   dict(retries=0, backoff=1, timeout=(120, 60)))))
         memento_thread.start()
 
         uploadable_versions = versions_queue
