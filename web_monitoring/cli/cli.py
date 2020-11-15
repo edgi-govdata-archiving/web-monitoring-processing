@@ -537,10 +537,15 @@ class WaybackRecordsWorker(threading.Thread):
         retry_queue = None
         workers = []
         for index, try_setting in enumerate(tries):
-            if retry_queue and not retry_queue.empty():
-                print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-                retry_queue.end()
-                records = retry_queue
+            if retry_queue:
+                if retry_queue.empty():
+                    # We can only get here if we are on retry run, but there's
+                    # nothing to retry, so we may as well stop.
+                    break
+                else:
+                    print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
+                    retry_queue.end()
+                    records = retry_queue
 
             if index == total_tries - 1:
                 retry_queue = None
