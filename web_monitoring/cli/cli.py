@@ -305,11 +305,12 @@ class WaybackRecordsWorker(threading.Thread):
             self.summary['playback'] += 1
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
-            # Log this at debug instead of info level: we know now that memento
-            # playback failures are normal and common (by design, in fact).
-            # This is especially true when there are many mementos in a short
-            # timeframe, which is not unusual for our highly monitored, very
-            # public URLs.
+            # Playback errors are not unusual or exceptional for us, so log
+            # only at debug level. The Wayback Machine marks some mementos as
+            # unplaybackable when there are many of them in a short timeframe
+            # in order to increase cache efficiency (the assumption they make
+            # here is that the mementos are likely the same). Since we are
+            # looking at highly monitored, public URLs, we hit this case a lot.
             logger.debug(f'  {error}')
         except requests.exceptions.HTTPError as error:
             if error.response.status_code == 404:
