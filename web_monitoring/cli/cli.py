@@ -38,9 +38,10 @@ and results between them.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import dateutil.parser
 from docopt import docopt
+from itertools import islice
 import json
 import logging
 import os
@@ -246,7 +247,7 @@ class WaybackRecordsWorker(threading.Thread):
 
     def __init__(self, records, results_queue, maintainers, tags, cancel,
                  failure_queue=None, session_options=None, adapter=None,
-                 unplaybackable=None):
+                 unplaybackable=None, version_cache=None):
         super().__init__()
         self.summary = self.create_summary()
         self.results_queue = results_queue
@@ -256,6 +257,7 @@ class WaybackRecordsWorker(threading.Thread):
         self.maintainers = maintainers
         self.tags = tags
         self.unplaybackable = unplaybackable
+        self.version_cache = version_cache or set()
         self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
                                                   timeout=(30.5, 2))
@@ -292,6 +294,10 @@ class WaybackRecordsWorker(threading.Thread):
         """
         Handle a single CDX record.
         """
+        # Check whether we already have this memento and bail out.
+        if _version_cache_key(record.timestamp, record.url) in self.version_cache:
+            self.summary['already_known'] += 1
+            return
         # Check for whether we already know this can't be played and bail out.
         if self.unplaybackable is not None and record.raw_url in self.unplaybackable:
             self.summary['playback'] += 1
@@ -426,8 +432,8 @@ class WaybackRecordsWorker(threading.Thread):
         Create a dictionary that summarizes the results of processing all the
         CDX records on a queue.
         """
-        return {'total': 0, 'success': 0, 'playback': 0, 'missing': 0,
-                'unknown': 0}
+        return {'total': 0, 'success': 0, 'already_known': 0, 'playback': 0,
+                'missing': 0, 'unknown': 0}
 
     @classmethod
     def summarize(cls, workers, initial=None):
@@ -564,6 +570,27 @@ class WaybackRecordsWorker(threading.Thread):
         results_queue.end()
 
 
+def _version_cache_key(time, url):
+    utc_time = time.astimezone(timezone.utc)
+    return f'{utc_time.strftime("%Y%m%d%H%M%S")}|{url}'
+
+
+def _load_known_versions(client, start_date, end_date):
+    print('Pre-checking known versions...', flush=True)
+
+    versions = client.get_versions(start_date=start_date,
+                                   end_date=end_date,
+                                   different=False,  # Get *every* record
+                                   sort=['capture_time:desc'],
+                                   chunk_size=1000)
+    # Limit to latest 500,000 results for sanity/time/memory
+    limited_versions = islice(versions, 500_000)
+    cache = set(_version_cache_key(v["capture_time"], v["capture_url"])
+                for v in limited_versions)
+    logger.debug(f'  Found {len(cache)} known versions')
+    return cache
+
+
 def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                       tags=None, skip_unchanged='resolved-response',
                       url_pattern=None, worker_count=0,
@@ -581,32 +608,11 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
     logger.debug('\n  '.join(urls))
 
     # TODO: should probably move most of this to a separate function
+    version_cache = None
     if precheck_versions:
-        # TODO: truncate the timeframe if it's too large, or load a max number
-        # of versions, e.g. 200,000 or something.
-        print('Pre-checking known versions...')
-
-        def memento_key(time, url):
-            return f'{time.strftime("%Y%m%d%H%M%S")}|{url}'
-
-        versions = client.get_versions(start_date=from_date,
-                                       end_date=to_date,
-                                       different=False,
-                                       sort=['capture_time:asc'],
-                                       chunk_size=1000)
-        known_mementos = set(memento_key(v["capture_time"], v["capture_url"])
-                             for v in versions)
-        logger.debug(f'  Found {len(known_mementos)} known versions')
-
-        # wrap version_filter in this filter
-        _filter = version_filter
-        def precheck_filter(cdx_record):
-            key = memento_key(cdx_record.timestamp, cdx_record.url)
-            if memento_key(cdx_record.timestamp, cdx_record.url) in known_mementos:
-                return False
-            return _filter(cdx_record)
-
-        version_filter = precheck_filter
+        version_cache = _load_known_versions(client,
+                                             start_date=from_date,
+                                             end_date=to_date)
 
     return import_ia_urls(
         urls=urls,
@@ -620,7 +626,8 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         create_pages=False,
         unplaybackable_path=unplaybackable_path,
         db_client=client,
-        dry_run=dry_run)
+        dry_run=dry_run,
+        version_cache=version_cache)
 
 
 # TODO: this function probably be split apart so `dry_run` doesn't need to
@@ -630,7 +637,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                    skip_unchanged='resolved-response',
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
-                   db_client=None, dry_run=False):
+                   db_client=None, dry_run=False, version_cache=None):
     for url in urls:
         if not _is_valid(url):
             raise ValueError(f'Invalid URL: "{url}"')
@@ -665,6 +672,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             tags,
             stop_event,
             unplaybackable=unplaybackable,
+            version_cache=version_cache,
             # Use the default retries on the first round, then no retries with
             # *really* long timeouts on the second, final round.
             tries=(None,
@@ -684,10 +692,11 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         memento_thread.join()
 
         print('\nLoaded {total} CDX records:\n'
-              '  {success:6} successes ({success_pct:.2f}%),\n'
-              '  {playback:6} could not be played back ({playback_pct:.2f}%),\n'
-              '  {missing:6} had no actual memento ({missing_pct:.2f}%),\n'
-              '  {unknown:6} unknown errors ({unknown_pct:.2f}%).'.format(
+              '  {success:6} successes ({success_pct:.2f}%)\n'
+              '  {already_known:6} skipped - already in DB ({already_known_pct:.2f}%)\n'
+              '  {playback:6} could not be played back ({playback_pct:.2f}%)\n'
+              '  {missing:6} had no actual memento ({missing_pct:.2f}%)\n'
+              '  {unknown:6} unknown errors ({unknown_pct:.2f}%)'.format(
                 **summary))
 
         uploader.join()
