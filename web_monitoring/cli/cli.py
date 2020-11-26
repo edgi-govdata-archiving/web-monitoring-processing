@@ -607,7 +607,6 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
     logger.info(f'Found {len(urls)} CDX-queryable URLs')
     logger.debug('\n  '.join(urls))
 
-    # TODO: should probably move most of this to a separate function
     version_cache = None
     if precheck_versions:
         version_cache = _load_known_versions(client,
