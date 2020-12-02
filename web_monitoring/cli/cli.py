@@ -39,6 +39,7 @@ and results between them.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from web_monitoring.utils import detect_encoding
 import dateutil.parser
 from docopt import docopt
 from itertools import islice
@@ -387,7 +388,8 @@ class WaybackRecordsWorker(threading.Thread):
 
         title = ''
         if media_type in HTML_MEDIA_TYPES:
-            title = utils.extract_title(memento.content, memento.encoding or 'utf-8')
+            encoding = detect_encoding(memento.content, memento.headers)
+            title = utils.extract_title(memento.content, encoding)
         elif media_type in PDF_MEDIA_TYPES or memento.content.startswith(b'%PDF-'):
             title = utils.extract_pdf_title(memento.content) or title
 

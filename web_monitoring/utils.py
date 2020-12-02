@@ -1,4 +1,6 @@
 import asyncio
+import cchardet
+import codecs
 import hashlib
 import io
 import logging
@@ -18,6 +20,81 @@ import time
 logger = logging.getLogger(__name__)
 
 WHITESPACE_PATTERN = re.compile(r'\s+')
+
+# Matches a <meta> tag in HTML used to specify the character encoding:
+# <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+# <meta charset="utf-8" />
+META_TAG_PATTERN = re.compile(
+    b'<meta[^>]+charset\\s*=\\s*[\'"]?([^>]*?)[ /;\'">]',
+    re.IGNORECASE)
+
+# Matches an XML prolog that specifies character encoding:
+# <?xml version="1.0" encoding="ISO-8859-1"?>
+XML_PROLOG_PATTERN = re.compile(
+    b'<?xml\\s[^>]*encoding=[\'"]([^\'"]+)[\'"].*\\?>',
+    re.IGNORECASE)
+
+
+def detect_encoding(content, headers, default='utf-8'):
+    """
+    Detect string encoding the same way browsers detect it. This will always
+    return an encoding name unless you explicitly set ``default=None``.
+
+    Parameters
+    ----------
+    content : bytes
+    headers : dict
+    default : str or None
+
+    Returns
+    -------
+    str
+        The name of a character encoding that is most likely to correctly
+        decode ``content`` to a valid string.
+    """
+    encoding = None
+
+    # Check for declarations in content.
+    meta_tag_match = META_TAG_PATTERN.search(content, endpos=2048)
+    if meta_tag_match:
+        encoding = meta_tag_match.group(1).decode('ascii', errors='ignore').strip()
+    if not encoding:
+        prolog_match = XML_PROLOG_PATTERN.search(content, endpos=2048)
+        if prolog_match:
+            encoding = prolog_match.group(1).decode('ascii', errors='ignore').strip()
+
+    # Fall back to headers.
+    content_type = headers.get('Content-Type', '').lower()
+    if not encoding:
+        if 'charset=' in content_type:
+            encoding = content_type.split('charset=', 1)[-1].split(';')[0].strip(' "\'')
+
+    # Make an educated guess.
+    if not encoding:
+        # try to identify encoding using cchardet. Use up to 18kb of the
+        # content for detection. Its not necessary to use the full content
+        # as it could be huge. Also, if you use too little, detection is not
+        # accurate.
+        detected = cchardet.detect(content[:18432])
+        if detected:
+            detected_encoding = detected.get('encoding')
+            if detected_encoding:
+                encoding = detected_encoding.lower()
+
+    # Handle common mistakes and errors in encoding names
+    if encoding == 'iso-8559-1':
+        encoding = 'iso-8859-1'
+    # Windows-1252 is so commonly mislabeled, WHATWG recommends assuming it's a
+    # mistake: https://encoding.spec.whatwg.org/#names-and-labels
+    if encoding == 'iso-8859-1' and 'html' in content_type:
+        encoding = 'windows-1252'
+
+    # Check if the selected encoding is known. If not, fall back to default.
+    try:
+        codecs.lookup(encoding)
+    except (LookupError, ValueError, TypeError):
+        encoding = default
+    return encoding
 
 
 def extract_title(content_bytes, encoding='utf-8'):
