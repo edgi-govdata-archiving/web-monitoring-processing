@@ -159,6 +159,19 @@ def test_format_memento_pdf():
         }
 
 
+@ia_vcr.use_cassette()
+def test_html_title_parsing():
+    with WaybackClient() as client:
+        url = 'https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html'
+        cdx_records = client.search(url, from_date='20201123000000',
+                                    to_date='20201124000000')
+        record = next(cdx_records)
+        memento = client.get_memento(record.raw_url, exact_redirects=False)
+        worker = WaybackRecordsWorker(None, None, None, None, None)
+        version = worker.format_memento(memento, record, [], [])
+        assert version['title'] == '旅行後 | CDC'
+
+
 # TODO: this test covers some of the various error cases, but probably not all
 # of them, and has a pretty big cassette file. We should *probably* rewrite it
 # with mock db.client and wayback.WaybackCLient instances that exercise all the

@@ -8,7 +8,13 @@ import os
 from pathlib import Path
 import pytest
 from unittest.mock import patch
-from web_monitoring.db import Client, MissingCredentials, UnauthorizedCredentials, DEFAULT_TIMEOUT
+import urllib3.util
+from web_monitoring.db import (Client,
+                               MissingCredentials,
+                               UnauthorizedCredentials,
+                               DEFAULT_RETRIES,
+                               DEFAULT_BACKOFF,
+                               DEFAULT_TIMEOUT)
 import vcr
 
 
@@ -56,11 +62,16 @@ def test_missing_creds():
         os.environ.update(env)
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_pages():
     cli = Client(**AUTH)
     res = cli.list_pages()
     assert res['data']
+
+    # Test datetimes are parsed correctly.
+    assert isinstance(res['data'][0]['created_at'], datetime)
+    assert isinstance(res['data'][0]['updated_at'], datetime)
 
     # Test chunk query parameters.
     res = cli.list_pages(chunk_size=2)
@@ -85,8 +96,75 @@ def test_list_pages():
     # Test relations
     res = cli.list_pages(include_earliest=True)
     assert all(['earliest' in page for page in res['data']]) is True
+    assert isinstance(res['data'][0]['earliest']['created_at'], datetime)
+    assert isinstance(res['data'][0]['earliest']['updated_at'], datetime)
     res = cli.list_pages(include_latest=True)
     assert all(['latest' in page for page in res['data']]) is True
+    assert isinstance(res['data'][0]['latest']['created_at'], datetime)
+    assert isinstance(res['data'][0]['latest']['updated_at'], datetime)
+
+
+@db_vcr.use_cassette()
+def test_get_pages():
+    cli = Client(**AUTH)
+    pages = list(cli.get_pages())
+    assert len(pages) > 0
+    assert isinstance(pages[0]['created_at'], datetime)
+    assert isinstance(pages[0]['updated_at'], datetime)
+
+
+def test_get_pages_chunk_size(requests_mock):
+    requests_mock.get('/api/v0/pages?chunk_size=3', json={"data": [{'fake': 'page'}]})
+    cli = Client(**AUTH)
+    pages = cli.get_pages(chunk_size=3)
+    next(pages)
+
+
+@db_vcr.use_cassette()
+def test_get_pages_can_filter_url():
+    cli = Client(**AUTH)
+
+    pages = cli.get_pages(url='__nonexistent__')
+    assert len(list(pages)) == 0
+
+    pages = cli.get_pages(url=URL)
+    assert len(list(pages)) > 0
+
+
+@db_vcr.use_cassette()
+def test_get_pages_can_filter_tags():
+    cli = Client(**AUTH)
+
+    pages = cli.get_pages(tags=['__nonexistent__'])
+    assert len(list(pages)) == 0
+
+    pages = cli.get_pages(tags=[SITE])
+    assert len(list(pages)) > 0
+
+
+@db_vcr.use_cassette()
+def test_get_pages_can_filter_maintainers():
+    cli = Client(**AUTH)
+
+    pages = cli.get_pages(maintainers=['__nonexistent__'])
+    assert len(list(pages)) == 0
+
+    pages = cli.get_pages(maintainers=[AGENCY])
+    assert len(list(pages)) > 0
+
+
+@db_vcr.use_cassette()
+def test_get_pages_includes_relations():
+    cli = Client(**AUTH)
+    pages = list(cli.get_pages(include_earliest=True))
+    assert all(['earliest' in page for page in pages]) is True
+    assert isinstance(pages[0]['earliest']['created_at'], datetime)
+    assert isinstance(pages[0]['earliest']['updated_at'], datetime)
+
+    pages = list(cli.get_pages(include_latest=True))
+    assert all(['latest' in page for page in pages]) is True
+    assert isinstance(pages[0]['latest']['created_at'], datetime)
+    assert isinstance(pages[0]['latest']['updated_at'], datetime)
 
 
 @db_vcr.use_cassette()
@@ -96,6 +174,7 @@ def test_get_page():
     assert res['data']['uuid'] == PAGE_ID
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_page_versions():
     cli = Client(**AUTH)
@@ -103,6 +182,14 @@ def test_list_page_versions():
     assert all([v['page_uuid'] == PAGE_ID for v in res['data']])
 
 
+@db_vcr.use_cassette()
+def test_get_versions_for_page():
+    cli = Client(**AUTH)
+    versions = cli.get_versions(page_id=PAGE_ID)
+    assert all(v['page_uuid'] == PAGE_ID for v in versions)
+
+
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_versions():
     cli = Client(**AUTH)
@@ -114,6 +201,27 @@ def test_list_versions():
     assert all(['change_from_previous' in item for item in res['data']]) is True
     res = cli.list_versions(include_change_from_earliest=True)
     assert all(['change_from_earliest' in item for item in res['data']]) is True
+
+
+@db_vcr.use_cassette()
+def test_get_versions():
+    cli = Client(**AUTH)
+    versions = cli.get_versions()
+    first = next(versions)
+    assert 'uuid' in first
+
+
+@db_vcr.use_cassette()
+def test_get_versions_includes_changes():
+    cli = Client(**AUTH)
+
+    versions = cli.get_versions(include_change_from_previous=True)
+    first = next(versions)
+    assert 'change_from_previous' in first
+
+    versions = cli.get_versions(include_change_from_earliest=True)
+    first = next(versions)
+    assert 'change_from_earliest' in first
 
 
 @db_vcr.use_cassette()
@@ -226,11 +334,22 @@ def test_monitor_import_statuses_returns_errors():
                            "not match expected hash (hash_placeholder)"]}
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_changes():
     cli = Client(**AUTH)
     # smoke test
     cli.list_changes(PAGE_ID)
+
+
+@db_vcr.use_cassette()
+def test_get_changes():
+    cli = Client(**AUTH)
+    # smoke test
+    changes = cli.get_changes(PAGE_ID)
+    first = next(changes)
+    assert 'uuid_from' in first
+    assert 'uuid_to' in first
 
 
 @db_vcr.use_cassette()
@@ -241,12 +360,23 @@ def test_get_change():
                    to_version_id=TO_VERSION_ID)
 
 
+# DEPRECATED
 @db_vcr.use_cassette()
 def test_list_annotations():
     cli = Client(**AUTH)
     # smoke test
     cli.list_annotations(page_id=PAGE_ID,
                          to_version_id=TO_VERSION_ID)
+
+
+@db_vcr.use_cassette()
+def test_get_annotations():
+    cli = Client(**AUTH)
+    # smoke test
+    annotations = cli.get_annotations(page_id=PAGE_ID,
+                                      to_version_id=TO_VERSION_ID)
+    first = next(annotations)
+    assert 'uuid' in first
 
 
 @db_vcr.use_cassette()
@@ -282,7 +412,7 @@ def test_get_user_session():
 
 @db_vcr.use_cassette()
 def test_validate_credentials():
-    cli = Client(**AUTH) 
+    cli = Client(**AUTH)
     cli.validate_credentials()
 
 
@@ -295,25 +425,70 @@ def test_validate_credentials_should_raise():
         cli.validate_credentials()
 
 
-@patch('web_monitoring.db.requests.Session')
-def test_client_with_default_timeout(mock_session):
+def test_retry_defaults():
+    """
+    This test is pretty minimal; it only checks that a correctly configured
+    Retry object is making it into requests. The retries themselves happen down
+    in urllib3, which is below the level at which requests-mock functions, and
+    hand-coding a VCR cassette is not a great idea. So it's tough to get a
+    better test.
+    """
+    client = Client(**AUTH)
+    adapter = client._session.adapters['https://']
+    assert DEFAULT_RETRIES == adapter.max_retries.total
+    assert DEFAULT_BACKOFF == adapter.max_retries.backoff_factor
+
+
+def test_retries_tuple():
+    """
+    This test is pretty minimal; it only checks that a correctly configured
+    Retry object is making it into requests. The retries themselves happen down
+    in urllib3, which is below the level at which requests-mock functions, and
+    hand-coding a VCR cassette is not a great idea. So it's tough to get a
+    better test.
+    """
+    hard_working_client = Client(**AUTH, retries=(8, 5))
+    adapter = hard_working_client._session.adapters['https://']
+    assert 8 == adapter.max_retries.total
+    assert 5 == adapter.max_retries.backoff_factor
+
+
+def test_retries_object():
+    """
+    This test is pretty minimal; it only checks that a correctly configured
+    Retry object is making it into requests. The retries themselves happen down
+    in urllib3, which is below the level at which requests-mock functions, and
+    hand-coding a VCR cassette is not a great idea. So it's tough to get a
+    better test.
+    """
+    fancy_retries = urllib3.util.Retry()
+    fancy_client = Client(**AUTH, retries=fancy_retries)
+    adapter = fancy_client._session.adapters['https://']
+    assert fancy_retries == adapter.max_retries
+
+
+@patch('web_monitoring.db.requests.Session.request')
+def test_client_with_default_timeout(mock_request):
     cli = Client(**AUTH)
     cli.get_user_session()
-    mock_session.return_value.request.assert_called_with(
-        method='GET', url=f'{AUTH["url"]}/users/session', timeout=DEFAULT_TIMEOUT)
+    mock_request.assert_called_with(method='GET',
+                                    url=f'{AUTH["url"]}/users/session',
+                                    timeout=DEFAULT_TIMEOUT)
 
 
-@patch('web_monitoring.db.requests.Session')
-def test_client_with_custom_timeout(mock_session):
+@patch('web_monitoring.db.requests.Session.request')
+def test_client_with_custom_timeout(mock_request):
     cli = Client(**AUTH, timeout=7.5)
     cli.get_user_session()
-    mock_session.return_value.request.assert_called_with(
-        method='GET', url=f'{AUTH["url"]}/users/session', timeout=7.5)
+    mock_request.assert_called_with(method='GET',
+                                    url=f'{AUTH["url"]}/users/session',
+                                    timeout=7.5)
 
 
-@patch('web_monitoring.db.requests.Session')
-def test_client_with_no_timeout(mock_session):
+@patch('web_monitoring.db.requests.Session.request')
+def test_client_with_no_timeout(mock_request):
     cli = Client(**AUTH, timeout=0)
     cli.get_user_session()
-    mock_session.return_value.request.assert_called_with(
-        method='GET', url=f'{AUTH["url"]}/users/session', timeout=None)
+    mock_request.assert_called_with(method='GET',
+                                    url=f'{AUTH["url"]}/users/session',
+                                    timeout=None)
