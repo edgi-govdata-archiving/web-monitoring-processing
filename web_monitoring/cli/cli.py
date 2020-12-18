@@ -778,6 +778,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                                version_filter=None, client=None, stop=None):
     version_filter = version_filter or _is_page
     skipped = 0
+    total = 0
 
     with client or wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT)) as client:
         for url in url_patterns:
@@ -792,6 +793,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     if stop and stop.is_set():
                         break
                     if version_filter(version):
+                        total += 1
                         yield version
                     else:
                         skipped += 1
@@ -820,8 +822,8 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     # be joined.
                     logger.exception(f'Error processing versions of {url}')
 
-    if skipped > 0:
-        logger.info('Skipped %s URLs that did not match filters', skipped)
+    logger.info('Found %s matching CDX records', total)
+    logger.info('Skipped %s CDX records that did not match filters', skipped)
 
 
 def load_unplaybackable_mementos(path):
