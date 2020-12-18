@@ -511,7 +511,7 @@ class ActivityMonitor:
         time.sleep(self.wait_time)
         while not self.cancel.is_set():
             delta = round(time.time() - self.start_time)
-            print(f'Waiting for {self.name} ({delta} s)', file=self.output)
+            print(f'Waiting for {self.name} ({delta} s)', file=self.output, flush=True)
             time.sleep(self.wait_time)
 
     def __enter__(self):
