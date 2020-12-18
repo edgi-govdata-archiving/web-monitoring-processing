@@ -317,8 +317,9 @@ class WaybackRecordsWorker(threading.Thread):
             return
 
         try:
-            version = self.process_record(record)
-            self.results_queue.put([record, version, None])
+            with utils.ActivityMonitor(f'Load {record.raw_url}', alert_after=30):
+                version = self.process_record(record)
+                self.results_queue.put([record, version, None])
         except MementoPlaybackError as error:
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
