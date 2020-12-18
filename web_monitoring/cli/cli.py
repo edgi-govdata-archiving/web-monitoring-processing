@@ -409,7 +409,7 @@ class WaybackRecordsWorker(threading.Thread):
         return media, parameter_string
 
     @classmethod
-    def parallel(cls, count, *args, **kwargs):
+    def parallel(cls, count, records, results_queue, *args, **kwargs):
         """
         Run several `WaybackRecordsWorker` instances in parallel. When this
         returns, the workers will have finished running.
@@ -418,6 +418,10 @@ class WaybackRecordsWorker(threading.Thread):
         ----------
         count: int
             Number of instances to run in parallel.
+        records: web_monitoring.utils.FiniteQueue
+            Queue of CDX records to load mementos for.
+        results_queue: web_monitoring.utils.FiniteQueue
+            Queue to place resulting import records onto.
         *args
             Arguments to pass to each instance.
         **kwargs
@@ -443,70 +447,16 @@ class WaybackRecordsWorker(threading.Thread):
         kwargs.setdefault('adapter', adapter)
         workers = []
         for i in range(count):
-            worker = cls(*args, **kwargs)
+            worker = cls(records, results_queue, *args, **kwargs)
             workers.append(worker)
             worker.start()
 
         for worker in workers:
             worker.join()
 
+        results_queue.end()
         adapter.close()
         return workers
-
-    @classmethod
-    def parallel_with_retries(cls, count, records, results_queue, *args, tries=None, **kwargs):
-        """
-        Run several `WaybackRecordsWorker` instances in parallel and retry
-        records that fail to load.
-
-        Parameters
-        ----------
-        count: int
-            Number of instances to run in parallel.
-        records: web_monitoring.utils.FiniteQueue
-            Queue of CDX records to load mementos for.
-        results_queue: web_monitoring.utils.FiniteQueue
-            Queue to place resulting import records onto.
-        *args
-            Arguments to pass to each instance.
-        **kwargs
-            Keyword arguments to pass to each instance.
-
-        Returns
-        -------
-        list of WaybackRecordsWorker
-        """
-        if tries is None or len(tries) == 0:
-            tries = (None,)
-
-        total_tries = len(tries)
-        retry_queue = None
-        workers = []
-        for index, try_setting in enumerate(tries):
-            if retry_queue:
-                if retry_queue.empty():
-                    # We can only get here if we are on retry run, but there's
-                    # nothing to retry, so we may as well stop.
-                    break
-                else:
-                    print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-                    retry_queue.end()
-                    records = retry_queue
-
-            if index == total_tries - 1:
-                retry_queue = None
-            else:
-                retry_queue = utils.FiniteQueue()
-
-            workers.extend(cls.parallel(count,
-                                        records,
-                                        results_queue,
-                                        *args,
-                                        failure_queue=retry_queue,
-                                        session_options=try_setting,
-                                        **kwargs))
-
-        results_queue.end()
 
 
 def _filter_and_summarize_mementos(memento_info, summary):
@@ -653,7 +603,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         cdx_thread.start()
 
         versions_queue = utils.FiniteQueue()
-        memento_thread = threading.Thread(target=lambda: WaybackRecordsWorker.parallel_with_retries(
+        memento_thread = threading.Thread(target=lambda: WaybackRecordsWorker.parallel(
             worker_count,
             cdx_records,
             versions_queue,
@@ -661,8 +611,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             tags,
             stop_event,
             unplaybackable=unplaybackable,
-            version_cache=version_cache,
-            tries=(None,)))
+            version_cache=version_cache))
         memento_thread.start()
 
         # Show a progress meter
