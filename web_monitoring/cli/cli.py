@@ -198,6 +198,11 @@ def _log_adds(versions):
         print(json.dumps(version))
 
 
+# HACK: Ensure WaybackSession retries all ConnectionErrors, since we are
+# clearly being too narrow about them right now.
+wayback.WaybackSession.retryable_errors = wayback.WaybackSession.handleable_errors
+
+
 class RateLimitedAdapter(requests.adapters.HTTPAdapter):
     def __init__(self, *args, requests_per_second=0, **kwargs):
         self._rate_limit = utils.RateLimit(requests_per_second)
@@ -261,7 +266,7 @@ class WaybackRecordsWorker(threading.Thread):
         self.version_cache = version_cache or set()
         self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
-                                                  timeout=(30.5, 2))
+                                                  timeout=(10, 10))
         session = CustomAdapterSession(adapter=adapter,
                                        user_agent=USER_AGENT,
                                        **session_options)
@@ -323,6 +328,7 @@ class WaybackRecordsWorker(threading.Thread):
             if error.response.status_code == 404:
                 logger.info(f'  Missing memento: {record.raw_url}')
                 self.summary['missing'] += 1
+                self.unplaybackable[record.raw_url] = datetime.utcnow()
             else:
                 # TODO: consider not logging this at a lower level, like debug
                 # unless failure_queue does not exist. Unsure how big a deal
@@ -674,10 +680,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             stop_event,
             unplaybackable=unplaybackable,
             version_cache=version_cache,
-            # Use the default retries on the first round, then no retries with
-            # *really* long timeouts on the second, final round.
-            tries=(None,
-                   dict(retries=0, backoff=1, timeout=(120, 60)))))
+            tries=(None,)))
         memento_thread.start()
 
         uploadable_versions = versions_queue
