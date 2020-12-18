@@ -171,7 +171,7 @@ def _get_progress_meter(iterable):
     if hasattr(file, "isatty") and not file.isatty():
         intervals = dict(mininterval=10, maxinterval=60)
 
-    return tqdm(iterable, desc='importing', unit=' versions', **intervals)
+    return tqdm(iterable, desc='Processing', unit=' CDX Records', **intervals)
 
 
 def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None, db_client=None):
