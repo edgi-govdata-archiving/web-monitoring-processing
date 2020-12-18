@@ -262,7 +262,6 @@ class WaybackRecordsWorker(threading.Thread):
                  failure_queue=None, session_options=None, adapter=None,
                  unplaybackable=None, version_cache=None):
         super().__init__()
-        self.summary = self.create_summary()
         self.results_queue = results_queue
         self.failure_queue = failure_queue
         self.cancel = cancel
@@ -291,7 +290,6 @@ class WaybackRecordsWorker(threading.Thread):
         while self.is_active():
             try:
                 record = next(self.records)
-                self.summary['total'] += 1
             except StopIteration:
                 break
 
@@ -301,7 +299,6 @@ class WaybackRecordsWorker(threading.Thread):
         # one some other piece of code owns.
         if not self.adapter:
             self.wayback.close()
-        return self.summary
 
     def handle_record(self, record):
         """
@@ -412,43 +409,6 @@ class WaybackRecordsWorker(threading.Thread):
         return media, parameter_string
 
     @classmethod
-    def create_summary(cls):
-        """
-        Create a dictionary that summarizes the results of processing all the
-        CDX records on a queue.
-        """
-        return {'total': 0, 'success': 0, 'already_known': 0, 'playback': 0,
-                'missing': 0, 'unknown': 0}
-
-    @classmethod
-    def summarize(cls, workers, initial=None):
-        """
-        Combine the summaries from multiple `WaybackRecordsWorker` instances
-        into a single summary.
-        """
-        return cls.merge_summaries((w.summary for w in workers), initial)
-
-    @classmethod
-    def merge_summaries(cls, summaries, intial=None):
-        merged = intial or cls.create_summary()
-        for summary in summaries:
-            for key in merged.keys():
-                if key in summary:
-                    merged[key] += summary[key]
-
-        # Add percentage calculations
-        if merged['total']:
-            merged.update({f'{k}_pct': 100 * v / merged['total']
-                           for k, v in merged.items()
-                           if k != 'total' and not k.endswith('_pct')})
-        else:
-            merged.update({f'{k}_pct': 0.0
-                           for k, v in merged.items()
-                           if k != 'total' and not k.endswith('_pct')})
-
-        return merged
-
-    @classmethod
     def parallel(cls, count, *args, **kwargs):
         """
         Run several `WaybackRecordsWorker` instances in parallel. When this
@@ -494,7 +454,7 @@ class WaybackRecordsWorker(threading.Thread):
         return workers
 
     @classmethod
-    def parallel_with_retries(cls, count, summary, records, results_queue, *args, tries=None, **kwargs):
+    def parallel_with_retries(cls, count, records, results_queue, *args, tries=None, **kwargs):
         """
         Run several `WaybackRecordsWorker` instances in parallel and retry
         records that fail to load.
@@ -503,8 +463,6 @@ class WaybackRecordsWorker(threading.Thread):
         ----------
         count: int
             Number of instances to run in parallel.
-        summary: dict
-            Dictionary to populate with summary data from all worker runs.
         records: web_monitoring.utils.FiniteQueue
             Queue of CDX records to load mementos for.
         results_queue: web_monitoring.utils.FiniteQueue
@@ -520,9 +478,6 @@ class WaybackRecordsWorker(threading.Thread):
         """
         if tries is None or len(tries) == 0:
             tries = (None,)
-
-        # Initialize the summary (we have to keep a reference so other threads can read)
-        summary.update(cls.create_summary())
 
         total_tries = len(tries)
         retry_queue = None
@@ -551,7 +506,6 @@ class WaybackRecordsWorker(threading.Thread):
                                         session_options=try_setting,
                                         **kwargs))
 
-        summary.update(cls.summarize(workers, summary))
         results_queue.end()
 
 
@@ -698,11 +652,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                 stop=stop_event)))
         cdx_thread.start()
 
-        summary = {}
         versions_queue = utils.FiniteQueue()
         memento_thread = threading.Thread(target=lambda: WaybackRecordsWorker.parallel_with_retries(
             worker_count,
-            summary,
             cdx_records,
             versions_queue,
             maintainers,
