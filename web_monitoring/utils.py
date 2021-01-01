@@ -13,6 +13,7 @@ import re
 import requests
 import requests.adapters
 import signal
+import sys
 import threading
 import time
 
@@ -467,10 +468,10 @@ class QuitSignal(Signal):
 
     def handle_interrupt(self, signal_type, frame):
         if not self.event.is_set():
-            print(self.graceful_message)
+            print(self.graceful_message, file=sys.stderr, flush=True)
             self.event.set()
         else:
-            print(self.final_message)
+            print(self.final_message, file=sys.stderr, flush=True)
             os._exit(100)
 
     def __enter__(self):
