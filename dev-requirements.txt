@@ -9,4 +9,4 @@ matplotlib ~=3.3.4
 numpydoc ~=1.1.0
 requests-mock ~=1.8.0
 sphinx ~=3.4.3
-sphinx_rtd_theme ~=0.5.0
+sphinx_rtd_theme ~=0.5.1
