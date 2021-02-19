@@ -42,6 +42,7 @@ and results between them.
 """
 
 from collections import defaultdict
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from web_monitoring.utils import detect_encoding
 import dateutil.parser
@@ -49,6 +50,7 @@ from docopt import docopt
 from itertools import islice
 import json
 import logging
+import math
 import os
 from os.path import splitext
 from pathlib import Path
@@ -250,6 +252,47 @@ class CustomAdapterSession(wayback.WaybackSession):
         pass
 
 
+class RequestStatistics:
+    """
+    Track basic timing statistics around HTTP requests. Creates a histogram
+    with 10-second buckets counting the number of requests, and tracks the
+    longest N requests for later reporting.
+
+    Parameters
+    ----------
+    leaderboard_size : int
+        How many of the longest requests to track details for, as opposed to
+        just counting in the histogram (e.g. the 10 longest).
+        (default: 10)
+    leaderboard_min : float
+        Minimum time (in seconds) for a request to be included on the
+        leaderboard. (default: 0)
+    """
+    def __init__(self, leaderboard_size=10, leaderboard_min=0):
+        self._lock = threading.Lock()
+        self.histogram = defaultdict(int)
+        self.leaderboard_size = leaderboard_size
+        self.leaderboard = []
+        self.leaderboard_min = leaderboard_min
+
+    def record_time(self, url, time):
+        bucket = math.floor(time / 10)
+        with self._lock:
+            self.histogram[bucket] += 1
+            if time > self.leaderboard_min:
+                self.leaderboard.append((time, url))
+                size = len(self.leaderboard)
+                if size > self.leaderboard_size:
+                    self.leaderboard = sorted(self.leaderboard,
+                                              key=lambda x: x[0])[1:]
+                    self.leaderboard_min = self.leaderboard[0][0]
+
+
+# TODO: this probably shouldn't be global/static, but it's expedient for now.
+# Ideally this is incorporated into our shared HTTP adapter/session.
+MEMENTO_STATISTICS = RequestStatistics(leaderboard_size=10, leaderboard_min=10)
+
+
 class WaybackRecordsWorker(threading.Thread):
     """
     WaybackRecordsWorker is a thread that takes CDX records from a queue and
@@ -332,9 +375,7 @@ class WaybackRecordsWorker(threading.Thread):
         except Exception as error:
             self.results_queue.put([record, None, error])
         finally:
-            total_time = time.time() - start_time
-            if total_time > 30:
-                logger.info(f'  Slow request: {total_time:.1f} s for {record.raw_url}')
+            MEMENTO_STATISTICS.record_time(record.raw_url, time.time() - start_time)
 
     def process_record(self, record):
         """
@@ -655,6 +696,20 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
               '  {missing:6} had no actual memento ({missing_pct:.2f}%)\n'
               '  {unknown:6} unknown errors ({unknown_pct:.2f}%)'.format(
                 **summary))
+
+        # Print slow request statistics
+        top_bucket = max(MEMENTO_STATISTICS.histogram.keys())
+        print('\nMemento load timings:')
+        for bucket in range(top_bucket + 1):
+            value = MEMENTO_STATISTICS.histogram[bucket]
+            print(f'  {bucket * 10}-{bucket * 10 + 10} s: {value}')
+        print('Slowest mementos:')
+        if len(MEMENTO_STATISTICS.leaderboard) > 0:
+            for timing in MEMENTO_STATISTICS.leaderboard:
+                print(f'  {timing[0]:.1f}: {timing[1]}')
+        else:
+            print('  ---')
+        print('')
 
         uploader.join()
 
