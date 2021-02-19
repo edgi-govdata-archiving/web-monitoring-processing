@@ -334,7 +334,7 @@ class WaybackRecordsWorker(threading.Thread):
         finally:
             total_time = time.time() - start_time
             if total_time > 30:
-                loggerl.info(f'  Slow request: {total_time:.1f} s for {record.raw_url}')
+                logger.info(f'  Slow request: {total_time:.1f} s for {record.raw_url}')
 
     def process_record(self, record):
         """
