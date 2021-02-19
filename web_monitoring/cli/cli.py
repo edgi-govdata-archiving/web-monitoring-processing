@@ -464,7 +464,10 @@ def _filter_and_summarize_mementos(memento_info, summary):
                     'playback': 0, 'missing': 0, 'unknown': 0})
     for cdx, memento, error in memento_info:
         summary['total'] += 1
-        if isinstance(error, ExistingVersionError):
+        if memento:
+            summary['success'] += 1
+            yield memento
+        elif isinstance(error, ExistingVersionError):
             summary['already_known'] += 1
         elif isinstance(error, MementoPlaybackError):
             summary['playback'] += 1
@@ -492,14 +495,9 @@ def _filter_and_summarize_mementos(memento_info, summary):
             # is present and we are ultimately going to retry.
             logger.exception(f'  {error!r}; URL: {cdx.raw_url}')
             summary['unknown'] += 1
-
-        # Dicts are our parsed and formatted mementos.
-        elif memento:
-            summary['success'] += 1
-            yield memento
         else:
-            summary['unknown'] += 1
             logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
+            summary['unknown'] += 1
 
     # Add percentage calculations to summary
     if summary['total']:
