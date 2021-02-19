@@ -272,7 +272,7 @@ class WaybackRecordsWorker(threading.Thread):
         self.version_cache = version_cache or set()
         self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
-                                                  timeout=(10, 10))
+                                                  timeout=(10, 5))
         session = CustomAdapterSession(adapter=adapter,
                                        user_agent=USER_AGENT,
                                        **session_options)
