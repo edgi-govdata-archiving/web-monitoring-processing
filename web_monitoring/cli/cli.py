@@ -57,6 +57,7 @@ import requests
 import signal
 import sys
 import threading
+import time
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
@@ -313,10 +314,10 @@ class WaybackRecordsWorker(threading.Thread):
             self.results_queue.put([record, None, MementoPlaybackError(f'Skipped {record.raw_url}')])
             return
 
+        start_time = time.time()
         try:
-            with utils.ActivityMonitor(f'Load {record.raw_url}', alert_after=30):
-                version = self.process_record(record)
-                self.results_queue.put([record, version, None])
+            version = self.process_record(record)
+            self.results_queue.put([record, version, None])
         except MementoPlaybackError as error:
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
@@ -330,6 +331,10 @@ class WaybackRecordsWorker(threading.Thread):
             self.results_queue.put([record, None, error])
         except Exception as error:
             self.results_queue.put([record, None, error])
+        finally:
+            total_time = time.time() - start_time
+            if total_time > 30:
+                loggerl.info(f'  Slow request: {total_time:.1f} s for {record.raw_url}')
 
     def process_record(self, record):
         """
