@@ -370,8 +370,6 @@ class WaybackRecordsWorker(threading.Thread):
                 logger.info(f'  Missing memento: {record.raw_url}')
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
-        except WaybackRetryError as error:
-            self.results_queue.put([record, None, error])
         except Exception as error:
             self.results_queue.put([record, None, error])
         finally:
