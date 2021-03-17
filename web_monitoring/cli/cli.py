@@ -42,7 +42,6 @@ and results between them.
 """
 
 from collections import defaultdict
-from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from web_monitoring.utils import detect_encoding
 import dateutil.parser
