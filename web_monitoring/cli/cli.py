@@ -368,6 +368,7 @@ class WaybackRecordsWorker(threading.Thread):
         except requests.exceptions.HTTPError as error:
             if error.response.status_code == 404:
                 logger.info(f'  Missing memento: {record.raw_url}')
+            if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
         except Exception as error:
