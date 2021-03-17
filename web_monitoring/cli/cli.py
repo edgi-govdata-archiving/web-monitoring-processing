@@ -698,18 +698,19 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                 **summary))
 
         # Print slow request statistics
-        top_bucket = max(MEMENTO_STATISTICS.histogram.keys())
-        print('\nMemento load timings:')
-        for bucket in range(top_bucket + 1):
-            value = MEMENTO_STATISTICS.histogram[bucket]
-            print(f'  {bucket * 10}-{bucket * 10 + 10} s: {value}')
-        print('Slowest mementos:')
-        if len(MEMENTO_STATISTICS.leaderboard) > 0:
-            for timing in MEMENTO_STATISTICS.leaderboard:
-                print(f'  {timing[0]:.1f}: {timing[1]}')
-        else:
-            print('  ---')
-        print('')
+        if len(MEMENTO_STATISTICS.histogram):
+            print('\nMemento load timings:')
+            top_bucket = max(MEMENTO_STATISTICS.histogram.keys())
+            for bucket in range(top_bucket + 1):
+                value = MEMENTO_STATISTICS.histogram[bucket]
+                print(f'  {bucket * 10}-{bucket * 10 + 10} s: {value}')
+            print('Slowest mementos:')
+            if len(MEMENTO_STATISTICS.leaderboard) > 0:
+                for timing in MEMENTO_STATISTICS.leaderboard:
+                    print(f'  {timing[0]:.1f}: {timing[1]}')
+            else:
+                print('  ---')
+            print('')
 
         uploader.join()
 
