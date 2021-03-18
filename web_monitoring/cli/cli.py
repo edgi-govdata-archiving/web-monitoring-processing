@@ -64,7 +64,8 @@ from urllib.parse import urlparse
 from web_monitoring import db
 import wayback
 from wayback.exceptions import (WaybackException, WaybackRetryError,
-                                MementoPlaybackError, BlockedByRobotsError)
+                                MementoPlaybackError, NoMementoError,
+                                BlockedByRobotsError)
 from web_monitoring import utils, __version__
 
 
@@ -379,12 +380,6 @@ class WaybackRecordsWorker(threading.Thread):
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
-        except requests.exceptions.HTTPError as error:
-            if error.response.status_code == 404:
-                logger.info(f'  Missing memento: {record.raw_url}')
-            if self.unplaybackable is not None:
-                self.unplaybackable[record.raw_url] = datetime.utcnow()
-            self.results_queue.put([record, None, error])
         except Exception as error:
             self.results_queue.put([record, None, error])
         finally:
@@ -528,6 +523,9 @@ def _filter_and_summarize_mementos(memento_info, summary):
             yield memento
         elif isinstance(error, ExistingVersionError):
             summary['already_known'] += 1
+        elif isinstance(error, NoMementoError):
+            logger.info(f'  Missing memento: {cdx.raw_url}')
+            summary['missing'] += 1
         elif isinstance(error, MementoPlaybackError):
             summary['playback'] += 1
             # Playback errors are not unusual or exceptional for us, so log
@@ -537,13 +535,6 @@ def _filter_and_summarize_mementos(memento_info, summary):
             # here is that the mementos are likely the same). Since we are
             # looking at highly monitored, public URLs, we hit this case a lot.
             logger.debug(f'  {error}')
-        elif isinstance(error, requests.exceptions.HTTPError):
-            if error.response.status_code == 404:
-                logger.info(f'  Missing memento: {cdx.raw_url}')
-                summary['missing'] += 1
-            else:
-                logger.info(f'  (HTTPError) {error}')
-                summary['unknown'] += 1
         elif isinstance(error, WaybackRetryError):
             logger.info(f'  {error}; URL: {cdx.raw_url}')
             summary['unknown'] += 1
