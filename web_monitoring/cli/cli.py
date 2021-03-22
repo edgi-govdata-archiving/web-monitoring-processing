@@ -213,21 +213,6 @@ class ExistingVersionError(Exception):
 wayback.WaybackSession.retryable_errors = wayback.WaybackSession.handleable_errors
 
 
-# Patch WaybackSession to correctly obey any timeouts it has set. This is a
-# serious bug that will be fixed in:
-#   https://github.com/edgi-govdata-archiving/wayback/pull/68
-# TODO: remove this when the above fix is released (Wayback v0.3.1)
-def _session_request(self, method, url, **kwargs):
-    if 'timeout' not in kwargs:
-        kwargs['timeout'] = self.timeout
-
-    return super(wayback.WaybackSession, self).request(method, url, **kwargs)
-
-
-wayback.WaybackSession.request = _session_request
-# END Patch
-
-
 class RateLimitedAdapter(requests.adapters.HTTPAdapter):
     def __init__(self, *args, requests_per_second=0, **kwargs):
         self._rate_limit = utils.RateLimit(requests_per_second)
@@ -331,7 +316,7 @@ class WaybackRecordsWorker(threading.Thread):
         self.version_cache = version_cache or set()
         self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
-                                                  timeout=60)
+                                                  timeout=45)
         session = CustomAdapterSession(adapter=adapter,
                                        user_agent=USER_AGENT,
                                        **session_options)
@@ -646,8 +631,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                 # Use a custom session to make sure CDX calls are extra robust.
                 client=wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT,
                                                                     retries=4,
-                                                                    backoff=4,
-                                                                    timeout=60)),
+                                                                    backoff=4)),
                 stop=stop_event)))
         cdx_thread.start()
 
