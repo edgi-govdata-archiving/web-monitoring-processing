@@ -80,7 +80,7 @@ Legacy projects that may be revisited:
    requirements.
 
    ```sh
-   pip install -r dev-requirements.txt
+   pip install -r requirements-dev.txt
    ```
 
 7. To build the docs:
