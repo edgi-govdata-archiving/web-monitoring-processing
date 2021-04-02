@@ -60,6 +60,9 @@ target/
 # PyCharm
 .idea/
 
+# VSCode
+.vscode/
+
 #ipython notebook stuff
 .ipynb_checkpoints/
 
@@ -76,3 +79,4 @@ diff_output_*
 
 *.swp
 scratch.*
+.DS_Store

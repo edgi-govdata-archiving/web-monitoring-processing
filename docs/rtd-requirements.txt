@@ -2,4 +2,4 @@
 # have one such file which will include all our requirements.
 
 -r ../requirements.txt
--r ../dev-requirements.txt
+-r ../requirements-dev.txt

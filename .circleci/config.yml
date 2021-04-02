@@ -8,8 +8,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-{{ checksum "requirements.txt" }}-{{ checksum "dev-requirements.txt" }}
-            - processing-{{ arch }}-
+            - processing-{{ arch }}-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - processing-{{ arch }}-v1-
 
       # Bundle install dependencies
       - run:
@@ -17,13 +17,15 @@ jobs:
           command: |
             python -m venv venv
             . venv/bin/activate
+            pip install --upgrade pip
+            pip install wheel
             pip install -r requirements.txt
-            pip install -r dev-requirements.txt
-            python setup.py install
+            pip install -r requirements-dev.txt
+            pip install .
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-{{ checksum "requirements.txt" }}-{{ checksum "dev-requirements.txt" }}
+          key: processing-{{ arch }}-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - venv
 
