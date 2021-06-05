@@ -560,7 +560,7 @@ def _load_known_versions(client, start_date, end_date):
                                    chunk_size=1000)
     # Limit to latest 500,000 results for sanity/time/memory
     limited_versions = islice(versions, 500_000)
-    cache = set(_version_cache_key(v["capture_time"], v["capture_url"])
+    cache = set(_version_cache_key(v["capture_time"], v.get("url", v.get("capture_url")))
                 for v in limited_versions)
     logger.debug(f'  Found {len(cache)} known versions')
     return cache

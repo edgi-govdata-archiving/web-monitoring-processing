@@ -1033,9 +1033,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         content : bytes
         """
         db_result = self.get_version(version_id)
-        content_uri = db_result['data']['uri']
+        # TODO: remove fallback once API migration is done:
+        # https://github.com/edgi-govdata-archiving/web-monitoring-db/issues/776
+        content_url = db_result['data'].get('body_url', db_result['data'].get('uri'))
         # override the session-level "accept: json" header
-        response = self.request(GET, content_uri, headers={'accept': None})
+        response = self.request(GET, content_url, headers={'accept': None})
         if response.headers.get('Content-Type', '').startswith('text/'):
             return response.text
         else:
