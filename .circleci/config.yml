@@ -15,16 +15,10 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            echo 'Creating virtualenv...'
-            echo `which python`
             python -m venv venv
-            echo 'Created virtualenv'
             . venv/bin/activate
-            echo 'Activated virtualenv'
             pip install --upgrade pip
-            echo 'Upgraded pip'
             pip install wheel
-            echo 'Wheel'
             pip install -r requirements.txt
             pip install -r requirements-dev.txt
             pip install .
