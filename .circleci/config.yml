@@ -16,6 +16,7 @@ jobs:
           name: Install Dependencies
           command: |
             echo 'Creating virtualenv...'
+            echo `which python`
             python -m venv venv
             echo 'Created virtualenv'
             . venv/bin/activate
