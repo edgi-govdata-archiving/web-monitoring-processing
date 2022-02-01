@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/web-monitoring-processing
     docker:
-      - image: cimg/python:3.8
+      - image: cimg/python:3.7
     steps:
       - checkout
       - restore_cache:
@@ -15,10 +15,15 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
+            echo 'Creating virtualenv...'
             python -m venv venv
+            echo 'Created virtualenv'
             . venv/bin/activate
+            echo 'Activated virtualenv'
             pip install --upgrade pip
+            echo 'Upgraded pip'
             pip install wheel
+            echo 'Wheel'
             pip install -r requirements.txt
             pip install -r requirements-dev.txt
             pip install .
