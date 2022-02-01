@@ -8,8 +8,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
-            - processing-{{ arch }}-v1-
+            - processing-{{ arch }}-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - processing-{{ arch }}-v2-
 
       # Bundle install dependencies
       - run:
@@ -17,11 +17,9 @@ jobs:
           command: |
             echo 'Creating virtualenv...'
             echo `which python`
-            # python -m venv venv
-            pyenv virtualenv venv
+            python -m venv venv
             echo 'Created virtualenv'
-            # . venv/bin/activate
-            pyenv activate venv
+            . venv/bin/activate
             echo 'Activated virtualenv'
             pip install --upgrade pip
             echo 'Upgraded pip'
@@ -33,7 +31,7 @@ jobs:
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+          key: processing-{{ arch }}-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - venv
 
@@ -45,20 +43,17 @@ jobs:
       - run:
           name: Coverage
           command: |
-            # . venv/bin/activate
-            pyenv activate venv
+            . venv/bin/activate
             coverage report -m
       - run:
           name: Code linting
           command: |
-            # . venv/bin/activate
-            pyenv activate venv
+            . venv/bin/activate
             pyflakes web_monitoring
       - run:
           name: Build docs
           command: |
-            # . venv/bin/activate
-            pyenv activate venv
+            . venv/bin/activate
             cd docs && make html
 
   build_docker:
