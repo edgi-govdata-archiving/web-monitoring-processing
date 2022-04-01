@@ -1,15 +1,21 @@
 version: 2.1
+
+parameters:
+  python-version:
+    type: string
+    default: "3.7.13"
+
 jobs:
   build:
     working_directory: ~/web-monitoring-processing
     docker:
-      - image: cimg/python:3.7.13
+      - image: cimg/python:<< pipeline.parameters.python-version >>
     steps:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
-            - processing-{{ arch }}-v3-
+            - processing-{{ arch }}-<< pipeline.parameters.python-version >>-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - processing-{{ arch }}-<< pipeline.parameters.python-version >>-v1-
 
       # Bundle install dependencies
       - run:
@@ -25,7 +31,7 @@ jobs:
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+          key: processing-{{ arch }}-<< pipeline.parameters.python-version >>-v1-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - venv
 
