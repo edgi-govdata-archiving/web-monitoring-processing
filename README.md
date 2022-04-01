@@ -31,11 +31,8 @@ Legacy projects that may be revisited:
 
 ## Installation Instructions
 
-1. Get Python 3.7. This packages makes use of modern Python features and
-   requires Python 3.7+.  If you don't have Python 3.7, we recommend using
-   [conda](https://conda.io/miniconda.html) to install it. (You don't need admin
-   privileges to install or use it, and it won't interfere with any other
-   installations of Python already on your system.)
+1. Get Python 3.7 or later. If you don't have the right version, we recommend using
+   [conda](https://conda.io/miniconda.html) or [pyenv](https://github.com/pyenv/pyenv) to install it. (You don't need admin privileges to install or use them, and they won't interfere with any other installations of Python already on your system.)
 
 2. Install libxml2 and libxslt. (This package uses lxml, which requires your system to have the libxml2 and libxslt libraries.)
 
