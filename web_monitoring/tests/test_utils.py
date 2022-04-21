@@ -92,7 +92,7 @@ class TestSniffMediaType:
         media = sniff_media_type(raw_bytes)
         assert media == 'text/html'
 
-    def test_sniff_media_type_detects_html(self):
+    def test_sniff_media_type_detects_pdf(self):
         raw_bytes = get_fixture_bytes('basic_title.pdf')
         media = sniff_media_type(raw_bytes)
         assert media == 'application/pdf'
