@@ -88,7 +88,17 @@ def test_extract_pdf_title_no_eof():
 
 class TestSniffMediaType:
     def test_sniff_media_type_detects_html(self):
-        raw_bytes = get_fixture_bytes('unknown_encoding.html')
+        raw_bytes = b'''
+            <!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+            <html>
+            <head>
+                <title>Test Page</title>
+            </head>
+            <body>
+                Test
+            </body>
+            </html>
+        '''
         media = sniff_media_type(raw_bytes)
         assert media == 'text/html'
 

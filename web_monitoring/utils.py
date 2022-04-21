@@ -98,27 +98,33 @@ def detect_encoding(content, headers, default='utf-8'):
 # Patterns used to sniff various media types. Based on:
 # - https://dev.w3.org/html5/cts/html5-type-sniffing.html
 # - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
-SNIFF_HTML_PATTERN = re.compile(rb'''
-    ^[\s\n\r]*(
-        <!DOCTYPE HTML|
-        <HTML|
-        <HEAD|
-        <SCRIPT|
-        <IFRAME|
-        <H1|
-        <DIV|
-        <FONT|
-        <TABLE|
-        <A|
-        <STYLE|
-        <TITLE|
-        <B|
-        <BODY|
-        <BR|
-        <P|
-        <!--
-    )[\s>]
-''', re.VERBOSE & re.IGNORECASE)
+#
+# NOTE: a "verbose" regex would be nice here, but they don't seem to work with
+# binary strings.
+SNIFF_HTML_HINTS = (
+    rb'<!DOCTYPE HTML',
+    rb'<HTML',
+    rb'<HEAD',
+    rb'<SCRIPT',
+    rb'<IFRAME',
+    rb'<H1',
+    rb'<DIV',
+    rb'<FONT',
+    rb'<TABLE',
+    rb'<A',
+    rb'<STYLE',
+    rb'<TITLE',
+    rb'<B',
+    rb'<BODY',
+    rb'<BR',
+    rb'<P',
+    rb'<!--',
+)
+
+SNIFF_HTML_PATTERN = re.compile(
+    rb'^[\s\n\r]*(%s)[\s\n\r>]' % b'|'.join(SNIFF_HTML_HINTS),
+    re.IGNORECASE
+)
 
 SNIFF_MEDIA_TYPE_PATTERNS = {
     SNIFF_HTML_PATTERN: 'text/html',
