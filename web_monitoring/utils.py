@@ -95,6 +95,75 @@ def detect_encoding(content, headers, default='utf-8'):
     return encoding
 
 
+# Patterns used to sniff various media types. Based on:
+# - https://dev.w3.org/html5/cts/html5-type-sniffing.html
+# - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
+#
+# NOTE: a "verbose" regex would be nice here, but they don't seem to work with
+# binary strings.
+SNIFF_HTML_HINTS = (
+    rb'<!DOCTYPE HTML',
+    rb'<HTML',
+    rb'<HEAD',
+    rb'<SCRIPT',
+    rb'<IFRAME',
+    rb'<H1',
+    rb'<DIV',
+    rb'<FONT',
+    rb'<TABLE',
+    rb'<A',
+    rb'<STYLE',
+    rb'<TITLE',
+    rb'<B',
+    rb'<BODY',
+    rb'<BR',
+    rb'<P',
+    rb'<!--',
+)
+
+SNIFF_HTML_PATTERN = re.compile(
+    rb'^[\s\n\r]*(%s)[\s\n\r>]' % b'|'.join(SNIFF_HTML_HINTS),
+    re.IGNORECASE
+)
+
+SNIFF_MEDIA_TYPE_PATTERNS = {
+    SNIFF_HTML_PATTERN: 'text/html',
+    re.compile(rb'^[\s\n\r]*<?xml'): 'text/xml',
+    re.compile(rb'^%PDF-'): 'application/pdf',
+    re.compile(rb'^%!PS-Adobe-'): 'application/postscript',
+    re.compile(rb'^(GIF87a|GIF89a)'): 'image/gif',
+    re.compile(rb'^\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'): 'image/png',
+    re.compile(rb'^\xFF\xD8\xFF'): 'image/jpeg',
+    re.compile(rb'^BM'): 'image/bmp',
+}
+
+
+def sniff_media_type(content, default='application/octet-stream'):
+    """
+    Detect the media type of some content. If the media type can't be detected,
+    the value of the ``default`` parameter will be returned.
+
+    This is similar to how browsers do it and is based on:
+    - https://dev.w3.org/html5/cts/html5-type-sniffing.html
+    - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
+
+    Parameters
+    ----------
+    content : bytes
+    default : str or None
+
+    Returns
+    -------
+    str
+        The detected media type of the content.
+    """
+    for pattern, media_type in SNIFF_MEDIA_TYPE_PATTERNS.items():
+        if pattern.match(content):
+            return media_type
+
+    return default
+
+
 def extract_title(content_bytes, encoding='utf-8'):
     "Return content of <title> tag as string. On failure return empty string."
     content_str = content_bytes.decode(encoding=encoding, errors='ignore')

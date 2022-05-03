@@ -43,7 +43,7 @@ and results between them.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from web_monitoring.utils import detect_encoding
+from web_monitoring.utils import detect_encoding, sniff_media_type
 import dateutil.parser
 from docopt import docopt
 from itertools import islice
@@ -153,6 +153,13 @@ HTML_MEDIA_TYPES = frozenset((
 PDF_MEDIA_TYPES = frozenset((
     'application/pdf',
     'application/x-pdf',
+))
+
+# These media types are so meaningless that it's worth sniffing the content to
+# see if we can determine an actual media type.
+SNIFF_MEDIA_TYPES = frozenset((
+    'application/octet-stream',
+    'application/x-download',
 ))
 
 # Identifies a bare media type (that is, one without parameters)
@@ -404,6 +411,8 @@ class WaybackRecordsWorker(threading.Thread):
             ]
 
         media_type, media_type_parameters = self.get_memento_media(memento)
+        if not media_type or media_type in SNIFF_MEDIA_TYPES:
+            media_type = sniff_media_type(memento.content, media_type)
 
         title = ''
         if media_type in HTML_MEDIA_TYPES:
