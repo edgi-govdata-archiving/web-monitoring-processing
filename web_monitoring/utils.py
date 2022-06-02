@@ -5,8 +5,8 @@ import io
 import logging
 import lxml.html
 import os
-from PyPDF2 import PdfFileReader
-from PyPDF2.utils import PyPdfError
+from PyPDF2 import PdfReader
+from PyPDF2.errors import PyPdfError
 import queue
 import re
 import signal
@@ -200,22 +200,19 @@ def extract_pdf_title(content_bytes, password=''):
     str or None
     """
     try:
-        pdf = PdfFileReader(io.BytesIO(content_bytes))
+        pdf = PdfReader(io.BytesIO(content_bytes))
         # Lots of PDFs turn out to be encrypted with an empty password, so this
         # is always worth trying (most PDF viewers turn out to do this, too).
         # This gets its own inner `try` block (that catches all exceptions)
         # because there are a huge variety of error types that happen inside
         # the `decrypt` call, even with valid PDFs. :(
-        if pdf.isEncrypted:
+        if pdf.is_encrypted:
             try:
                 pdf.decrypt(password)
             except Exception:
                 return None
 
-        info = pdf.getDocumentInfo()
-        # Documents with no title actually have no title attribute at all,
-        # rather than setting the title attribute to `None`. ¯\_(ツ)_/¯
-        return getattr(info, 'title', None)
+        return pdf.metadata.title
     except PyPdfError:
         return None
 
