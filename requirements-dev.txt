@@ -6,5 +6,5 @@ vcrpy ~=4.2.0
 ipython ~=7.34.0
 numpydoc ~=1.4
 requests-mock ~=1.9.3
-sphinx ~=4.5.0
+sphinx ~=5.0.2
 sphinx_rtd_theme ~=1.0.0
