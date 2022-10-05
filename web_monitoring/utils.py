@@ -212,7 +212,7 @@ def extract_pdf_title(content_bytes, password=''):
             except Exception:
                 return None
 
-        return pdf.metadata.title
+        return pdf.metadata.title if pdf.metadata else None
     except PyPdfError:
         return None
 
