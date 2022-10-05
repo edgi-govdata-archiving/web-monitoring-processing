@@ -65,6 +65,11 @@ def test_extract_pdf_title_encrypted_no_password():
     assert title == 'Empty Password Title Field'
 
 
+@pytest.mark.skip("""
+    PyPDF2 has maintainers again, and we no longer have any examples of
+    unsupported encryption schemes! Bring this test back if we
+    encounter new, unencryptable PDFs.
+""")
 def test_extract_pdf_title_encrypted_unsupported_algorithm():
     """
     Get the title of a PDF that's encrypted with an unsupported algorithm. This
