@@ -91,6 +91,16 @@ def test_extract_pdf_title_no_eof():
     assert title is None
 
 
+def test_extract_pdf_title_no_metadata():
+    """
+    Get the title of a PDF that has no metadata at all without raising an
+    exception.
+    """
+    pdf_bytes = get_fixture_bytes('no_metadata.pdf')
+    title = extract_pdf_title(pdf_bytes)
+    assert title is None
+
+
 class TestSniffMediaType:
     def test_sniff_media_type_detects_html(self):
         raw_bytes = b'''
