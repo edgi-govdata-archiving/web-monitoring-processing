@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.7.13-slim
+FROM python:3.10.7-slim
 LABEL maintainer="enviroDGI@gmail.com"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

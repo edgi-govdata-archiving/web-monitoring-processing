@@ -31,7 +31,8 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
+extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
@@ -45,6 +46,8 @@ extensions = ['sphinx.ext.autodoc',
 # Generate the API documentation when building
 autosummary_generate = True
 numpydoc_show_class_members = False
+numpydoc_xref_param_type = True
+numpydoc_xref_ignore = {'type', 'optional', 'default'}
 
 
 # Add any paths that contain templates here, relative to this directory.
