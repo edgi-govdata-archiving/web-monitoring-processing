@@ -73,16 +73,6 @@ jobs:
           command: |
             . ~/venv/bin/activate
             coverage report -m
-      - run:
-          name: Code linting
-          command: |
-            . ~/venv/bin/activate
-            pyflakes web_monitoring
-      - run:
-          name: Build docs
-          command: |
-            . ~/venv/bin/activate
-            cd docs && make html
 
   lint:
     working_directory: ~/web-monitoring-processing
@@ -111,6 +101,7 @@ jobs:
       - checkout
       - setup_pip:
           python-version: << pipeline.parameters.primary-python-version >>
+          install-docs: true
       - run:
           name: Build docs
           command: |
