@@ -9,7 +9,7 @@
 #
 # It only exists to keep the list of dependencies in a separate file from
 # setup.py.
-ipython ~=7.34.0
+ipython ~=8.5
 numpydoc ~=1.4
 sphinx ~=5.2.3
 sphinx_rtd_theme ~=1.0.0
