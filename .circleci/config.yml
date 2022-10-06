@@ -87,11 +87,6 @@ jobs:
           command: |
             . ~/venv/bin/activate
             pyflakes web_monitoring
-      - run:
-          name: Build docs
-          command: |
-            . ~/venv/bin/activate
-            cd docs && make html
 
   docs:
     working_directory: ~/web-monitoring-processing

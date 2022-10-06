@@ -722,7 +722,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        versions : iterable
+        versions : Iterable
             Iterable of dicts from :func:`format_version`
         update : {'skip', 'replace', 'merge'}, optional
             Specifies how versions that are already in the database (i.e.
@@ -736,10 +736,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                 * ``'merge'`` -- Similar to `replace`, but merges the values in
                   ``source_metadata``
 
-        create_pages : bool, optional
+        create_pages : boolean, optional
             If True, create new pages for any URLs in the import set that don't
             already exist.
-        skip_unchanged_versions : bool, optional
+        skip_unchanged_versions : boolean, optional
             If true, don't import versions of a page that have the same hash as
             the version captured immediately before them.
         batch_size : integer, optional
@@ -839,7 +839,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         Parameters
         ----------
         page_id : string
-        include_total : boolean, optional
+        include_total : bool, optional
             Whether to include a `meta.total_results` field in the response.
             If not set, `links.last` will usually be empty unless you are on
             the last chunk. Setting this option runs a pretty expensive query,
