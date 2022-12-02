@@ -5,9 +5,9 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - edgi.web_monitoring.WaybackClient/0.2.0a1
+      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
-    uri: http://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.fws.gov%2Fbirds%2F&from=20171124151314&to=20171124151316&showResumeKey=true&resolveRevisits=true
+    uri: https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.fws.gov%2Fbirds%2F&limit=1000&from=20171124151314&to=20171124151316&showResumeKey=true&resolveRevisits=true
   response:
     body:
       string: !!binary |
@@ -17,25 +17,35 @@ interactions:
     headers:
       Connection:
       - keep-alive
-      Content-Encoding:
-      - gzip
       Content-Type:
       - text/plain;charset=UTF-8
       Date:
-      - Mon, 18 Nov 2019 20:50:52 GMT
+      - Fri, 02 Dec 2022 01:19:36 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
       Server:
-      - nginx/1.15.8
+      - nginx/1.19.5
       Transfer-Encoding:
       - chunked
-      X-App-Server:
-      - wwwb-app1
-      X-Cache-Key:
-      - httpweb.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.fws.gov%2Fbirds%2F&from=20171124151314&to=20171124151316&showResumeKey=true&resolveRevisits=trueUS
+      X-NA:
+      - '0'
+      X-NID:
+      - '-'
       X-Page-Cache:
       - BYPASS
+      X-RL:
+      - '0'
       X-location:
       - cdx
-      X-ts:
+      content-encoding:
+      - gzip
+      x-app-server:
+      - wwwb-app52
+      x-tr:
+      - '50'
+      x-ts:
       - '200'
     status:
       code: 200
@@ -46,13 +56,13 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - edgi.web_monitoring.WaybackClient/0.2.0a1
+      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
-    uri: http://web.archive.org/web/20171124151315id_/https://www.fws.gov/birds/
+    uri: https://web.archive.org/web/20171124151315id_/https://www.fws.gov/birds/
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA+2975LbyJEv+nn0FGV6Y6UJCw21NPaMZ6Te038ljdWjtrplHYevw4EmQRJqkqAJ
+        H4sIAAAAAAAEA+2975LbyJEv+nn0FGV6Y6UJCw21NPaMZ6Te038ljdWjtrplHYevw4EmQRJqkqAJ
         sKm21xHn+32afYZ9k/sk55eZVYUCUCRBNtEzG3Endq1GAazMysrKzMrMynr5q5P3x1d/vjhVw3w8
         Onj08ldB8Jekr0a5enuqvv3rgeL/XtJb1R1FWfaqM0mDzxm+CJL49/LPd/LPt50D9fJXf4knvaT/
         1yAoenO7Qn/relvRzXcGo1XdLPv9gAeFLmiUwK42qA6/UW8nWR5NuvFRPEgmKo/H01GUx6864ZX+
@@ -482,51 +492,66 @@ interactions:
         uNmVxPIEY3/V0VOJ2B98JbOOMvbMdZqT2QALdDTvxd8rFFLtsR9UGxJP8UC/yJ6qOO+aX1lQp5Oe
         BcQvw+u0dwe708UHHxG8l+EwH48OHv1fEwFPJYTfAQA=
     headers:
-      Cache-Control:
-      - max-age=1800
       Connection:
       - keep-alive
       Content-Encoding:
       - gzip
-      Content-Security-Policy:
-      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
-        web.archive.org analytics.archive.org pragma.archivelab.org'
       Content-Type:
       - text/html
       Date:
-      - Mon, 18 Nov 2019 20:50:53 GMT
-      Link:
-      - <https://www.fws.gov/birds/>; rel="original", <http://web.archive.org/web/timemap/link/https://www.fws.gov/birds/>;
-        rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.fws.gov/birds/>;
-        rel="timegate", <http://web.archive.org/web/20050323155300/http://www.fws.gov:80/birds>;
-        rel="first memento"; datetime="Wed, 23 Mar 2005 15:53:00 GMT", <http://web.archive.org/web/20170929002712/https://www.fws.gov/birds/>;
-        rel="prev memento"; datetime="Fri, 29 Sep 2017 00:27:12 GMT", <http://web.archive.org/web/20171124151315/https://www.fws.gov/birds/>;
-        rel="memento"; datetime="Fri, 24 Nov 2017 15:13:15 GMT", <http://web.archive.org/web/20171228222143/https://www.fws.gov/birds/>;
-        rel="next memento"; datetime="Thu, 28 Dec 2017 22:21:43 GMT", <http://web.archive.org/web/20190928223117/https://www.fws.gov/birds/>;
-        rel="last memento"; datetime="Sat, 28 Sep 2019 22:31:17 GMT"
-      Memento-Datetime:
-      - Fri, 24 Nov 2017 15:13:15 GMT
+      - Fri, 02 Dec 2022 01:19:36 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
       Server:
-      - nginx/1.15.8
+      - nginx/1.19.5
       Transfer-Encoding:
       - chunked
-      X-App-Server:
-      - wwwb-app102
-      X-Archive-Orig-Date:
-      - Fri, 24 Nov 2017 15:13:14 GMT
-      X-Archive-Orig-Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
-      X-Archive-Orig-Transfer-Encoding:
-      - chunked
-      X-Archive-Src:
-      - archiveteam_archivebot_go_20171125060002/nostalgia.esmartkid.com-inf-20171124-135423-93c54-00000.warc.gz
-      X-Cache-Key:
-      - httpweb.archive.org/web/20171124151315id_/https://www.fws.gov/birds/US
+      X-NA:
+      - '0'
+      X-NID:
+      - '-'
       X-Page-Cache:
       - HIT
+      X-RL:
+      - '0'
       X-location:
       - All
-      X-ts:
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org analytics.archive.org pragma.archivelab.org'
+      link:
+      - <https://www.fws.gov/birds/>; rel="original", <https://web.archive.org/web/timemap/link/https://www.fws.gov/birds/>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://www.fws.gov/birds/>;
+        rel="timegate", <https://web.archive.org/web/20050323155300/http://www.fws.gov:80/birds>;
+        rel="first memento"; datetime="Wed, 23 Mar 2005 15:53:00 GMT", <https://web.archive.org/web/20170929002712/https://www.fws.gov/birds/>;
+        rel="prev memento"; datetime="Fri, 29 Sep 2017 00:27:12 GMT", <https://web.archive.org/web/20171124151315/https://www.fws.gov/birds/>;
+        rel="memento"; datetime="Fri, 24 Nov 2017 15:13:15 GMT", <https://web.archive.org/web/20171228222143/https://www.fws.gov/birds/>;
+        rel="next memento"; datetime="Thu, 28 Dec 2017 22:21:43 GMT", <https://web.archive.org/web/20221122122646/https://www.fws.gov/birds/>;
+        rel="last memento"; datetime="Tue, 22 Nov 2022 12:26:46 GMT"
+      memento-datetime:
+      - Fri, 24 Nov 2017 15:13:15 GMT
+      server-timing:
+      - captures_list;dur=163.288251, exclusion.robots;dur=0.386764, exclusion.robots.policy;dur=0.368872,
+        cdx.remote;dur=0.170380, esindex;dur=0.019260, LoadShardBlock;dur=114.986470,
+        PetaboxLoader3.datanode;dur=33.495351, CDXLines.iter;dur=25.384548, PetaboxLoader3.resolve;dur=69.937854,
+        load_resource;dur=49.330260
+      x-app-server:
+      - wwwb-app210
+      x-archive-orig-date:
+      - Fri, 24 Nov 2017 15:13:14 GMT
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-archive-orig-transfer-encoding:
+      - chunked
+      x-archive-src:
+      - archiveteam_archivebot_go_20171125060002/nostalgia.esmartkid.com-inf-20171124-135423-93c54-00000.warc.gz
+      x-tr:
+      - '230'
+      x-ts:
       - '200'
     status:
       code: 200
