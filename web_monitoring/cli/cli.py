@@ -398,7 +398,7 @@ class WaybackRecordsWorker(threading.Thread):
             iso_date = f'{no_tz_date}Z'
 
         metadata = {
-            'headers': memento.headers,
+            'headers': dict(memento.headers),
             'view_url': cdx_record.view_url
         }
 
@@ -640,7 +640,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                 # Use a custom session to make sure CDX calls are extra robust.
                 client=wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT,
                                                                     retries=4,
-                                                                    backoff=4)),
+                                                                    backoff=4,
+                                                                    search_calls_per_second=WAYBACK_RATE_LIMIT)),
                 stop=stop_event)))
         cdx_thread.start()
 

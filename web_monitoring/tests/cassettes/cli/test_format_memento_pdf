@@ -5,38 +5,48 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - wayback/0.2.3 (+https://github.com/edgi-govdata-archiving/wayback)
+      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
-    uri: http://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.epa.gov%2Fsites%2Fproduction%2Ffiles%2F2016-08%2Fdocuments%2Foar-climate-change-adaptation-plan.pdf&from=20200430024232&to=20200430024232&showResumeKey=true&resolveRevisits=true
+    uri: https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.epa.gov%2Fsites%2Fproduction%2Ffiles%2F2016-08%2Fdocuments%2Foar-climate-change-adaptation-plan.pdf&limit=1000&from=20200430024232&to=20200430024232&showResumeKey=true&resolveRevisits=true
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAAOWPyw6CMBQF935FtyaW1gsB484NEk18IPja3ZQCTYA2tMDvi//gzu1JZian0uNK
-        Glwyq5y0zPS6GIRTumOlauYB+DqkfMMKLYZWds4yjT0VjWrRSSpq7CpJsUDj8EtR02DnmaIkwIHz
-        wOccAvCB1M4Zu2VsmiZv7nmVHn+enLAXrJejmsWEkgjOB3jF0S5L8yR93x6na54llzSJn3u4HyMS
-        hv6i+vP/H4BRVo4AAgAA
+        H4sIAAAAAAAAAK2NSw6CMBQA956iWxNL64OAcecGiSZ+EL+7l7ZAE6ANFHp98Q5uJ5mZykwrZXHJ
+        Bu3UwGxv5CicNh0rdTMD4OuY8g2TRoyt6tzADPZUNLpFp6iosasURYnW4c+itsEusLIkwIHzKOQc
+        IgiB1M7ZYcuY9z6Yf0Flpr8vPfaC9WrSc5hQksD5AO802RX5Pcs/t+fpei+yS56lrz08jgmJ43Dx
+        BbJW6yMAAQAA
     headers:
       Connection:
       - keep-alive
-      Content-Encoding:
-      - gzip
       Content-Type:
       - text/plain;charset=UTF-8
       Date:
-      - Fri, 28 Aug 2020 08:11:04 GMT
+      - Fri, 02 Dec 2022 01:19:36 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
       Server:
-      - nginx/1.15.8
+      - nginx/1.19.5
       Transfer-Encoding:
       - chunked
-      X-App-Server:
-      - wwwb-app53
-      X-Cache-Key:
-      - httpweb.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.epa.gov%2Fsites%2Fproduction%2Ffiles%2F2016-08%2Fdocuments%2Foar-climate-change-adaptation-plan.pdf&from=20200430024232&to=20200430024232&showResumeKey=true&resolveRevisits=trueUS
+      X-NA:
+      - '0'
+      X-NID:
+      - '-'
       X-Page-Cache:
       - BYPASS
+      X-RL:
+      - '0'
       X-location:
       - cdx
-      X-ts:
+      content-encoding:
+      - gzip
+      x-app-server:
+      - wwwb-app14
+      x-tr:
+      - '41'
+      x-ts:
       - '200'
     status:
       code: 200
@@ -47,9 +57,9 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - wayback/0.2.3 (+https://github.com/edgi-govdata-archiving/wayback)
+      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
-    uri: http://web.archive.org/web/20200430024232id_/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf
+    uri: https://web.archive.org/web/20200430024232id_/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf
   response:
     body:
       string: !!binary |
@@ -6649,74 +6659,86 @@ interactions:
         L1NpemUgMTAzNy9UeXBlL1hSZWYvV1sxIDMgMF0+PnN0cmVhbQ0KaN5iYmRd/pGJgUFIEUgwCQME
         GAAUJAHtDQplbmRzdHJlYW0NZW5kb2JqDXN0YXJ0eHJlZg0KMzc1NTg5DQolJUVPRg0K
     headers:
-      Cache-Control:
-      - max-age=1800
+      Accept-Ranges:
+      - bytes
       Connection:
       - keep-alive
-      Content-Security-Policy:
-      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
-        web.archive.org analytics.archive.org pragma.archivelab.org'
+      Content-Length:
+      - '375909'
       Content-Type:
       - application/pdf
       Date:
-      - Fri, 28 Aug 2020 08:11:05 GMT
-      Link:
-      - <https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="original", <http://web.archive.org/web/timemap/link/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="timegate", <http://web.archive.org/web/20170118011157/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="first memento"; datetime="Wed, 18 Jan 2017 01:11:57 GMT", <http://web.archive.org/web/20200429023007/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="prev memento"; datetime="Wed, 29 Apr 2020 02:30:07 GMT", <http://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="memento"; datetime="Thu, 30 Apr 2020 02:42:32 GMT", <http://web.archive.org/web/20200501040326/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="next memento"; datetime="Fri, 01 May 2020 04:03:26 GMT", <http://web.archive.org/web/20200827014623/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="last memento"; datetime="Thu, 27 Aug 2020 01:46:23 GMT"
-      Memento-Datetime:
-      - Thu, 30 Apr 2020 02:42:32 GMT
+      - Fri, 02 Dec 2022 01:19:37 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
       Server:
-      - nginx/1.15.8
-      Server-Timing:
-      - PetaboxLoader3.datanode;dur=118.638226, PetaboxLoader3.resolve;dur=148.022852,
-        LoadShardBlock;dur=160.385209, exclusion.robots;dur=0.493145, esindex;dur=0.016460,
-        load_resource;dur=188.042826, CDXLines.iter;dur=25.445277, exclusion.robots.policy;dur=0.477237,
-        RedisCDXSource;dur=8.537661, captures_list;dur=257.903345
-      Transfer-Encoding:
-      - chunked
-      X-App-Server:
-      - wwwb-app12
-      X-Archive-Orig-Accept-Ranges:
-      - bytes
-      X-Archive-Orig-Cache-Control:
-      - max-age=572
-      X-Archive-Orig-Connection:
-      - close
-      X-Archive-Orig-Content-Length:
-      - '375909'
-      X-Archive-Orig-Date:
+      - nginx/1.19.5
+      X-NA:
+      - '0'
+      X-NID:
+      - '-'
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '0'
+      X-location:
+      - _pdf
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org analytics.archive.org pragma.archivelab.org'
+      link:
+      - <https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="timegate", <https://web.archive.org/web/20170118011157/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="first memento"; datetime="Wed, 18 Jan 2017 01:11:57 GMT", <https://web.archive.org/web/20200429023007/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="prev memento"; datetime="Wed, 29 Apr 2020 02:30:07 GMT", <https://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="memento"; datetime="Thu, 30 Apr 2020 02:42:32 GMT", <https://web.archive.org/web/20200501040326/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="next memento"; datetime="Fri, 01 May 2020 04:03:26 GMT", <https://web.archive.org/web/20221128214249/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="last memento"; datetime="Mon, 28 Nov 2022 21:42:49 GMT"
+      memento-datetime:
       - Thu, 30 Apr 2020 02:42:32 GMT
-      X-Archive-Orig-ETag:
+      server-timing:
+      - captures_list;dur=126.062358, exclusion.robots;dur=0.322762, exclusion.robots.policy;dur=0.308693,
+        RedisCDXSource;dur=2.677645, esindex;dur=0.011994, LoadShardBlock;dur=58.365449,
+        PetaboxLoader3.datanode;dur=125.525449, CDXLines.iter;dur=34.622135, load_resource;dur=255.324183,
+        PetaboxLoader3.resolve;dur=134.836218
+      x-app-server:
+      - wwwb-app223
+      x-archive-orig-accept-ranges:
+      - bytes
+      x-archive-orig-cache-control:
+      - max-age=572
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '375909'
+      x-archive-orig-date:
+      - Thu, 30 Apr 2020 02:42:32 GMT
+      x-archive-orig-etag:
       - '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"'
-      X-Archive-Orig-Expires:
+      x-archive-orig-expires:
       - Thu, 30 Apr 2020 02:52:04 GMT
-      X-Archive-Orig-Last-Modified:
+      x-archive-orig-last-modified:
       - Tue, 16 Aug 2016 15:43:21 GMT
-      X-Archive-Orig-Server:
+      x-archive-orig-server:
       - AkamaiNetStorage
-      X-Archive-Orig-Server-Timing:
+      x-archive-orig-server-timing:
       - cdn-cache; desc=HIT
       - edge; dur=141
-      X-Archive-Orig-Strict-Transport-Security:
+      x-archive-orig-strict-transport-security:
       - max-age=31536000; preload;
-      X-Archive-Orig-X-Content-Type-Options:
+      x-archive-orig-x-content-type-options:
       - nosniff
-      X-Archive-Src:
+      x-archive-src:
       - epa.gov3-20190924-190603/IA-FOC-epa.gov3-20200430020845-00000.warc.gz
-      X-Cache-Key:
-      - httpweb.archive.org/web/20200430024232id_/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdfUS
-      X-Page-Cache:
-      - MISS
-      X-location:
-      - All
-      X-ts:
+      x-tr:
+      - '399'
+      x-ts:
       - '200'
     status:
       code: 200

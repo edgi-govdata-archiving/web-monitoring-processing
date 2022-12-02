@@ -11,7 +11,7 @@ from web_monitoring.cli.cli import (_filter_unchanged_versions,
 
 # The only matters when re-recording the tests for vcr.
 AUTH_ENVIRON = {
-    'WEB_MONITORING_DB_URL': 'https://api-staging.monitoring.envirodatagov.org',
+    'WEB_MONITORING_DB_URL': 'https://api.monitoring-staging.envirodatagov.org',
     'WEB_MONITORING_DB_EMAIL': 'public.access@envirodatagov.org',
     'WEB_MONITORING_DB_PASSWORD': 'PUBLIC_ACCESS'
 }
@@ -24,6 +24,7 @@ ia_vcr = vcr.VCR(
          cassette_library_dir=cassette_library_dir,
          record_mode='once',
          match_on=['uri', 'method'],
+         filter_headers=['authorization'],
 )
 
 
@@ -79,19 +80,19 @@ def test_format_memento():
         assert version['title'] == "U.S. Fish & Wildlife Service - Migratory Bird Program | Conserving America's Birds"
 
         assert version['capture_time'] == '2017-11-24T15:13:15Z'
-        assert version['uri'] == f'http://web.archive.org/web/20171124151315id_/{url}'
+        assert version['uri'] == f'https://web.archive.org/web/20171124151315id_/{url}'
         assert version['version_hash'] == 'ae433414499f91630983fc379d9bafae67250061178930b8779ee76c82485491'
         assert version['source_type'] == 'internet_archive'
         assert version['status'] == 200
         assert version['media_type'] == 'text/html'
         assert version['source_metadata'] == {
             'headers': {
-                'Content-Type': 'text/html',
-                'Date': 'Fri, 24 Nov 2017 15:13:14 GMT',
-                'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-                'Transfer-Encoding': 'chunked'
+                'content-type': 'text/html',
+                'date': 'Fri, 24 Nov 2017 15:13:14 GMT',
+                'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+                'transfer-encoding': 'chunked'
             },
-            'view_url': 'http://web.archive.org/web/20171124151315/https://www.fws.gov/birds/'
+            'view_url': 'https://web.archive.org/web/20171124151315/https://www.fws.gov/birds/'
         }
 
 
@@ -134,28 +135,28 @@ def test_format_memento_pdf():
         assert version['page_tags'] == ['tag']
         assert version['title'] == "EPA Office of Air and Radiation Climate Change Adaptation Implementation Plan, June 2014"
         assert version['capture_time'] == '2020-04-30T02:42:32Z'
-        assert version['uri'] == f'http://web.archive.org/web/20200430024232id_/{url}'
+        assert version['uri'] == f'https://web.archive.org/web/20200430024232id_/{url}'
         assert version['version_hash'] == 'bdfd8c1ee22b70cd1b8bd513989822e066a9656f4578606ef3d5feb6204e3dc6'
         assert version['source_type'] == 'internet_archive'
         assert version['status'] == 200
         assert version['media_type'] == 'application/pdf'
         assert version['source_metadata'] == {
             'headers': {
-                'Accept-Ranges': 'bytes',
-                'Cache-Control': 'max-age=572',
-                'Connection': 'close',
-                'Content-Length': '375909',
-                'Content-Type': 'application/pdf',
-                'Date': 'Thu, 30 Apr 2020 02:42:32 GMT',
-                'ETag': '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"',
-                'Expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
-                'Last-Modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
-                'Server': 'AkamaiNetStorage',
-                'Server-Timing': 'cdn-cache; desc=HIT, edge; dur=141',
-                'Strict-Transport-Security': 'max-age=31536000; preload;',
-                'X-Content-Type-Options': 'nosniff'
+                'accept-ranges': 'bytes',
+                'cache-control': 'max-age=572',
+                'connection': 'close',
+                'content-length': '375909',
+                'content-type': 'application/pdf',
+                'date': 'Thu, 30 Apr 2020 02:42:32 GMT',
+                'etag': '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"',
+                'expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
+                'last-modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
+                'server': 'AkamaiNetStorage',
+                'server-timing': 'cdn-cache; desc=HIT, edge; dur=141',
+                'strict-transport-security': 'max-age=31536000; preload;',
+                'x-content-type-options': 'nosniff'
             },
-            'view_url': 'http://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf'
+            'view_url': 'https://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf'
         }
 
 
