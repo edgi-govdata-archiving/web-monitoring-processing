@@ -676,7 +676,12 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         uploadable_versions = importable_queue
         if skip_unchanged == 'resolved-response':
-            uploadable_versions = _filter_unchanged_versions(importable_queue)
+            # uploadable_versions = _filter_unchanged_versions(importable_queue)
+            uploadable_versions = utils.FiniteQueue()
+            filter_unchanged_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
+                uploadable_versions,
+                _filter_unchanged_versions(importable_queue)))
+            filter_unchanged_thread.start()
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
@@ -684,8 +689,11 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         uploader.start()
 
         cdx_thread.join()
+        logger.info('All CDX queries complete')
         memento_thread.join()
+        logger.info('All mementos loaded')
         progress_thread.join()
+        logger.info('Progress meter ended')
         filter_importable_thread.join()
 
         print('\nLoaded {total} CDX records:\n'
