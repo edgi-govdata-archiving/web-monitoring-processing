@@ -5,8 +5,8 @@ import io
 import logging
 import lxml.html
 import os
-from PyPDF2 import PdfReader
-from PyPDF2.errors import PyPdfError
+from pypdf import PdfReader
+from pypdf.errors import PyPdfError
 import queue
 import re
 import signal
