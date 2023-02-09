@@ -249,8 +249,9 @@ class Client:
     """
     def __init__(self, email, password, url=DEFAULT_URL, timeout=None,
                  retries=None):
-        self._api_url = f'{url}/api/v0'
-        self._base_url = url
+        clean_url = url.rstrip('/')
+        self._api_url = f'{clean_url}/api/v0'
+        self._base_url = clean_url
         self._session = DbSession(retries=retries, timeout=timeout)
         self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
@@ -791,7 +792,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         errors : dict of {str or int : list}
         """
+        # Track errors from each job for reporting.
         errors = {}
+        # Controls delay between status checks; increases on each loop.
+        wait_factor = 0
+
         import_ids = list(import_ids)  # to ensure mutable collection
         try:
             while import_ids and (stop is None or not stop.is_set()):
@@ -810,7 +815,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                         job_errors = data['processing_errors']
                         if job_errors:
                             errors[import_id] = job_errors
-                time.sleep(1)
+                        wait_factor = 0
+                time.sleep(2 ** wait_factor)
+                wait_factor = min(4, 1 + wait_factor)
         except KeyboardInterrupt:
             ...
         return errors
