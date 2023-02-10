@@ -1,10 +1,15 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10.7-slim
+# Base Image for Building -----------------------------------------------------
+
+FROM python:3.10.10-slim AS build
 LABEL maintainer="enviroDGI@gmail.com"
 
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     git gcc g++ pkg-config libxml2-dev libxslt-dev libz-dev \
+#     libssl-dev openssl libcurl4-openssl-dev
+
+# Need build tools for some dependencies (Cchardet, Lxml)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git gcc g++ pkg-config libxml2-dev libxslt-dev libz-dev \
-    libssl-dev openssl libcurl4-openssl-dev
+    gcc g++ pkg-config libxml2-dev libxslt-dev libz-dev
 
 # Set the working directory to /app
 WORKDIR /app
@@ -14,16 +19,32 @@ WORKDIR /app
 ADD requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --trusted-host pypi.python.org -r requirements.txt
+RUN pip install --user --trusted-host pypi.python.org -r requirements.txt
 
 # Copy the rest of the source.
 ADD . /app
 
 # Install package.
-RUN pip install .
+RUN pip install --user .
 
-# Make port 80 available to the world outside this container.
-EXPOSE 80
 
-# Run server on port 80 when the container launches.
-CMD ["wm-diffing-server", "80"]
+# Deployable Image w/out Build-Only Dependencies ------------------------------
+
+FROM python:3.10.10-slim AS release
+LABEL maintainer="enviroDGI@gmail.com"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxml2 libxslt1.1 zlib1g
+
+# Copy installed/built Python packages from build image.
+COPY --from=build /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the rest of the source. No need to reinstall here, since it will have
+# been installed in the build layer above.
+COPY --from=build /app /app
+
+# NOTE: no built-in command; run something like `scripts/ia_healthcheck`
