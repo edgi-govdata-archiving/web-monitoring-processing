@@ -231,8 +231,8 @@ class Client:
 
     Parameters
     ----------
-    email : string
-    password : string
+    email : string, optional
+    password : string, optional
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout : float, optional
@@ -247,44 +247,48 @@ class Client:
         https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry
         Default: ``(2, 2)``
     """
-    def __init__(self, email, password, url=DEFAULT_URL, timeout=None,
+    def __init__(self, email=None, password=None, url=DEFAULT_URL, timeout=None,
                  retries=None):
         clean_url = url.rstrip('/')
         self._api_url = f'{clean_url}/api/v0'
         self._base_url = clean_url
         self._session = DbSession(retries=retries, timeout=timeout)
-        self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
+        if email and password:
+            self._session.auth = (email, password)
+        elif email or password:
+            missing = 'email' if not email else 'password'
+            raise MissingCredentials('You provided incomplete credentials! ' +
+                                     f'"{missing}" was not set.')
 
     @classmethod
     def from_env(cls, **kwargs):
         """
         Instantiate a :class:`Client` by obtaining its authentication info from
-        these environment variables:
+        these environment variables (all are optional):
 
-            * ``WEB_MONITORING_DB_URL`` (optional -- defaults to
-              ``https://api.monitoring.envirodatagov.org``)
+            * ``WEB_MONITORING_DB_URL``
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
 
         Any extra parameters (e.g. ``timeout``) are passed to the ``Client``
         constructor.
         """
-        try:
-            url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
-            email = os.environ['WEB_MONITORING_DB_EMAIL']
-            password = os.environ['WEB_MONITORING_DB_PASSWORD']
-        except KeyError:
+        url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
+        email = os.environ.get('WEB_MONITORING_DB_EMAIL')
+        password = os.environ.get('WEB_MONITORING_DB_PASSWORD')
+        if email and not password:
             raise MissingCredentials("""
-Before using this method, database credentials must be set via environmental
-variables:
-
-   WEB_MONITORING_DB_URL (optional)
-   WEB_MONITORING_DB_EMAIL
-   WEB_MONITORING_DB_PASSWORD
-
-Alternatively, you can instaniate Client(user, password) directly.""")
-        return cls(email=email, password=password, url=url, **kwargs)
+The WEB_MONITORING_DB_EMAIL environment variable was set, but
+WEB_MONITORING_DB_PASSWORD was not. Make sure to neither or both!
+""")
+        elif password and not email:
+            raise MissingCredentials("""
+The WEB_MONITORING_DB_PASSWORD environment variable was set, but
+WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
+""")
+        else:
+            return cls(email=email, password=password, url=url, **kwargs)
 
     def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
