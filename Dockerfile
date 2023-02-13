@@ -1,11 +1,11 @@
-# Base Image for Building -----------------------------------------------------
-
-FROM python:3.10.10-slim AS build
+# Base Image  -----------------------------------------------------------------
+FROM python:3.10.10-slim AS base
+LABEL org.opencontainers.image.authors="enviroDGI@gmail.com"
 LABEL maintainer="enviroDGI@gmail.com"
 
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     git gcc g++ pkg-config libxml2-dev libxslt-dev libz-dev \
-#     libssl-dev openssl libcurl4-openssl-dev
+
+# Building Deps & Native Code -------------------------------------------------
+FROM base AS build
 
 # Need build tools for some dependencies (Cchardet, Lxml)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -29,9 +29,7 @@ RUN pip install --user .
 
 
 # Deployable Image w/out Build-Only Dependencies ------------------------------
-
-FROM python:3.10.10-slim AS release
-LABEL maintainer="enviroDGI@gmail.com"
+FROM base AS release
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 libxslt1.1 zlib1g
