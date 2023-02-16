@@ -952,7 +952,7 @@ def validate_db_credentials():
             Check the following environment variables:
 
                 WEB_MONITORING_DB_URL
-                WEB_MONITORING_DB_EMAIL {os.environ['WEB_MONITORING_DB_EMAIL']}
+                WEB_MONITORING_DB_EMAIL {os.environ.get('WEB_MONITORING_DB_EMAIL')}
                 WEB_MONITORING_DB_PASSWORD
                 """)
 
