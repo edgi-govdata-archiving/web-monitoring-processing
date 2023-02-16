@@ -104,11 +104,12 @@ jobs:
             cd docs && make html
 
   build_docker:
-    machine: true
+    machine:
+      image: ubuntu-2004:202111-02
     steps:
       - checkout
       - run: |
-          docker build -t envirodgi/processing:$CIRCLE_SHA1 .
+          docker build --target release --tag envirodgi/processing:$CIRCLE_SHA1 .
       - run:
           name: Save Image
           command: |
@@ -120,7 +121,8 @@ jobs:
             - docker-image
 
   publish_docker:
-    machine: true
+    machine:
+      image: ubuntu-2004:202111-02
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -146,19 +148,13 @@ workflows:
               python-version: ["3.7", "3.8", "3.9", "3.10"]
       - lint
       - docs
-      # The docker image is currently focused on the diff server, which now
-      # lives in the web-monitoring-diff project and will be published there.
-      # The current docker image should be considered deprecated and will no
-      # longer be updated.
-      #
-      # We're keeping this code around for future images based around the other
-      # scripts here for possible use with things like AWS Batch.
-      # - build_docker
-      # - publish_docker:
-      #     requires:
-      #       - build
-      #       - build_docker
-      #     filters:
-      #       branches:
-      #         only:
-      #           - release
+      - build_docker
+      - publish_docker:
+          requires:
+            - test
+            - lint
+            - build_docker
+          filters:
+            branches:
+              only:
+                - release
