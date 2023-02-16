@@ -1,0 +1,15 @@
+# Tools for building documentation. Some of our docs tools conflict with dev
+# tools on Python < 10, so docs tools are listed here in order to make it
+# possible to skip installing them if not needed.
+#
+# Unlike most requirements.txt files, this is not a frozen list of exact
+# dependencies (a.k.a. a lock file). Instead, it specifies:
+# - Direct dependencies only.
+# - Package names and valid version *ranges*
+#
+# It only exists to keep the list of dependencies in a separate file from
+# setup.py.
+ipython ~=8.5
+numpydoc ~=1.5
+sphinx ~=5.3.0
+sphinx_rtd_theme ~=1.1.1

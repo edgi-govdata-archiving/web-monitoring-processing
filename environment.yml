@@ -6,9 +6,4 @@ dependencies:
 - lxml
 - requests
 - toolz
-- tornado
 - tqdm
-- pip:
-  - diff_match_patch_python
-  - git+https://github.com/anastasia/htmldiffer@develop
-  - git+https://github.com/danielballan/htmltreediff@customize

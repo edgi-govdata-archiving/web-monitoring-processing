@@ -1,59 +1,115 @@
 version: 2.1
-jobs:
-  build:
-    working_directory: ~/web-monitoring-processing
-    docker:
-      - image: circleci/python:3.7
+
+parameters:
+  primary-python-version:
+    type: string
+    default: "3.10.7"
+
+commands:
+  setup_pip:
+    description: "Set Up Dependencies"
+    parameters:
+      python-version:
+        type: string
+      install-docs:
+        description: Install docs dependencies
+        type: boolean
+        default: false
     steps:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-{{ checksum "requirements.txt" }}-{{ checksum "dev-requirements.txt" }}
-            - processing-{{ arch }}-
+            - processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
+            - processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-
+            - processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-
+            - processing-{{ arch }}-<< parameters.python-version >>-v2-
 
       # Bundle install dependencies
       - run:
           name: Install Dependencies
           command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-            pip install -r dev-requirements.txt
-            python setup.py install
+            python -m venv ~/venv
+            . ~/venv/bin/activate
+            pip install --upgrade pip
+            pip install wheel
+            pip install .
+            pip install -r requirements-dev.txt
+
+      # Docs dependencies are only compatible on Python 3.10+, so only install
+      # them on demand.
+      - when:
+          condition: << parameters.install-docs >>
+          steps:
+            - run:
+                command: |
+                  . ~/venv/bin/activate
+                  pip install -r requirements-docs.txt
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-{{ checksum "requirements.txt" }}-{{ checksum "dev-requirements.txt" }}
+          key: processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
           paths:
             - venv
 
+jobs:
+  test:
+    parameters:
+      python-version:
+        type: string
+    working_directory: ~/web-monitoring-processing
+    docker:
+      - image: cimg/python:<< parameters.python-version >>
+    steps:
+      - checkout
+      - setup_pip:
+          python-version: << parameters.python-version >>
       - run:
           name: Tests
           command: |
-            . venv/bin/activate
+            . ~/venv/bin/activate
             coverage run run_tests.py -v web_monitoring/tests/
       - run:
           name: Coverage
           command: |
-            . venv/bin/activate
+            . ~/venv/bin/activate
             coverage report -m
+
+  lint:
+    working_directory: ~/web-monitoring-processing
+    docker:
+      - image: cimg/python:<< pipeline.parameters.primary-python-version >>
+    steps:
+      - checkout
+      - setup_pip:
+          python-version: << pipeline.parameters.primary-python-version >>
       - run:
           name: Code linting
           command: |
-            . venv/bin/activate
+            . ~/venv/bin/activate
             pyflakes web_monitoring
+
+  docs:
+    working_directory: ~/web-monitoring-processing
+    docker:
+      - image: cimg/python:<< pipeline.parameters.primary-python-version >>
+    steps:
+      - checkout
+      - setup_pip:
+          python-version: << pipeline.parameters.primary-python-version >>
+          install-docs: true
       - run:
           name: Build docs
           command: |
-            . venv/bin/activate
+            . ~/venv/bin/activate
             cd docs && make html
 
   build_docker:
-    machine: true
+    machine:
+      image: ubuntu-2004:202111-02
     steps:
       - checkout
       - run: |
-          docker build -t envirodgi/processing:$CIRCLE_SHA1 .
+          docker build --target release --tag envirodgi/processing:$CIRCLE_SHA1 .
       - run:
           name: Save Image
           command: |
@@ -65,7 +121,8 @@ jobs:
             - docker-image
 
   publish_docker:
-    machine: true
+    machine:
+      image: ubuntu-2004:202111-02
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -85,20 +142,19 @@ jobs:
 workflows:
   build:
     jobs:
-      - build
-      # The docker image is currently focused on the diff server, which now
-      # lives in the web-monitoring-diff project and will be published there.
-      # The current docker image should be considered deprecated and will no
-      # longer be updated.
-      #
-      # We're keeping this code around for future images based around the other
-      # scripts here for possible use with things like AWS Batch.
-      # - build_docker
-      # - publish_docker:
-      #     requires:
-      #       - build
-      #       - build_docker
-      #     filters:
-      #       branches:
-      #         only:
-      #           - release
+      - test:
+          matrix:
+            parameters:
+              python-version: ["3.7", "3.8", "3.9", "3.10"]
+      - lint
+      - docs
+      - build_docker
+      - publish_docker:
+          requires:
+            - test
+            - lint
+            - build_docker
+          filters:
+            branches:
+              only:
+                - release

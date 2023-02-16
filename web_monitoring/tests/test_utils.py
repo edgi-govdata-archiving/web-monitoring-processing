@@ -4,7 +4,7 @@ import queue
 from pathlib import Path
 import threading
 from web_monitoring.utils import (extract_title, extract_pdf_title, RateLimit,
-                                  FiniteQueue)
+                                  FiniteQueue, sniff_media_type)
 
 
 def get_fixture_bytes(filename):
@@ -65,6 +65,11 @@ def test_extract_pdf_title_encrypted_no_password():
     assert title == 'Empty Password Title Field'
 
 
+@pytest.mark.skip("""
+    pypdf has maintainers again, and we no longer have any examples of
+    unsupported encryption schemes! Bring this test back if we
+    encounter new, undecryptable PDFs.
+""")
 def test_extract_pdf_title_encrypted_unsupported_algorithm():
     """
     Get the title of a PDF that's encrypted with an unsupported algorithm. This
@@ -84,6 +89,43 @@ def test_extract_pdf_title_no_eof():
     pdf_bytes = get_fixture_bytes('no_eof_marker.pdf')
     title = extract_pdf_title(pdf_bytes)
     assert title is None
+
+
+def test_extract_pdf_title_no_metadata():
+    """
+    Get the title of a PDF that has no metadata at all without raising an
+    exception.
+    """
+    pdf_bytes = get_fixture_bytes('no_metadata.pdf')
+    title = extract_pdf_title(pdf_bytes)
+    assert title is None
+
+
+class TestSniffMediaType:
+    def test_sniff_media_type_detects_html(self):
+        raw_bytes = b'''
+            <!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+            <html>
+            <head>
+                <title>Test Page</title>
+            </head>
+            <body>
+                Test
+            </body>
+            </html>
+        '''
+        media = sniff_media_type(raw_bytes)
+        assert media == 'text/html'
+
+    def test_sniff_media_type_detects_pdf(self):
+        raw_bytes = get_fixture_bytes('basic_title.pdf')
+        media = sniff_media_type(raw_bytes)
+        assert media == 'application/pdf'
+
+    def test_sniff_media_type_uses_default_parameter_as_fallback(self):
+        raw_bytes = b'This is just a random string'
+        media = sniff_media_type(raw_bytes, 'my/default')
+        assert media == 'my/default'
 
 
 class TestRateLimit:

@@ -1,4 +1,3 @@
-import asyncio
 import cchardet
 import codecs
 import hashlib
@@ -6,12 +5,10 @@ import io
 import logging
 import lxml.html
 import os
-from PyPDF2 import PdfFileReader
-from PyPDF2.utils import PyPdfError
+from pypdf import PdfReader
+from pypdf.errors import PyPdfError
 import queue
 import re
-import requests
-import requests.adapters
 import signal
 import sys
 import threading
@@ -98,6 +95,75 @@ def detect_encoding(content, headers, default='utf-8'):
     return encoding
 
 
+# Patterns used to sniff various media types. Based on:
+# - https://dev.w3.org/html5/cts/html5-type-sniffing.html
+# - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
+#
+# NOTE: a "verbose" regex would be nice here, but they don't seem to work with
+# binary strings.
+SNIFF_HTML_HINTS = (
+    rb'<!DOCTYPE HTML',
+    rb'<HTML',
+    rb'<HEAD',
+    rb'<SCRIPT',
+    rb'<IFRAME',
+    rb'<H1',
+    rb'<DIV',
+    rb'<FONT',
+    rb'<TABLE',
+    rb'<A',
+    rb'<STYLE',
+    rb'<TITLE',
+    rb'<B',
+    rb'<BODY',
+    rb'<BR',
+    rb'<P',
+    rb'<!--',
+)
+
+SNIFF_HTML_PATTERN = re.compile(
+    rb'^[\s\n\r]*(%s)[\s\n\r>]' % b'|'.join(SNIFF_HTML_HINTS),
+    re.IGNORECASE
+)
+
+SNIFF_MEDIA_TYPE_PATTERNS = {
+    SNIFF_HTML_PATTERN: 'text/html',
+    re.compile(rb'^[\s\n\r]*<?xml'): 'text/xml',
+    re.compile(rb'^%PDF-'): 'application/pdf',
+    re.compile(rb'^%!PS-Adobe-'): 'application/postscript',
+    re.compile(rb'^(GIF87a|GIF89a)'): 'image/gif',
+    re.compile(rb'^\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'): 'image/png',
+    re.compile(rb'^\xFF\xD8\xFF'): 'image/jpeg',
+    re.compile(rb'^BM'): 'image/bmp',
+}
+
+
+def sniff_media_type(content, default='application/octet-stream'):
+    """
+    Detect the media type of some content. If the media type can't be detected,
+    the value of the ``default`` parameter will be returned.
+
+    This is similar to how browsers do it and is based on:
+    - https://dev.w3.org/html5/cts/html5-type-sniffing.html
+    - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
+
+    Parameters
+    ----------
+    content : bytes
+    default : str or None
+
+    Returns
+    -------
+    str
+        The detected media type of the content.
+    """
+    for pattern, media_type in SNIFF_MEDIA_TYPE_PATTERNS.items():
+        if pattern.match(content):
+            return media_type
+
+    return default
+
+
 def extract_title(content_bytes, encoding='utf-8'):
     "Return content of <title> tag as string. On failure return empty string."
     content_str = content_bytes.decode(encoding=encoding, errors='ignore')
@@ -134,22 +200,19 @@ def extract_pdf_title(content_bytes, password=''):
     str or None
     """
     try:
-        pdf = PdfFileReader(io.BytesIO(content_bytes))
+        pdf = PdfReader(io.BytesIO(content_bytes))
         # Lots of PDFs turn out to be encrypted with an empty password, so this
         # is always worth trying (most PDF viewers turn out to do this, too).
         # This gets its own inner `try` block (that catches all exceptions)
         # because there are a huge variety of error types that happen inside
         # the `decrypt` call, even with valid PDFs. :(
-        if pdf.isEncrypted:
+        if pdf.is_encrypted:
             try:
                 pdf.decrypt(password)
             except Exception:
                 return None
 
-        info = pdf.getDocumentInfo()
-        # Documents with no title actually have no title attribute at all,
-        # rather than setting the title attribute to `None`. ¯\_(ツ)_/¯
-        return getattr(info, 'title', None)
+        return pdf.metadata.title if pdf.metadata else None
     except PyPdfError:
         return None
 
@@ -157,37 +220,6 @@ def extract_pdf_title(content_bytes, password=''):
 def hash_content(content_bytes):
     "Create a version_hash for the content of a snapshot."
     return hashlib.sha256(content_bytes).hexdigest()
-
-
-def shutdown_executor_in_loop(executor):
-    """
-    Safely and asynchronously shut down a ProcessPoolExecutor from within an
-    event loop.
-
-    This returns an awaitable future, but is not a coroutine itself, so it's
-    safe to *not* await the result if you don't need to know when the shutdown
-    is complete.
-
-    The executor documentation suggests that calling ``shutdown(wait=False)``
-    won't actually trash the executor until all pending futures are done, but
-    this isn't actually true (at least not for ``ProcessPoolExecutor`` -- it
-    will raise ``OSError`` moments later in an internal polling function where
-    it can not be caught). To safely shutdown in an event loop, you *must* set
-    ``wait=True``. This handles that for you in an easy-to-use awaitable form.
-
-    See also: https://docs.python.org/3.7/library/concurrent.futures.html#concurrent.futures.Executor.shutdown
-
-    Parameters
-    ----------
-    executor : concurrent.futures.Executor
-
-    Returns
-    -------
-    shutdown : Awaitable
-    """
-    return asyncio.get_event_loop().run_in_executor(
-        None,
-        lambda: executor.shutdown(wait=True))
 
 
 class RateLimit:
@@ -240,23 +272,6 @@ class RateLimit:
 
     def __exit__(self, type, value, traceback):
         pass
-
-
-def get_color_palette():
-    """
-    Read and return the CSS color env variables that indicate the colors in
-    html_diff_render, differs and links_diff.
-
-    Returns
-    ------
-    palette: Dictionary
-        A dictionary containing the differ_insertion and differ_deletion css
-        color codes
-    """
-    differ_insertion = os.environ.get('DIFFER_COLOR_INSERTION', '#a1d76a')
-    differ_deletion = os.environ.get('DIFFER_COLOR_DELETION', '#e8a4c8')
-    return {'differ_insertion': differ_insertion,
-            'differ_deletion': differ_deletion}
 
 
 def iterate_into_queue(queue, iterable):
@@ -324,66 +339,6 @@ class FiniteQueue(queue.SimpleQueue):
                 yield self.__next__(timeout)
             except StopIteration:
                 return
-
-
-class DepthCountedContext:
-    """
-    DepthCountedContext is a mixin or base class for context managers that need
-    to be perform special operations only when all nested contexts they might
-    be used in have exited.
-
-    Override the `__exit_all__(self, type, value, traceback)` method to get a
-    version of `__exit__` that is only called when exiting the top context.
-
-    As a convenience, the built-in `__enter__` returns `self`, which is fairly
-    common, so in many cases you don't need to author your own `__enter__` or
-    `__exit__` methods.
-    """
-    _context_depth = 0
-
-    def __enter__(self):
-        self._context_depth += 1
-        return self
-
-    def __exit__(self, type, value, traceback):
-        if self._context_depth > 0:
-            self._context_depth -= 1
-        if self._context_depth == 0:
-            return self.__exit_all__(type, value, traceback)
-
-    def __exit_all__(self, type, value, traceback):
-        """
-        A version of the normal `__exit__` context manager method that only
-        gets called when the top level context is exited. This is meant to be
-        overridden in your class.
-        """
-        pass
-
-
-class SessionClosedError(Exception):
-    ...
-
-
-class DisableAfterCloseSession(requests.Session):
-    """
-    A custom session object raises a :class:`SessionClosedError` if you try to
-    use it after closing it, to help identify and avoid potentially dangerous
-    code patterns. (Standard session objects continue to be usable after
-    closing, even if they may not work exactly as expected.)
-    """
-    _closed = False
-
-    def close(self, disable=True):
-        super().close()
-        if disable:
-            self._closed = True
-
-    def send(self, *args, **kwargs):
-        if self._closed:
-            raise SessionClosedError('This session has already been closed '
-                                     'and cannot send new HTTP requests.')
-
-        return super().send(*args, **kwargs)
 
 
 class Signal:

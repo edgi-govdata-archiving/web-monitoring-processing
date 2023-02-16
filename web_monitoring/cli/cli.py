@@ -18,20 +18,24 @@ general data flow looks something like:
  └──────────────┘   └──────────────┘
         ├───────────────────┘
         │
- ┌─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ (in parallel) ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
- ┊      │                                                                     ┊
- ┊ ┌──────────┐  ┌─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  ┌────────┐ ┊
- ┊ │ Load CDX │  ┊ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┊  │ Import │ ┊
- ┊ │ records  │  ┊ │Load memento│ │Load memento│ │Load memento│ ┊  │   to   │ ┊
- ┊ │ for URLs │  ┊ └────────────┘ └────────────┘ └────────────┘ ┊  │   DB   │ ┊
- ┊ │          │  ┊    ├─────────────────┴──────────────┘        ┊  │        │ ┊
- ┊ └──────────┘  └─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  └────────┘ ┊
- ┊      ↓             ↑                              ↓   ↓           ↑   │    ┊
- ┊      └── (queue) ──┘ <─── (re-queue errors x2) ───┘   └─ (queue) ─┘   │    ┊
- ┊                                                                       │    ┊
- └─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┼─ ─ ┘
-                                                                         │
-                                                                       Done!
+ ┌ ─ ─ ─┼─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ (in parallel) ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+ ┊      │                                                                      ┊
+ ┊ ┌──────────┐  ┌─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  ┌─────────┐ ┊
+ ┊ │ Load CDX │  ┊ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┊  │Summarize│ ┊
+ ┊ │ records  │  ┊ │Load memento│ │Load memento│ │Load memento│ ┊  │ results │ ┊
+ ┊ │ for URLs │  ┊ └────────────┘ └────────────┘ └────────────┘ ┊  │   and   │ ┊
+ ┊ │          │  ┊    ├─────────────────┴──────────────┘        ┊  │  errors │ ┊
+ ┊ └──────────┘  └─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  └─────────┘ ┊
+ ┊      ↓             ↑                                  ↓           ↑   │     ┊
+ ┊      └── (queue) ──┘                                  └─ (queue) ─┘   │     ┊
+ ┊                                                                       │     ┊
+ ┊                                              ┌────────┐      ┌────────────┐ ┊
+ ┊                                              │ Import │←─────│   Filter   │ ┊
+ ┊                                              │ to DB  │      │ out errors │ ┊
+ ┊                                              └────────┘      └────────────┘ ┊
+ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┼─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+                                                    │
+                                                  Done!
 
 Each box represents a thread. Instances of `FiniteQueue` are used to move data
 and results between them.
@@ -39,12 +43,13 @@ and results between them.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from web_monitoring.utils import detect_encoding
+from web_monitoring.utils import detect_encoding, sniff_media_type
 import dateutil.parser
 from docopt import docopt
 from itertools import islice
 import json
 import logging
+import math
 import os
 from os.path import splitext
 from pathlib import Path
@@ -53,12 +58,14 @@ import requests
 import signal
 import sys
 import threading
+import time
 from tqdm import tqdm
 from urllib.parse import urlparse
 from web_monitoring import db
 import wayback
 from wayback.exceptions import (WaybackException, WaybackRetryError,
-                                MementoPlaybackError, BlockedByRobotsError)
+                                MementoPlaybackError, NoMementoError,
+                                BlockedByRobotsError)
 from web_monitoring import utils, __version__
 
 
@@ -148,6 +155,13 @@ PDF_MEDIA_TYPES = frozenset((
     'application/x-pdf',
 ))
 
+# These media types are so meaningless that it's worth sniffing the content to
+# see if we can determine an actual media type.
+SNIFF_MEDIA_TYPES = frozenset((
+    'application/octet-stream',
+    'application/x-download',
+))
+
 # Identifies a bare media type (that is, one without parameters)
 MEDIA_TYPE_EXPRESSION = re.compile(r'^\w+/\w[\w+_\-.]+$')
 
@@ -167,15 +181,11 @@ def _get_progress_meter(iterable):
     if hasattr(file, "isatty") and not file.isatty():
         intervals = dict(mininterval=10, maxinterval=60)
 
-    return tqdm(iterable, desc='importing', unit=' versions', **intervals)
+    return tqdm(iterable, desc='Processing', unit=' CDX Records', **intervals)
 
 
 def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None, db_client=None):
     cli = db_client or db.Client.from_env()  # will raise if env vars not set
-    # Wrap verions in a progress bar.
-    # TODO: create this on the main thread so we can update totals when we
-    # discover them in CDX, but update progress here as we import.
-    versions = _get_progress_meter(versions)
     import_ids = cli.add_versions(versions, create_pages=create_pages,
                                   skip_unchanged_versions=skip_unchanged_versions)
     if len(import_ids) == 0:
@@ -193,9 +203,16 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
 
 
 def _log_adds(versions):
-    versions = _get_progress_meter(versions)
     for version in versions:
         print(json.dumps(version))
+
+
+class ExistingVersionError(Exception):
+    """
+    Indicates that a CDX record represented a version that's already been
+    imported and so the memento was skipped.
+    """
+    ...
 
 
 # HACK: Ensure WaybackSession retries all ConnectionErrors, since we are
@@ -242,6 +259,47 @@ class CustomAdapterSession(wayback.WaybackSession):
         pass
 
 
+class RequestStatistics:
+    """
+    Track basic timing statistics around HTTP requests. Creates a histogram
+    with 10-second buckets counting the number of requests, and tracks the
+    longest N requests for later reporting.
+
+    Parameters
+    ----------
+    leaderboard_size : int
+        How many of the longest requests to track details for, as opposed to
+        just counting in the histogram (e.g. the 10 longest).
+        (default: 10)
+    leaderboard_min : float
+        Minimum time (in seconds) for a request to be included on the
+        leaderboard. (default: 0)
+    """
+    def __init__(self, leaderboard_size=10, leaderboard_min=0):
+        self._lock = threading.Lock()
+        self.histogram = defaultdict(int)
+        self.leaderboard_size = leaderboard_size
+        self.leaderboard = []
+        self.leaderboard_min = leaderboard_min
+
+    def record_time(self, url, time):
+        bucket = math.floor(time / 10)
+        with self._lock:
+            self.histogram[bucket] += 1
+            if time > self.leaderboard_min:
+                self.leaderboard.append((time, url))
+                size = len(self.leaderboard)
+                if size > self.leaderboard_size:
+                    self.leaderboard = sorted(self.leaderboard,
+                                              key=lambda x: x[0])[1:]
+                    self.leaderboard_min = self.leaderboard[0][0]
+
+
+# TODO: this probably shouldn't be global/static, but it's expedient for now.
+# Ideally this is incorporated into our shared HTTP adapter/session.
+MEMENTO_STATISTICS = RequestStatistics(leaderboard_size=10, leaderboard_min=10)
+
+
 class WaybackRecordsWorker(threading.Thread):
     """
     WaybackRecordsWorker is a thread that takes CDX records from a queue and
@@ -255,7 +313,6 @@ class WaybackRecordsWorker(threading.Thread):
                  failure_queue=None, session_options=None, adapter=None,
                  unplaybackable=None, version_cache=None):
         super().__init__()
-        self.summary = self.create_summary()
         self.results_queue = results_queue
         self.failure_queue = failure_queue
         self.cancel = cancel
@@ -266,7 +323,7 @@ class WaybackRecordsWorker(threading.Thread):
         self.version_cache = version_cache or set()
         self.adapter = adapter
         session_options = session_options or dict(retries=3, backoff=2,
-                                                  timeout=(10, 10))
+                                                  timeout=45)
         session = CustomAdapterSession(adapter=adapter,
                                        user_agent=USER_AGENT,
                                        **session_options)
@@ -284,7 +341,6 @@ class WaybackRecordsWorker(threading.Thread):
         while self.is_active():
             try:
                 record = next(self.records)
-                self.summary['total'] += 1
             except StopIteration:
                 break
 
@@ -294,7 +350,6 @@ class WaybackRecordsWorker(threading.Thread):
         # one some other piece of code owns.
         if not self.adapter:
             self.wayback.close()
-        return self.summary
 
     def handle_record(self, record):
         """
@@ -302,60 +357,25 @@ class WaybackRecordsWorker(threading.Thread):
         """
         # Check whether we already have this memento and bail out.
         if _version_cache_key(record.timestamp, record.url) in self.version_cache:
-            self.summary['already_known'] += 1
+            self.results_queue.put([record, None, ExistingVersionError(f'Skipped {record.raw_url}')])
             return
         # Check for whether we already know this can't be played and bail out.
         if self.unplaybackable is not None and record.raw_url in self.unplaybackable:
-            self.summary['playback'] += 1
+            self.results_queue.put([record, None, MementoPlaybackError(f'Skipped {record.raw_url}')])
             return
 
+        start_time = time.time()
         try:
             version = self.process_record(record)
-            self.results_queue.put(version)
-            self.summary['success'] += 1
+            self.results_queue.put([record, version, None])
         except MementoPlaybackError as error:
-            self.summary['playback'] += 1
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
-            # Playback errors are not unusual or exceptional for us, so log
-            # only at debug level. The Wayback Machine marks some mementos as
-            # unplaybackable when there are many of them in a short timeframe
-            # in order to increase cache efficiency (the assumption they make
-            # here is that the mementos are likely the same). Since we are
-            # looking at highly monitored, public URLs, we hit this case a lot.
-            logger.debug(f'  {error}')
-        except requests.exceptions.HTTPError as error:
-            if error.response.status_code == 404:
-                logger.info(f'  Missing memento: {record.raw_url}')
-                self.summary['missing'] += 1
-                self.unplaybackable[record.raw_url] = datetime.utcnow()
-            else:
-                # TODO: consider not logging this at a lower level, like debug
-                # unless failure_queue does not exist. Unsure how big a deal
-                # this error is to log if we are retrying.
-                logger.info(f'  (HTTPError) {error}')
-                if self.failure_queue:
-                    self.failure_queue.put(record)
-                else:
-                    self.summary['unknown'] += 1
-        except WaybackRetryError as error:
-            logger.info(f'  {error}; URL: {record.raw_url}')
-
-            if self.failure_queue:
-                self.failure_queue.put(record)
-            else:
-                self.summary['unknown'] += 1
+            self.results_queue.put([record, None, error])
         except Exception as error:
-            # FIXME: getting read timed out connection errors here...
-            # requests.exceptions.ConnectionError: HTTPConnectionPool(host='web.archive.org', port=80): Read timed out.
-            # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
-            # is present and we are ultimately going to retry.
-            logger.exception(f'  {error!r}; URL: {record.raw_url}')
-
-            if self.failure_queue:
-                self.failure_queue.put(record)
-            else:
-                self.summary['unknown'] += 1
+            self.results_queue.put([record, None, error])
+        finally:
+            MEMENTO_STATISTICS.record_time(record.raw_url, time.time() - start_time)
 
     def process_record(self, record):
         """
@@ -378,7 +398,7 @@ class WaybackRecordsWorker(threading.Thread):
             iso_date = f'{no_tz_date}Z'
 
         metadata = {
-            'headers': memento.headers,
+            'headers': dict(memento.headers),
             'view_url': cdx_record.view_url
         }
 
@@ -391,6 +411,8 @@ class WaybackRecordsWorker(threading.Thread):
             ]
 
         media_type, media_type_parameters = self.get_memento_media(memento)
+        if not media_type or media_type in SNIFF_MEDIA_TYPES:
+            media_type = sniff_media_type(memento.content, media_type)
 
         title = ''
         if media_type in HTML_MEDIA_TYPES:
@@ -435,44 +457,7 @@ class WaybackRecordsWorker(threading.Thread):
         return media, parameter_string
 
     @classmethod
-    def create_summary(cls):
-        """
-        Create a dictionary that summarizes the results of processing all the
-        CDX records on a queue.
-        """
-        return {'total': 0, 'success': 0, 'already_known': 0, 'playback': 0,
-                'missing': 0, 'unknown': 0}
-
-    @classmethod
-    def summarize(cls, workers, initial=None):
-        """
-        Combine the summaries from multiple `WaybackRecordsWorker` instances
-        into a single summary.
-        """
-        return cls.merge_summaries((w.summary for w in workers), initial)
-
-    @classmethod
-    def merge_summaries(cls, summaries, intial=None):
-        merged = intial or cls.create_summary()
-        for summary in summaries:
-            for key in merged.keys():
-                if key in summary:
-                    merged[key] += summary[key]
-
-        # Add percentage calculations
-        if merged['total']:
-            merged.update({f'{k}_pct': 100 * v / merged['total']
-                           for k, v in merged.items()
-                           if k != 'total' and not k.endswith('_pct')})
-        else:
-            merged.update({f'{k}_pct': 0.0
-                           for k, v in merged.items()
-                           if k != 'total' and not k.endswith('_pct')})
-
-        return merged
-
-    @classmethod
-    def parallel(cls, count, *args, **kwargs):
+    def parallel(cls, count, records, results_queue, *args, **kwargs):
         """
         Run several `WaybackRecordsWorker` instances in parallel. When this
         returns, the workers will have finished running.
@@ -481,6 +466,10 @@ class WaybackRecordsWorker(threading.Thread):
         ----------
         count: int
             Number of instances to run in parallel.
+        records: web_monitoring.utils.FiniteQueue
+            Queue of CDX records to load mementos for.
+        results_queue: web_monitoring.utils.FiniteQueue
+            Queue to place resulting import records onto.
         *args
             Arguments to pass to each instance.
         **kwargs
@@ -506,76 +495,63 @@ class WaybackRecordsWorker(threading.Thread):
         kwargs.setdefault('adapter', adapter)
         workers = []
         for i in range(count):
-            worker = cls(*args, **kwargs)
+            worker = cls(records, results_queue, *args, **kwargs)
             workers.append(worker)
             worker.start()
 
         for worker in workers:
             worker.join()
 
+        results_queue.end()
         adapter.close()
         return workers
 
-    @classmethod
-    def parallel_with_retries(cls, count, summary, records, results_queue, *args, tries=None, **kwargs):
-        """
-        Run several `WaybackRecordsWorker` instances in parallel and retry
-        records that fail to load.
 
-        Parameters
-        ----------
-        count: int
-            Number of instances to run in parallel.
-        summary: dict
-            Dictionary to populate with summary data from all worker runs.
-        records: web_monitoring.utils.FiniteQueue
-            Queue of CDX records to load mementos for.
-        results_queue: web_monitoring.utils.FiniteQueue
-            Queue to place resulting import records onto.
-        *args
-            Arguments to pass to each instance.
-        **kwargs
-            Keyword arguments to pass to each instance.
+def _filter_and_summarize_mementos(memento_info, summary):
+    summary.update({'total': 0, 'success': 0, 'already_known': 0,
+                    'playback': 0, 'missing': 0, 'unknown': 0})
+    for cdx, memento, error in memento_info:
+        summary['total'] += 1
+        if memento:
+            summary['success'] += 1
+            yield memento
+        elif isinstance(error, ExistingVersionError):
+            summary['already_known'] += 1
+        elif isinstance(error, NoMementoError):
+            logger.info(f'  Missing memento: {cdx.raw_url}')
+            summary['missing'] += 1
+        elif isinstance(error, MementoPlaybackError):
+            summary['playback'] += 1
+            # Playback errors are not unusual or exceptional for us, so log
+            # only at debug level. The Wayback Machine marks some mementos as
+            # unplaybackable when there are many of them in a short timeframe
+            # in order to increase cache efficiency (the assumption they make
+            # here is that the mementos are likely the same). Since we are
+            # looking at highly monitored, public URLs, we hit this case a lot.
+            logger.debug(f'  {error}')
+        elif isinstance(error, WaybackRetryError):
+            logger.info(f'  {error}; URL: {cdx.raw_url}')
+            summary['unknown'] += 1
+        elif isinstance(error, Exception):
+            # FIXME: getting read timed out connection errors here...
+            # requests.exceptions.ConnectionError: HTTPConnectionPool(host='web.archive.org', port=80): Read timed out.
+            # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
+            # is present and we are ultimately going to retry.
+            logger.exception(f'  {error!r}; URL: {cdx.raw_url}')
+            summary['unknown'] += 1
+        else:
+            logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
+            summary['unknown'] += 1
 
-        Returns
-        -------
-        list of WaybackRecordsWorker
-        """
-        if tries is None or len(tries) == 0:
-            tries = (None,)
-
-        # Initialize the summary (we have to keep a reference so other threads can read)
-        summary.update(cls.create_summary())
-
-        total_tries = len(tries)
-        retry_queue = None
-        workers = []
-        for index, try_setting in enumerate(tries):
-            if retry_queue:
-                if retry_queue.empty():
-                    # We can only get here if we are on retry run, but there's
-                    # nothing to retry, so we may as well stop.
-                    break
-                else:
-                    print(f'\nRetrying about {retry_queue.qsize()} failed records...', flush=True)
-                    retry_queue.end()
-                    records = retry_queue
-
-            if index == total_tries - 1:
-                retry_queue = None
-            else:
-                retry_queue = utils.FiniteQueue()
-
-            workers.extend(cls.parallel(count,
-                                        records,
-                                        results_queue,
-                                        *args,
-                                        failure_queue=retry_queue,
-                                        session_options=try_setting,
-                                        **kwargs))
-
-        summary.update(cls.summarize(workers, summary))
-        results_queue.end()
+    # Add percentage calculations to summary
+    if summary['total']:
+        summary.update({f'{k}_pct': 100 * v / summary['total']
+                        for k, v in summary.items()
+                        if k != 'total' and not k.endswith('_pct')})
+    else:
+        summary.update({f'{k}_pct': 0.0
+                        for k, v in summary.items()
+                        if k != 'total' and not k.endswith('_pct')})
 
 
 def _version_cache_key(time, url):
@@ -593,7 +569,7 @@ def _load_known_versions(client, start_date, end_date):
                                    chunk_size=1000)
     # Limit to latest 500,000 results for sanity/time/memory
     limited_versions = islice(versions, 500_000)
-    cache = set(_version_cache_key(v["capture_time"], v["capture_url"])
+    cache = set(_version_cache_key(v["capture_time"], v.get("url", v.get("capture_url")))
                 for v in limited_versions)
     logger.debug(f'  Found {len(cache)} known versions')
     return cache
@@ -664,28 +640,43 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                 # Use a custom session to make sure CDX calls are extra robust.
                 client=wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT,
                                                                     retries=4,
-                                                                    backoff=4)),
+                                                                    backoff=4,
+                                                                    search_calls_per_second=WAYBACK_RATE_LIMIT)),
                 stop=stop_event)))
         cdx_thread.start()
 
-        summary = {}
         versions_queue = utils.FiniteQueue()
-        memento_thread = threading.Thread(target=lambda: WaybackRecordsWorker.parallel_with_retries(
+        memento_thread = threading.Thread(target=lambda: WaybackRecordsWorker.parallel(
             worker_count,
-            summary,
             cdx_records,
             versions_queue,
             maintainers,
             tags,
             stop_event,
             unplaybackable=unplaybackable,
-            version_cache=version_cache,
-            tries=(None,)))
+            version_cache=version_cache))
         memento_thread.start()
 
-        uploadable_versions = versions_queue
+        # Show a progress meter
+        # TODO: figure out whether we can update the expected total on the
+        # meter once we have finished all the CDX searches.
+        memento_data_queue = utils.FiniteQueue()
+        progress_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
+            memento_data_queue,
+            _get_progress_meter(versions_queue)))
+        progress_thread.start()
+
+        # Filter out errors and summarize
+        summary = {}
+        importable_queue = utils.FiniteQueue()
+        filter_importable_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
+            importable_queue,
+            _filter_and_summarize_mementos(memento_data_queue, summary)))
+        filter_importable_thread.start()
+
+        uploadable_versions = importable_queue
         if skip_unchanged == 'resolved-response':
-            uploadable_versions = _filter_unchanged_versions(versions_queue)
+            uploadable_versions = _filter_unchanged_versions(importable_queue)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
@@ -694,6 +685,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         cdx_thread.join()
         memento_thread.join()
+        progress_thread.join()
+        filter_importable_thread.join()
 
         print('\nLoaded {total} CDX records:\n'
               '  {success:6} successes ({success_pct:.2f}%)\n'
@@ -702,6 +695,21 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
               '  {missing:6} had no actual memento ({missing_pct:.2f}%)\n'
               '  {unknown:6} unknown errors ({unknown_pct:.2f}%)'.format(
                 **summary))
+
+        # Print slow request statistics
+        if len(MEMENTO_STATISTICS.histogram):
+            print('\nMemento load timings:')
+            top_bucket = max(MEMENTO_STATISTICS.histogram.keys())
+            for bucket in range(top_bucket + 1):
+                value = MEMENTO_STATISTICS.histogram[bucket]
+                print(f'  {bucket * 10}-{bucket * 10 + 10} s: {value}')
+            print('Slowest mementos:')
+            if len(MEMENTO_STATISTICS.leaderboard) > 0:
+                for timing in MEMENTO_STATISTICS.leaderboard:
+                    print(f'  {timing[0]:.1f}: {timing[1]}')
+            else:
+                print('  ---')
+            print('')
 
         uploader.join()
 
@@ -729,6 +737,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                                version_filter=None, client=None, stop=None):
     version_filter = version_filter or _is_page
     skipped = 0
+    total = 0
 
     with client or wayback.WaybackClient(wayback.WaybackSession(user_agent=USER_AGENT)) as client:
         for url in url_patterns:
@@ -737,12 +746,13 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                 break
 
             ia_versions = client.search(url, from_date=from_date,
-                                        to_date=to_date)
+                                        to_date=to_date, limit=1000)
             try:
                 for version in ia_versions:
                     if stop and stop.is_set():
                         break
                     if version_filter(version):
+                        total += 1
                         yield version
                     else:
                         skipped += 1
@@ -771,8 +781,8 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     # be joined.
                     logger.exception(f'Error processing versions of {url}')
 
-    if skipped > 0:
-        logger.info('Skipped %s URLs that did not match filters', skipped)
+    logger.info('Found %s matching CDX records', total)
+    logger.info('Skipped %s CDX records that did not match filters', skipped)
 
 
 def load_unplaybackable_mementos(path):
@@ -942,7 +952,7 @@ def validate_db_credentials():
             Check the following environment variables:
 
                 WEB_MONITORING_DB_URL
-                WEB_MONITORING_DB_EMAIL {os.environ['WEB_MONITORING_DB_EMAIL']}
+                WEB_MONITORING_DB_EMAIL {os.environ.get('WEB_MONITORING_DB_EMAIL')}
                 WEB_MONITORING_DB_PASSWORD
                 """)
 

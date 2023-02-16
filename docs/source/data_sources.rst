@@ -59,7 +59,7 @@ Versionista returns a JSON blob which contains the following fields:
 * `filePath` : Path to the diff file which is stored in our archive.
 *  `hash` : The diff file's SHA 256 hash.
 
-`Recent Versionista output file <https://s3-us-west-2.amazonaws.com/edgi-versionista-archive/versionista1/metadata-2017-06-20T00%3A00Z.json>`_
+`Recent Versionista output file <https://edgi-wm-versionista.s3.amazonaws.com/versionista1/metadata-2017-06-20T00%3A00Z.json>`_
 
 ======================================= ================ ===========
 Aspect                                  Internet Archive Versionista

@@ -48,16 +48,24 @@ AUTH = {'url': "http://localhost:3000",
         'password': "PASSWORD"}
 
 
-def test_missing_creds():
+def test_partial_creds():
     try:
         env = os.environ.copy()
         os.environ.clear()
+
+        # Should work with no credentials.
+        Client.from_env()
+
+        # Should fail with partial credentials.
         with pytest.raises(MissingCredentials):
+            os.environ.update({'WEB_MONITORING_DB_EMAIL': AUTH['email']})
             Client.from_env()
+
+        # Should work with complete credentials.
         os.environ.update({'WEB_MONITORING_DB_URL': AUTH['url'],
                            'WEB_MONITORING_DB_EMAIL': AUTH['email'],
                            'WEB_MONITORING_DB_PASSWORD': AUTH['password']})
-        Client.from_env()  # should work
+        Client.from_env()
     finally:
         os.environ.update(env)
 

@@ -231,8 +231,8 @@ class Client:
 
     Parameters
     ----------
-    email : string
-    password : string
+    email : string, optional
+    password : string, optional
     url : string, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout : float, optional
@@ -247,43 +247,48 @@ class Client:
         https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry
         Default: ``(2, 2)``
     """
-    def __init__(self, email, password, url=DEFAULT_URL, timeout=None,
+    def __init__(self, email=None, password=None, url=DEFAULT_URL, timeout=None,
                  retries=None):
-        self._api_url = f'{url}/api/v0'
-        self._base_url = url
+        clean_url = url.rstrip('/')
+        self._api_url = f'{clean_url}/api/v0'
+        self._base_url = clean_url
         self._session = DbSession(retries=retries, timeout=timeout)
-        self._session.auth = (email, password)
         self._session.headers.update({'accept': 'application/json'})
+        if email and password:
+            self._session.auth = (email, password)
+        elif email or password:
+            missing = 'email' if not email else 'password'
+            raise MissingCredentials('You provided incomplete credentials! ' +
+                                     f'"{missing}" was not set.')
 
     @classmethod
     def from_env(cls, **kwargs):
         """
         Instantiate a :class:`Client` by obtaining its authentication info from
-        these environment variables:
+        these environment variables (all are optional):
 
-            * ``WEB_MONITORING_DB_URL`` (optional -- defaults to
-              ``https://api.monitoring.envirodatagov.org``)
+            * ``WEB_MONITORING_DB_URL``
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
 
         Any extra parameters (e.g. ``timeout``) are passed to the ``Client``
         constructor.
         """
-        try:
-            url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
-            email = os.environ['WEB_MONITORING_DB_EMAIL']
-            password = os.environ['WEB_MONITORING_DB_PASSWORD']
-        except KeyError:
+        url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
+        email = os.environ.get('WEB_MONITORING_DB_EMAIL')
+        password = os.environ.get('WEB_MONITORING_DB_PASSWORD')
+        if email and not password:
             raise MissingCredentials("""
-Before using this method, database credentials must be set via environmental
-variables:
-
-   WEB_MONITORING_DB_URL (optional)
-   WEB_MONITORING_DB_EMAIL
-   WEB_MONITORING_DB_PASSWORD
-
-Alternatively, you can instaniate Client(user, password) directly.""")
-        return cls(email=email, password=password, url=url, **kwargs)
+The WEB_MONITORING_DB_EMAIL environment variable was set, but
+WEB_MONITORING_DB_PASSWORD was not. Make sure to neither or both!
+""")
+        elif password and not email:
+            raise MissingCredentials("""
+The WEB_MONITORING_DB_PASSWORD environment variable was set, but
+WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
+""")
+        else:
+            return cls(email=email, password=password, url=url, **kwargs)
 
     def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
@@ -722,7 +727,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
 
         Parameters
         ----------
-        versions : iterable
+        versions : Iterable
             Iterable of dicts from :func:`format_version`
         update : {'skip', 'replace', 'merge'}, optional
             Specifies how versions that are already in the database (i.e.
@@ -736,10 +741,10 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                 * ``'merge'`` -- Similar to `replace`, but merges the values in
                   ``source_metadata``
 
-        create_pages : bool, optional
+        create_pages : boolean, optional
             If True, create new pages for any URLs in the import set that don't
             already exist.
-        skip_unchanged_versions : bool, optional
+        skip_unchanged_versions : boolean, optional
             If true, don't import versions of a page that have the same hash as
             the version captured immediately before them.
         batch_size : integer, optional
@@ -791,7 +796,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         -------
         errors : dict of {str or int : list}
         """
+        # Track errors from each job for reporting.
         errors = {}
+        # Controls delay between status checks; increases on each loop.
+        wait_factor = 0
+
         import_ids = list(import_ids)  # to ensure mutable collection
         try:
             while import_ids and (stop is None or not stop.is_set()):
@@ -810,7 +819,9 @@ Alternatively, you can instaniate Client(user, password) directly.""")
                         job_errors = data['processing_errors']
                         if job_errors:
                             errors[import_id] = job_errors
-                time.sleep(1)
+                        wait_factor = 0
+                time.sleep(2 ** wait_factor)
+                wait_factor = min(4, 1 + wait_factor)
         except KeyboardInterrupt:
             ...
         return errors
@@ -839,7 +850,7 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         Parameters
         ----------
         page_id : string
-        include_total : boolean, optional
+        include_total : bool, optional
             Whether to include a `meta.total_results` field in the response.
             If not set, `links.last` will usually be empty unless you are on
             the last chunk. Setting this option runs a pretty expensive query,
@@ -1033,9 +1044,11 @@ Alternatively, you can instaniate Client(user, password) directly.""")
         content : bytes
         """
         db_result = self.get_version(version_id)
-        content_uri = db_result['data']['uri']
+        # TODO: remove fallback once API migration is done:
+        # https://github.com/edgi-govdata-archiving/web-monitoring-db/issues/776
+        content_url = db_result['data'].get('body_url', db_result['data'].get('uri'))
         # override the session-level "accept: json" header
-        response = self.request(GET, content_uri, headers={'accept': None})
+        response = self.request(GET, content_url, headers={'accept': None})
         if response.headers.get('Content-Type', '').startswith('text/'):
             return response.text
         else:

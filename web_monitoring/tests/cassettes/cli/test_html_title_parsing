@@ -5,40 +5,48 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - wayback/0.3.0a3 (+https://github.com/edgi-govdata-archiving/wayback)
+      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
-    uri: http://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.cdc.gov%2Fcoronavirus%2F2019-ncov%2Ftravelers%2Fafter-travel-precautions-japanese.html&from=20201123000000&to=20201124000000&showResumeKey=true&resolveRevisits=true
+    uri: https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.cdc.gov%2Fcoronavirus%2F2019-ncov%2Ftravelers%2Fafter-travel-precautions-japanese.html&limit=1000&from=20201123000000&to=20201124000000&showResumeKey=true&resolveRevisits=true
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAAK3NsQ6CMBSF4d2n6GpiaakGgpuiohKDCiY6NrUCBlvSXoqPL4k+guMZ/vOV2k3E
-        XYyJ0EYr7mrTWcKoH2EltCNguJONNJbwB0iDvxu3RgreQa2VxU/eciWt9Cp4NYjRIfbZlM6oz0JU
-        AbR2Tkjf997AeOXw+ScJ5BvIz6SoKPLilibncHu6xIdgf1yny2SXx3Gy2mTXbIFCGkXB6AMxEthY
-        7wAAAA==
+        H4sIAAAAAAAAAL2PzU6DQBhF932K2ZoU5sfCJ90VRNqShlIoKd1NxpFikCEzU/DxJdFHUJd3ce7J
+        adS4FK/iAQulVc/HVt8NZoQGTi/UiK3mo+ykNpi/Wamd7+0MWgp+t63qjfPOB95LI92b/egQIzNM
+        2SNZEcoA3awdzBrjaZrcWeM28+cvmaz8tPjHSVBZFmWdJifY5ufo4O+PcRomuyKKkueX7JJtEJAg
+        8BfNH+VSfwWM/F9uXB1yL4N9VCebXVV72/Cah5V3CuPiAn4KCOCJksUXABkwWd4BAAA=
     headers:
       Connection:
       - keep-alive
-      Content-Encoding:
-      - gzip
       Content-Type:
       - text/plain;charset=UTF-8
       Date:
-      - Wed, 02 Dec 2020 08:58:51 GMT
+      - Fri, 02 Dec 2022 01:19:37 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
       Server:
-      - nginx/1.15.8
+      - nginx/1.19.5
       Transfer-Encoding:
       - chunked
-      X-App-Server:
-      - wwwb-app15
-      X-Archive-Screenname:
+      X-NA:
       - '0'
-      X-Cache-Key:
-      - httpweb.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.cdc.gov%2Fcoronavirus%2F2019-ncov%2Ftravelers%2Fafter-travel-precautions-japanese.html&from=20201123000000&to=20201124000000&showResumeKey=true&resolveRevisits=trueUS
+      X-NID:
+      - '-'
       X-Page-Cache:
       - BYPASS
+      X-RL:
+      - '0'
       X-location:
       - cdx
-      X-ts:
+      content-encoding:
+      - gzip
+      x-app-server:
+      - wwwb-app15
+      x-tr:
+      - '62'
+      x-ts:
       - '200'
     status:
       code: 200
@@ -49,13 +57,13 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - wayback/0.3.0a3 (+https://github.com/edgi-govdata-archiving/wayback)
+      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
-    uri: http://web.archive.org/web/20201123040127id_/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html
+    uri: https://web.archive.org/web/20201123040127id_/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA7TdW49kWXoe5usegP8hWASkHqkzK46ZEX0ymzk9mjayZwbs5tAkQTSysrKrciar
+        H4sIAAAAAAAEA7TdW49kWXoe5usegP8hWASkHqkzK46ZEX0ymzk9mjayZwbs5tAkQTSysrKrciar
         spyZ1YchCXCGpkRRurINCfCNYFjyhQ3rxrAEk4L+TGso6kp/wc/7rb1j78iKnhlSMgFOR72xY+21
         1/oO73dYO3/lG2//6re+d/Lx73z//cnTu2dX7/7KN97OfydXZ8+fvPPgh2cHP3zxYHJ+dXZ7+86D
         u6cXzy4Ozr88ez45f3x+MJ/Opw8m9YuLs8f++5of/+rBweQfXF0/OruaPJy8fH752cXNrc/PLu7O
@@ -1595,72 +1603,81 @@ interactions:
         uwdrVeVOOIp/XcXCD2dnEf9K0z6UeNSdXC7n3w93NQTD+3n+s17FjAhHrVxGmSTW/BucSYSGu0K1
         OXwEBhceZX/F38AKcgr82rD+/+fradxcHwQA
     headers:
-      Cache-Control:
-      - max-age=1800
       Connection:
       - keep-alive
       Content-Encoding:
       - gzip
-      Content-Security-Policy:
-      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
-        web.archive.org analytics.archive.org pragma.archivelab.org'
       Content-Type:
       - text/html
       Date:
-      - Wed, 02 Dec 2020 08:58:51 GMT
-      Link:
-      - <https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="original", <http://web.archive.org/web/timemap/link/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="timemap"; type="application/link-format", <http://web.archive.org/web/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="timegate", <http://web.archive.org/web/20200312025926/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="first memento"; datetime="Thu, 12 Mar 2020 02:59:26 GMT", <http://web.archive.org/web/20201020075358/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="prev memento"; datetime="Tue, 20 Oct 2020 07:53:58 GMT", <http://web.archive.org/web/20201123040127/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="memento"; datetime="Mon, 23 Nov 2020 04:01:27 GMT", <http://web.archive.org/web/20201123040127/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
-        rel="last memento"; datetime="Mon, 23 Nov 2020 04:01:27 GMT"
-      Memento-Datetime:
-      - Mon, 23 Nov 2020 04:01:27 GMT
+      - Fri, 02 Dec 2022 01:19:37 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
       Server:
-      - nginx/1.15.8
-      Server-Timing:
-      - captures_list;dur=703.924022, exclusion.robots;dur=0.240602, exclusion.robots.policy;dur=0.230474,
-        RedisCDXSource;dur=5.722664, esindex;dur=0.011214, LoadShardBlock;dur=664.084698,
-        PetaboxLoader3.resolve;dur=93.218726, PetaboxLoader3.datanode;dur=331.304029,
-        CDXLines.iter;dur=25.180512, load_resource;dur=151.079525, loaddict;dur=98.308880
+      - nginx/1.19.5
       Transfer-Encoding:
       - chunked
-      X-App-Server:
-      - wwwb-app200
-      X-Archive-Orig-Access-Control-Allow-Origin:
-      - '*'
-      X-Archive-Orig-Connection:
-      - keep-alive
-      - Transfer-Encoding
-      X-Archive-Orig-Date:
-      - Mon, 23 Nov 2020 04:01:27 GMT
-      X-Archive-Orig-SRV:
-      - '1'
-      X-Archive-Orig-Set-Cookie:
-      - TS0196e5be=015d0abe87bbc92908a14e48a5ccd6d546d35a0af273ba693cc14d6e17d65c40846c6e0bab335d0437225defff22484d5e2e641160;
-        Path=/; Domain=.www.cdc.gov
-      X-Archive-Orig-Strict-Transport-Security:
-      - max-age=31536000 ; includeSubDomains ; preload
-      X-Archive-Orig-Transfer-Encoding:
-      - chunked
-      X-Archive-Orig-Vary:
-      - Accept-Encoding
-      X-Archive-Orig-X-UA-Compatible:
-      - IE=edge
-      X-Archive-Screenname:
+      X-NA:
       - '0'
-      X-Archive-Src:
-      - archiveteam_urls_20201123053017_baae9e66/urls_20201123053017_baae9e66.1605747747.megawarc.warc.zst
-      X-Cache-Key:
-      - httpweb.archive.org/web/20201123040127id_/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.htmlUS
+      X-NID:
+      - '-'
       X-Page-Cache:
       - HIT
+      X-RL:
+      - '0'
       X-location:
       - All
-      X-ts:
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org analytics.archive.org pragma.archivelab.org'
+      link:
+      - <https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="timegate", <https://web.archive.org/web/20200312025926/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="first memento"; datetime="Thu, 12 Mar 2020 02:59:26 GMT", <https://web.archive.org/web/20201122220645/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="prev memento"; datetime="Sun, 22 Nov 2020 22:06:45 GMT", <https://web.archive.org/web/20201123040127/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="memento"; datetime="Mon, 23 Nov 2020 04:01:27 GMT", <https://web.archive.org/web/20201123164720/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="next memento"; datetime="Mon, 23 Nov 2020 16:47:20 GMT", <https://web.archive.org/web/20220816210929/https://www.cdc.gov/coronavirus/2019-ncov/travelers/after-travel-precautions-japanese.html>;
+        rel="last memento"; datetime="Tue, 16 Aug 2022 21:09:29 GMT"
+      memento-datetime:
+      - Mon, 23 Nov 2020 04:01:27 GMT
+      server-timing:
+      - captures_list;dur=244.698782, exclusion.robots;dur=1.268491, exclusion.robots.policy;dur=1.262642,
+        cdx.remote;dur=0.055145, esindex;dur=0.007465, LoadShardBlock;dur=96.770849,
+        PetaboxLoader3.datanode;dur=58.038291, CDXLines.iter;dur=16.759258, load_resource;dur=105.130430,
+        PetaboxLoader3.resolve;dur=69.470819, loaddict;dur=14.744788
+      x-app-server:
+      - wwwb-app217
+      x-archive-orig-access-control-allow-origin:
+      - '*'
+      x-archive-orig-connection:
+      - keep-alive
+      - Transfer-Encoding
+      x-archive-orig-date:
+      - Mon, 23 Nov 2020 04:01:27 GMT
+      x-archive-orig-set-cookie:
+      - TS0196e5be=015d0abe87bbc92908a14e48a5ccd6d546d35a0af273ba693cc14d6e17d65c40846c6e0bab335d0437225defff22484d5e2e641160;
+        Path=/; Domain=.www.cdc.gov
+      x-archive-orig-srv:
+      - '1'
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-orig-transfer-encoding:
+      - chunked
+      x-archive-orig-vary:
+      - Accept-Encoding
+      x-archive-orig-x-ua-compatible:
+      - IE=edge
+      x-archive-src:
+      - archiveteam_urls_20201123053017_baae9e66/urls_20201123053017_baae9e66.1605747747.megawarc.warc.zst
+      x-tr:
+      - '359'
+      x-ts:
       - '200'
     status:
       code: 200
