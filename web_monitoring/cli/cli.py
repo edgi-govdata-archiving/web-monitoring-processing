@@ -41,6 +41,7 @@ Each box represents a thread. Instances of `FiniteQueue` are used to move data
 and results between them.
 """
 
+from cloudpathlib import CloudPath
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from web_monitoring.utils import detect_encoding, sniff_media_type
@@ -789,7 +790,7 @@ def load_unplaybackable_mementos(path):
     unplaybackable = {}
     if path:
         try:
-            with open(path) as file:
+            with path.open() as file:
                 unplaybackable = json.load(file)
         except FileNotFoundError:
             pass
@@ -817,10 +818,9 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
         elif needs_format:
             mementos[url] = date.isoformat(timespec='seconds') + 'Z'
 
-    file_path = Path(path)
-    if not file_path.parent.exists():
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-    with file_path.open('w') as file:
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('w') as file:
         json.dump(mementos, file)
 
 
@@ -921,6 +921,21 @@ def _parse_date_argument(date_string):
     return None
 
 
+def _parse_path(path_string):
+    if path_string is None:
+        return None
+
+    parsed = urlparse(path_string)
+    if parsed.scheme == '':
+        return Path(path_string)
+    elif parsed.scheme == 'file':
+        return Path(path_string[7:])
+    if parsed.scheme == 's3':
+        return CloudPath(path_string)
+    else:
+        raise ValueError(f'"{parsed.scheme}://" paths are not supported')
+
+
 def _is_valid(url):
     """
     Validate that all URLs are formatted correctly. This function assumes that
@@ -997,6 +1012,7 @@ Options:
                   'or `resolved-response`')
             return
 
+        unplaybackable_path = _parse_path(arguments.get('--unplaybackable'))
         validate_db_credentials()
         if arguments['ia']:
             import_ia_urls(
@@ -1006,7 +1022,7 @@ Options:
                 from_date=_parse_date_argument(arguments['<from_date>']),
                 to_date=_parse_date_argument(arguments['<to_date>']),
                 skip_unchanged=skip_unchanged,
-                unplaybackable_path=arguments.get('--unplaybackable'),
+                unplaybackable_path=unplaybackable_path,
                 dry_run=arguments.get('--dry-run'))
         elif arguments['ia-known-pages']:
             import_ia_db_urls(
@@ -1017,7 +1033,7 @@ Options:
                 skip_unchanged=skip_unchanged,
                 url_pattern=arguments.get('--pattern'),
                 worker_count=int(arguments.get('--parallel')),
-                unplaybackable_path=arguments.get('--unplaybackable'),
+                unplaybackable_path=unplaybackable_path,
                 dry_run=arguments.get('--dry-run'),
                 precheck_versions=arguments.get('--precheck'))
 
