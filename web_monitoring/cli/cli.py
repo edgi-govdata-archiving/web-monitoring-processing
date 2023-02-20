@@ -999,7 +999,10 @@ Options:
             return
 
         unplaybackable_path = _parse_path(arguments.get('--unplaybackable'))
-        validate_db_credentials()
+        if not arguments.get('--dry-run'):
+            validate_db_credentials()
+
+        start_time = datetime.now(tz=timezone.utc)
         if arguments['ia']:
             import_ia_urls(
                 urls=[arguments['<url>']],
@@ -1022,6 +1025,10 @@ Options:
                 unplaybackable_path=unplaybackable_path,
                 dry_run=arguments.get('--dry-run'),
                 precheck_versions=arguments.get('--precheck'))
+
+        end_time = datetime.now(tz=timezone.utc)
+        print(f'Completed at {end_time.isoformat()}')
+        print(f'Duration: {end_time - start_time}')
 
 
 if __name__ == '__main__':
