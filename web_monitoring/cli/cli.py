@@ -171,20 +171,6 @@ MEDIA_TYPE_EXPRESSION = re.compile(r'^\w+/\w[\w+_\-.]+$')
 # CLI. They also print. To access this functionality programmatically, it is
 # better to use the underlying library code.
 
-def _get_progress_meter(iterable):
-    # Use TQDM in all environments, but don't update very often if not a TTY.
-    # Basically, the idea here is to keep TQDM in our logs so we get stats, but
-    # not to waste a huge amount of space in the logs with it.
-    # NOTE: This is cribbed from TQDM's `disable=None` logic:
-    # https://github.com/tqdm/tqdm/blob/f2a60d1fb9e8a15baf926b4a67c02f90e0033eba/tqdm/_tqdm.py#L817-L830
-    file = sys.stderr
-    intervals = {}
-    if hasattr(file, "isatty") and not file.isatty():
-        intervals = dict(mininterval=10, maxinterval=60)
-
-    return tqdm(iterable, desc='Processing', unit=' CDX Records', **intervals)
-
-
 def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None, db_client=None):
     cli = db_client or db.Client.from_env()  # will raise if env vars not set
     import_ids = cli.add_versions(versions, create_pages=create_pages,
@@ -664,7 +650,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         memento_data_queue = utils.FiniteQueue()
         progress_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
             memento_data_queue,
-            _get_progress_meter(versions_queue)))
+            tqdm(versions_queue, desc='Processing', unit=' CDX Records')))
         progress_thread.start()
 
         # Filter out errors and summarize
