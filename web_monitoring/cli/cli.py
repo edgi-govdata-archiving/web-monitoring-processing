@@ -649,7 +649,10 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         memento_data_queue = utils.FiniteQueue()
         progress_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
             memento_data_queue,
-            tqdm(versions_queue, desc='Processing', unit=' CDX Records')))
+            tqdm(versions_queue,
+                 desc='Processing',
+                 unit=' CDX Records',
+                 disable=None)))
         progress_thread.start()
 
         # Filter out errors and summarize
