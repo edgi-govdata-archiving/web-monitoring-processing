@@ -4,8 +4,10 @@ from dataclasses import asdict, dataclass
 from docopt import docopt
 import json
 import logging
+import math
 import os
 import re
+from time import sleep
 from tqdm import tqdm
 from web_monitoring import db
 
@@ -209,18 +211,17 @@ class AnalystSheet:
         for index, row in enumerate(self.read_csv()):
             row_number = index + self.row_offset + 1
             change_ids = self.get_change_ids(row)
+            if not change_ids:
+                logger.error(f'failed to extract IDs from row {row_number}')
+
             try:
                 annotation = self.create_annotation(row, index)
                 id = annotation['sheet_change_id']
                 if id in ids:
                     logger.warn(f"DUPLICATE ID: {id}")
             except Exception as error:
-                raise TypeError(f'Could not parse row {row_number}: {error}')
-
-            if not change_ids:
-                logger.warning(f'failed to extract IDs from row {row_number}')
-            if not annotation:
-                logger.warning(f'failed to extract annotation data from row {row_number}')
+                logger.exception(TypeError(f'Could not parse row {row_number}: {error}'))
+                annotation = None
 
             yield ResultRow(row_number, change_ids, annotation)
 
@@ -397,7 +398,7 @@ class AuthorNameMapper:
 
 
 def main():
-    log_level = os.getenv('LOG_LEVEL', 'WARNING')
+    log_level = os.getenv('LOG_LEVEL', 'INFO')
     logging.basicConfig(level=log_level)
 
     doc = """Add analyst annotations from a csv file to the Web Monitoring db.
@@ -410,12 +411,16 @@ Options:
 --commit                Send annotatins to DB
 --schema <version>      Should be 'v1' or 'v2'
 --author-map <map_path> Use this CSV to map annotation author names to IDs
+--start <start_row>
+--end <end_row>
 """
     arguments = docopt(doc)
     is_important_changes = arguments['--is-important-changes']
     commit = arguments['--commit']
     schema_version = arguments.get('--schema') or 'v2'
     csv_path = arguments['<csv_path>']
+    start_row = int(arguments.get('--start') or 0)
+    end_row = int(arguments.get('--end') or 0) or math.inf
     author_map = None
     if arguments.get('--author-map'):
         author_map = AuthorNameMapper(arguments.get('--author-map'))
@@ -429,7 +434,16 @@ Options:
         exit(1)
 
     client = db.Client.from_env()
-    for row in tqdm(sheet.parse(), unit=' rows'):
+    for index, row in tqdm(enumerate(sheet.parse()), unit=' rows'):
+        if start_row > row.number:
+            continue
+        elif row.number >= end_row:
+            break
+
+        if commit and index > 0 and index % 50 == 0:
+            logger.info('Pausing for 15s to give server breathing room...')
+            sleep(15)
+
         if row.change_ids and row.annotation:
             author = row.annotation['annotation_author']
             if author and author_map:
@@ -437,9 +451,14 @@ Options:
 
             if commit:
                 try:
-                    response = client.add_annotation(**row.change_ids,
-                                                     annotation=row.annotation)
-                    logger.debug(response)
+                    for existing in client.get_annotations(**row.change_ids):
+                        if existing['annotation'] == row.annotation:
+                            print(f'Annotation already exists for row {row.number}')
+                            break
+                    else:
+                        response = client.add_annotation(**row.change_ids,
+                                                         annotation=row.annotation)
+                        logger.debug(response)
                 except db.WebMonitoringDbError as e:
                     logger.warning(
                         f'failed to post annotation for row {row} with error: {e}')
