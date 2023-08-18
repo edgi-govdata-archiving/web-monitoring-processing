@@ -350,8 +350,7 @@ class V2ChangesSheet(AnalystSheet):
         ('Importance?', None, sheet_str),
 
         ('Language alteration', 'language_alteration', sheet_bool),
-        # FIXME: missing?
-        ('Content change/addition/removal', None, sheet_bool),
+        ('Content change/addition/removal', 'content_change', sheet_bool),
         ('Link change/addition/removal', 'link_change', sheet_bool),
         ('Repeated Change across many pages or a domain', 'repeated_change', sheet_bool),
         ('Alteration within sections of a webpage', 'alteration_within_sections', sheet_bool),
