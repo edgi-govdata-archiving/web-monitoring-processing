@@ -125,17 +125,11 @@ V1_SIGNIFICANT_ROWS = [
 ]
 
 
-class DictReaderStrip(csv.DictReader):
-    @property
-    def fieldnames(self):
-        return [name.strip() for name in super().fieldnames]
+CHANGE_URL_REGEX = re.compile(r'^.*/page/(.*)/(.*)\.\.(.*)')
 
 
-DIFF_URL_REGEX = re.compile(r'^.*/page/(.*)/(.*)\.\.(.*)')
-
-
-def find_change_ids(diff_url):
-    regex_result = DIFF_URL_REGEX.match(diff_url)
+def parse_change_url(diff_url):
+    regex_result = CHANGE_URL_REGEX.match(diff_url)
     if regex_result:
         (page_id, from_version_id, to_version_id) = regex_result.groups()
         return {'page_id': page_id,
@@ -180,6 +174,38 @@ class AnalystSheet:
         self.path = csv_path
         self.is_important = is_important
 
+    def get(self, field_name, row):
+        if not getattr(self, 'field_index', None):
+            self.field_index = {}
+            for index, field in enumerate(self.schema):
+                if field[0] in self.field_index:
+                    self.field_index[field[0]].append(index)
+                else:
+                    self.field_index[field[0]] = [index]
+
+        indexes = self.field_index[field_name]
+        if len(indexes) == 1:
+            return row[indexes[0]]
+        else:
+            raise KeyError(f'{len(indexes)} fields named "{field_name}"')
+
+    def get_change_ids(self, row):
+        return parse_change_url(self.get('Last Two - Side by Side', row))
+
+    def assert_schema(self, header_row):
+        expected = [header[0] for header in self.schema]
+        actual = [cell.strip() for cell in header_row[0:len(expected)]]
+        if actual != expected:
+            raise CsvSchemaError(f'Sheet did not have expected header row!\n  Expected: {expected}\n    Actual: {actual}')
+
+    def read_csv(self):
+        with open(self.path, newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            for i in range(self.row_offset):
+                raw_headers = next(reader)
+            self.assert_schema(raw_headers)
+            yield from reader
+
     def parse(self):
         ids = set()
         for index, row in enumerate(self.read_csv()):
@@ -200,8 +226,17 @@ class AnalystSheet:
 
             yield ResultRow(row_number, change_ids, annotation)
 
-    def get_change_ids(self, row):
-        raise NotImplementedError()
+    def create_annotation(self, csv_row, row_index):
+        annotation = {
+            'annotation_schema': self.schema_name,
+        }
+        for index, field in enumerate(self.schema):
+            value = csv_row[index]
+            key = field[1]
+            if key:
+                annotation[key] = field[2](value)
+
+        return annotation
 
 
 class V1ChangesSheet(AnalystSheet):
@@ -227,7 +262,7 @@ class V1ChangesSheet(AnalystSheet):
         ('Diff hash', None),
         ('Text diff length', None),
         ('Text diff hash', None),
-        ('Who Found This?', None),
+        ('Who Found This?', 'annotation_author', sheet_str),
 
         ('1', 'page_date_time_change_only', sheet_bool),  # Individual page: Date and time change only
         ('2', 'page_text_or_numeric_content_change', sheet_bool),  # Individual page: Text or numeric content removal or change
@@ -260,34 +295,8 @@ class V1ChangesSheet(AnalystSheet):
         ('', None),
     )
 
-    def assert_schema(self, header_row):
-        expected = [header[0] for header in self.schema]
-        actual = header_row[0:len(expected)]
-        if actual != expected:
-            raise CsvSchemaError(f'Sheet did not have expected header row!\n  Expected: {expected}\n    Actual: {header_row}')
-
-    def read_csv(self):
-        with open(self.path, newline='') as csvfile:
-            reader = csv.reader(csvfile)
-            for i in range(self.row_offset):
-                raw_headers = next(reader)
-            self.assert_schema(raw_headers)
-            yield from reader
-
-    def get_change_ids(self, row):
-        # FIXME: don't use index here
-        return find_change_ids(row[9])
-
     def create_annotation(self, csv_row, row_index):
-        annotation = {
-            'annotation_schema': self.schema_name,
-            'annotation_author': csv_row[17],
-        }
-        for index, field in enumerate(self.schema):
-            value = csv_row[index]
-            key = field[1]
-            if key:
-                annotation[key] = field[2](value)
+        annotation = super().create_annotation(csv_row, row_index)
 
         annotation['notes_2'] = f"{annotation['notes_2_a']} {annotation['notes_2_b']}".strip()
         del annotation['notes_2_a']
@@ -314,118 +323,73 @@ class V1ChangesSheet(AnalystSheet):
         return IMPORTANCE_SIGNIFICANCE_MAP[value]
 
 
-class AnnotationAttributeInfo:
-    def __init__(self, column_names, json_key):
-        self.column_names = column_names
-        self.json_key = json_key
-
-
 class V2ChangesSheet(AnalystSheet):
     schema_name = 'edgi_analyst_v2'
     row_offset = 1
 
-    # If column names ever change while leaving the value semantics intact,
-    # add the new  name to the correct list of column names here
-    BOOL_ANNOTATION_ATTRIBUTES = [AnnotationAttributeInfo(*info) for info in [
-        (['Language alteration'],
-        'language_alteration'),
-        (['Link change/addition/removal'],
-        'link_change'),
-        (['Repeated Change across many pages or a domain'],
-        'repeated_change'),
-        (['Alteration within sections of a webpage'],
-        'alteration_within_sections'),
-        (['Alteration, removal, or addition of entire section(s) of a webpage'],
-        'alteration_entire_sections'),
-        (['Alteration, removal, or addition of an entire webpage or document'],
-        'alteration_entire_webpage_or_document'),
-        (['Overhaul, removal, or addition of an entire website'],
-        'alteration_entire_website'),
-        (['Alteration, removal, or addition of datasets'],
-        'alteration_dataset')]]
+    schema = (
+        ('Index', None, sheet_str),
+        ('Unique ID', 'analyst_sheet_id', sheet_str),
+        ('Output Date/Time', None, sheet_str),
+        ('Agency', None, sheet_str),
+        ('Site Name', None, sheet_str),
+        ('Page Name', None, sheet_str),
+        ('URL', None, sheet_str),
+        ('Page View URL', None, sheet_str),
+        ('Last Two - Side by Side', None, sheet_str),
+        ('Latest to Base - Side by Side', None, sheet_str),
+        ('Date Found - Latest', None, sheet_str),
+        ('Date Found - Base', None, sheet_str),
+        ('Diff length', None, sheet_str),
+        ('Diff hash', None, sheet_str),
+        ('Text diff length', None, sheet_str),
+        ('Text diff hash', None, sheet_str),
+        ('# of Changes this Week', None, sheet_str),
+        ('Priority (algorithm)', None, sheet_str),
+        ('Who Found This?', 'annotation_author', sheet_str),
+        ('Importance?', None, sheet_str),
 
-    STRING_ANNOTATION_ATTRIBUTES = [AnnotationAttributeInfo(*info) for info in [
-        (['Is this primarily a content or access change (or both)?'],
-        'content_or_access_change'),
-        (['Brief Description'],
-        'brief_description'),
-        (['Topic 1'],
-        'topic_1'),
-        (['Subtopic 1a'],
-        'subtopic_1a'),
-        (['Subtopic 1b'],
-        'subtopic_1b'),
-        (['Topic 2'],
-        'topic_2'),
-        (['Subtopic 2a'],
-        'subtopic_2a'),
-        (['Subtopic 2b'],
-        'subtopic_2b'),
-        (['Topic 3'],
-        'topic_3'),
-        (['Subtopic 3a'],
-        'subtopic_3a'),
-        (['Subtopic 3b'],
-        'subtopic_3b'),
-        (['Any keywords to monitor (e.g. for term analyses)?'],
-        'keywords_to_monitor'),
-        (['Further Notes'],
-        'further_notes'),
+        ('Language alteration', 'language_alteration', sheet_bool),
+        # FIXME: missing?
+        ('Content change/addition/removal', None, sheet_bool),
+        ('Link change/addition/removal', 'link_change', sheet_bool),
+        ('Repeated Change across many pages or a domain', 'repeated_change', sheet_bool),
+        ('Alteration within sections of a webpage', 'alteration_within_sections', sheet_bool),
+        ('Alteration, removal, or addition of entire section(s) of a webpage', 'alteration_entire_sections', sheet_bool),
+        ('Alteration, removal, or addition of an entire webpage or document', 'alteration_entire_webpage_or_document', sheet_bool),
+        ('Overhaul, removal, or addition of an entire website', 'alteration_entire_website', sheet_bool),
+        ('Alteration, removal, or addition of datasets', 'alteration_dataset', sheet_bool),
 
-        # Skipping this column; not relevant for archival purposes
-        # (['Ask/tell other working groups?'],
-        #  'ask_tell_other_working_groups'),
+        ('Is this primarily a content or access change (or both)?', 'content_or_access_change', sheet_str),
+        ('Brief Description', 'brief_description', sheet_str),
+        ('Topic 1', 'topic_1', sheet_str),
+        ('Subtopic 1a', 'subtopic_1a', sheet_str),
+        ('Subtopic 1b', 'subtopic_1b', sheet_str),
+        ('Topic 2', 'topic_2', sheet_str),
+        ('Subtopic 2a', 'subtopic_2a', sheet_str),
+        ('Subtopic 2b', 'subtopic_2b', sheet_str),
+        ('Topic 3', 'topic_3', sheet_str),
+        ('Subtopic 3a', 'subtopic_3a', sheet_str),
+        ('Subtopic 3b', 'subtopic_3b', sheet_str),
+        ('Any keywords to monitor (e.g. for term analyses)?', 'keywords_to_monitor', sheet_str),
+        ('Further Notes', 'further_notes', sheet_str),
 
-        # Including this so that we can eventually map it to
-        # users in the database
-        (['Who Found This?'],
-        'annotation_author'),
+        ('Ask/tell other working groups?', None, sheet_str),
+    )
 
-        (['Unique ID'],
-         'analyst_sheet_id')]]
-
-    def read_csv(self):
-        with open(self.path, newline='') as csvfile:
-            for _ in range(self.row_offset - 1):
-                csvfile.readline()
-            reader = DictReaderStrip(csvfile)
-            # FIXME: assert schema matches?
-            for row in reader:
-                yield row
-
-    def get_change_ids(self, row):
-        return find_change_ids(row['Last Two - Side by Side'])
-
-    def get_attribute_value(self, attribute_info, csv_row):
-        for column_name in attribute_info.column_names:
-            if column_name in csv_row:
-                return csv_row[column_name].strip()
-
-        # Despite being raised in a row-level function, this error means that the
-        # whole sheet is missing a column, so we don't catch and allow it to crash
-        raise CsvSchemaError(f'Expected to find one of {attribute_info.column_names} '
-                             f'in {csv_row.keys()}')
-
-    def create_annotation(self, csv_row, _row_index):
-        annotation = {}
-
-        for attribute_info in self.BOOL_ANNOTATION_ATTRIBUTES:
-            attribute_value = self.get_attribute_value(attribute_info, csv_row)
-            annotation[attribute_info.json_key] = sheet_bool(attribute_value)
-        for attribute_info in self.STRING_ANNOTATION_ATTRIBUTES:
-            attribute_value = self.get_attribute_value(attribute_info, csv_row)
-            annotation[attribute_info.json_key] = attribute_value
-
-        # This will need additional logic to determine the actual sheet schema
-        annotation['annotation_schema'] = self.schema_name
+    def create_annotation(self, csv_row, row_index):
+        annotation = super().create_annotation(csv_row, row_index)
 
         significance = 0.0
         if self.is_important:
-            row_importance = csv_row['Importance?'].lower().strip()
-            significance = IMPORTANCE_SIGNIFICANCE_MAP.get(row_importance, 0.0)
+            significance = self.get_row_significance(csv_row)
         annotation['significance'] = significance
 
         return annotation
+
+    def get_row_significance(self, row):
+        row_importance = self.get('Importance?', row).lower().strip()
+        return IMPORTANCE_SIGNIFICANCE_MAP.get(row_importance, 0.0)
 
 
 def main():
