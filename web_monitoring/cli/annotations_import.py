@@ -213,7 +213,7 @@ class AnalystSheet:
             change_ids = self.get_change_ids(row)
             try:
                 annotation = self.create_annotation(row, index)
-                id = annotation['analyst_sheet_id']
+                id = annotation['sheet_change_id']
                 if id in ids:
                     logger.warn(f"DUPLICATE ID: {id}")
             except Exception as error:
@@ -247,7 +247,7 @@ class V1ChangesSheet(AnalystSheet):
         # Useful info for analysts, but mostly duplicative of data in DB.
         ('Checked (2-significant)', None),
         ('Index', None),
-        ('Unique ID', 'analyst_sheet_id', sheet_str),
+        ('Unique ID', 'sheet_change_id', sheet_str),
         ('Output Date/Time', None),
         ('Agency', None),
         ('Site Name', None),
@@ -329,7 +329,7 @@ class V2ChangesSheet(AnalystSheet):
 
     schema = (
         ('Index', None, sheet_str),
-        ('Unique ID', 'analyst_sheet_id', sheet_str),
+        ('Unique ID', 'sheet_change_id', sheet_str),
         ('Output Date/Time', None, sheet_str),
         ('Agency', None, sheet_str),
         ('Site Name', None, sheet_str),
