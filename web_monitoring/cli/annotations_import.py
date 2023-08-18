@@ -13,6 +13,12 @@ logger = logging.getLogger(__name__)
 log_level = os.getenv('LOG_LEVEL', 'WARNING')
 logger.setLevel(logging.__dict__[log_level])
 
+IMPORTANCE_SIGNIFICANCE_MAP = {
+    'low': 0.5,
+    'medium': 0.75,
+    'high': 1.0
+}
+
 # These were set in the original sheet by color coding, so we've just kept an
 # index here. Not great. 2 types of data in this list:
 #   1. (row_number, significance)
@@ -165,6 +171,7 @@ class ResultRow:
 
 
 class AnalystSheet:
+    schema_name = ''
     schema = ()
     row_offset = 0
     is_important = False
@@ -198,6 +205,9 @@ class AnalystSheet:
 
 
 class V1ChangesSheet(AnalystSheet):
+    schema_name = 'edgi_analyst_v1'
+    row_offset = 5
+
     schema = (
         # Useful info for analysts, but mostly duplicative of data in DB.
         ('Checked (2-significant)', None),
@@ -250,22 +260,18 @@ class V1ChangesSheet(AnalystSheet):
         ('', None),
     )
 
-    row_offset = 5
+    def assert_schema(self, header_row):
+        expected = [header[0] for header in self.schema]
+        actual = header_row[0:len(expected)]
+        if actual != expected:
+            raise CsvSchemaError(f'Sheet did not have expected header row!\n  Expected: {expected}\n    Actual: {header_row}')
 
     def read_csv(self):
         with open(self.path, newline='') as csvfile:
             reader = csv.reader(csvfile)
             for i in range(self.row_offset):
                 raw_headers = next(reader)
-            expected_headers = [header[0] for header in self.schema]
-            actual_headers = raw_headers[0:len(expected_headers)]
-            if actual_headers != expected_headers:
-                raise CsvSchemaError(f'Sheet did not have expected v1 header row!\n  Expected: {expected_headers}\n    Actual: {raw_headers}')
-            # for row in reader:
-            #     yield {
-            #         header[1] if len(header) > 1 else header[0]: row[index]
-            #         for index, header in enumerate(self.headers)
-            #     }
+            self.assert_schema(raw_headers)
             yield from reader
 
     def get_change_ids(self, row):
@@ -274,7 +280,7 @@ class V1ChangesSheet(AnalystSheet):
 
     def create_annotation(self, csv_row, row_index):
         annotation = {
-            'annotation_schema': 'edgi_analyst_v1',
+            'annotation_schema': self.schema_name,
             'annotation_author': csv_row[17],
         }
         for index, field in enumerate(self.schema):
@@ -295,7 +301,7 @@ class V1ChangesSheet(AnalystSheet):
         return annotation
 
     def get_row_significance(self, row_number):
-        value = None
+        value = 'medium'
         offset = self.row_offset + 1
         for candidate in V1_SIGNIFICANT_ROWS:
             if row_number == candidate[0] - offset:
@@ -304,12 +310,8 @@ class V1ChangesSheet(AnalystSheet):
             elif len(candidate) == 3 and row_number > candidate[0] - offset and row_number < candidate[1] - offset:
                 value = candidate[2]
                 break
-        if value == 'low':
-            return 0.5
-        elif value == 'high':
-            return 1.0
-        else:
-            return 0.75
+
+        return IMPORTANCE_SIGNIFICANCE_MAP[value]
 
 
 class AnnotationAttributeInfo:
@@ -319,6 +321,7 @@ class AnnotationAttributeInfo:
 
 
 class V2ChangesSheet(AnalystSheet):
+    schema_name = 'edgi_analyst_v2'
     row_offset = 1
 
     # If column names ever change while leaving the value semantics intact,
@@ -414,17 +417,12 @@ class V2ChangesSheet(AnalystSheet):
             annotation[attribute_info.json_key] = attribute_value
 
         # This will need additional logic to determine the actual sheet schema
-        annotation['annotation_schema'] = 'edgi_analyst_v2'
+        annotation['annotation_schema'] = self.schema_name
 
         significance = 0.0
         if self.is_important:
-            importance_significance_mapping = {
-                'low': 0.5,
-                'medium': 0.75,
-                'high': 1.0
-            }
             row_importance = csv_row['Importance?'].lower().strip()
-            significance = importance_significance_mapping.get(row_importance, 0.0)
+            significance = IMPORTANCE_SIGNIFICANCE_MAP.get(row_importance, 0.0)
         annotation['significance'] = significance
 
         return annotation
