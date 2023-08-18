@@ -229,6 +229,9 @@ class AnalystSheet:
     def create_annotation(self, csv_row, row_index):
         annotation = {
             'annotation_schema': self.schema_name,
+            'significance': (self.get_row_significance(csv_row, row_index)
+                             if self.is_important
+                             else 0.0)
         }
         for index, field in enumerate(self.schema):
             value = csv_row[index]
@@ -302,14 +305,9 @@ class V1ChangesSheet(AnalystSheet):
         del annotation['notes_2_a']
         del annotation['notes_2_b']
 
-        significance = 0.0
-        if self.is_important:
-            significance = self.get_row_significance(row_index)
-        annotation['significance'] = significance
-
         return annotation
 
-    def get_row_significance(self, row_number):
+    def get_row_significance(self, _row, row_number):
         value = 'medium'
         offset = self.row_offset + 1
         for candidate in V1_SIGNIFICANT_ROWS:
@@ -376,17 +374,7 @@ class V2ChangesSheet(AnalystSheet):
         ('Ask/tell other working groups?', None, sheet_str),
     )
 
-    def create_annotation(self, csv_row, row_index):
-        annotation = super().create_annotation(csv_row, row_index)
-
-        significance = 0.0
-        if self.is_important:
-            significance = self.get_row_significance(csv_row)
-        annotation['significance'] = significance
-
-        return annotation
-
-    def get_row_significance(self, row):
+    def get_row_significance(self, row, _row_index):
         row_importance = self.get('Importance?', row).lower().strip()
         return IMPORTANCE_SIGNIFICANCE_MAP.get(row_importance, 0.0)
 
