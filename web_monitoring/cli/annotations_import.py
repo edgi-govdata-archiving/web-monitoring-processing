@@ -265,24 +265,24 @@ class V1ChangesSheet(AnalystSheet):
         ('Text diff hash', None),
         ('Who Found This?', 'annotation_author', sheet_str),
 
-        ('1', 'page_date_time_change_only', sheet_bool),  # Individual page: Date and time change only
-        ('2', 'page_text_or_numeric_content_change', sheet_bool),  # Individual page: Text or numeric content removal or change
-        ('3', 'page_image_content_change', sheet_bool),  # Individual page: Image content removal or change
-        ('4', 'page_hyperlink_change', sheet_bool),  # Individual page: Hyperlink removal or change
-        ('5', 'page_form_or_interactive_component_change', sheet_bool),  # Individual page: Text-box, entry field, or interactive component removal or change
-        ('6', 'page_page_removal', sheet_bool),  # Individual page: Page removal (whether it has happened in the past or is currently removed)
-        ('7', 'repeat_header_menu_change', sheet_bool),  # Repeated change: Header menu removal or change
-        ('8', 'repeat_template_text_page_format_or_comment_change', sheet_bool),  # Repeated change: Template text, page format, or comment field removal or change
-        ('9', 'repeat_footer_or_site_map_change', sheet_bool),  # Repeated change: Footer or site map removal or change
-        ('10', 'repeat_sidebar_change', sheet_bool),  # Repeated change: Sidebar removal or change
-        ('11', 'repeat_banner_or_ad_change', sheet_bool),  # Repeated change: Banner/advertisement removal or change
-        ('12', 'repeat_scrolling_news', sheet_bool),  # Repeated change: Scrolling news/reports
-        ('1', 'significance_energy_environment_climate', sheet_bool),  # Significant: Change related to energy, environment, or climate
-        ('2', 'significance_language', sheet_bool),  # Significant: Language is significantly altered
-        ('3', 'significance_content_removed', sheet_bool),  # Significant: Content is removed
-        ('4', 'significance_page_removed', sheet_bool),  # Significant: Page is removed
-        ('5', 'significance_not_significant', sheet_bool),  # Significant: Insignificant
-        ('6', 'significance_repeated_insignificant_change', sheet_bool),  # Significant: Repeated Insignificant
+        ('1', 'date_time_change_only', sheet_bool),  # Individual page: Date and time change only
+        ('2', 'text_or_numeric_content_change', sheet_bool),  # Individual page: Text or numeric content removal or change
+        ('3', 'image_content_change', sheet_bool),  # Individual page: Image content removal or change
+        ('4', 'hyperlink_change', sheet_bool),  # Individual page: Hyperlink removal or change
+        ('5', 'form_or_interactive_component_change', sheet_bool),  # Individual page: Text-box, entry field, or interactive component removal or change
+        ('6', 'page_removal', sheet_bool),  # Individual page: Page removal (whether it has happened in the past or is currently removed)
+        ('7', 'repeat__header_menu_change', sheet_bool),  # Repeated change: Header menu removal or change
+        ('8', 'repeat__template_text_page_format_or_comment_change', sheet_bool),  # Repeated change: Template text, page format, or comment field removal or change
+        ('9', 'repeat__footer_or_site_map_change', sheet_bool),  # Repeated change: Footer or site map removal or change
+        ('10', 'repeat__sidebar_change', sheet_bool),  # Repeated change: Sidebar removal or change
+        ('11', 'repeat__banner_or_ad_change', sheet_bool),  # Repeated change: Banner/advertisement removal or change
+        ('12', 'repeat__scrolling_news', sheet_bool),  # Repeated change: Scrolling news/reports
+        ('1', 'significance__energy_environment_climate', sheet_bool),  # Significant: Change related to energy, environment, or climate
+        ('2', 'significance__language', sheet_bool),  # Significant: Language is significantly altered
+        ('3', 'significance__content_removed', sheet_bool),  # Significant: Content is removed
+        ('4', 'significance__page_removed', sheet_bool),  # Significant: Page is removed
+        ('5', 'significance__not_significant', sheet_bool),  # Significant: Insignificant
+        ('6', 'significance__repeated_insignificant_change', sheet_bool),  # Significant: Repeated Insignificant
         ('Further Notes', 'notes', sheet_str),
         ('Choose from drop down menu', 'broad_topic', sheet_str),  # Broad Topic
         ('', 'keywords', str),  # Keywords
