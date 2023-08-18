@@ -9,9 +9,7 @@ import re
 from tqdm import tqdm
 from web_monitoring import db
 
-logger = logging.getLogger(__name__)
-log_level = os.getenv('LOG_LEVEL', 'WARNING')
-logger.setLevel(logging.__dict__[log_level])
+logger = logging.getLogger('annotations_import')
 
 IMPORTANCE_SIGNIFICANCE_MAP = {
     'low': 0.5,
@@ -399,6 +397,9 @@ class AuthorNameMapper:
 
 
 def main():
+    log_level = os.getenv('LOG_LEVEL', 'WARNING')
+    logging.basicConfig(level=log_level)
+
     doc = """Add analyst annotations from a csv file to the Web Monitoring db.
 
 Usage:
