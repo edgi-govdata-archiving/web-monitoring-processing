@@ -379,6 +379,25 @@ class V2ChangesSheet(AnalystSheet):
         return IMPORTANCE_SIGNIFICANCE_MAP.get(row_importance, 0.0)
 
 
+class AuthorNameMapper:
+    data = {}
+
+    def __init__(self, file_path):
+        self.path = file_path
+
+    def read(self):
+        with open(self.path, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                row['id'] = int(row['id'])
+                self.data[row['name'].strip().lower()] = row
+
+    def get(self, name):
+        if not self.data:
+            self.read()
+        return self.data[name.strip().lower()]
+
+
 def main():
     doc = """Add analyst annotations from a csv file to the Web Monitoring db.
 
@@ -386,15 +405,19 @@ Usage:
 path/to/annotations_import.py <csv_path> [options]
 
 Options:
---is_important_changes  Was this CSV generated from an Important Changes sheet?
+--is-important-changes  Was this CSV generated from an Important Changes sheet?
 --commit                Send annotatins to DB
---schema <version>      Should be 'v1' or 'v2'.
+--schema <version>      Should be 'v1' or 'v2'
+--author-map <map_path> Use this CSV to map annotation author names to IDs
 """
     arguments = docopt(doc)
-    is_important_changes = arguments['--is_important_changes']
+    is_important_changes = arguments['--is-important-changes']
     commit = arguments['--commit']
     schema_version = arguments.get('--schema') or 'v2'
     csv_path = arguments['<csv_path>']
+    author_map = None
+    if arguments.get('--author-map'):
+        author_map = AuthorNameMapper(arguments.get('--author-map'))
 
     if schema_version == 'v1':
         sheet = V1ChangesSheet(csv_path, is_important_changes)
@@ -407,6 +430,10 @@ Options:
     client = db.Client.from_env()
     for row in tqdm(sheet.parse(), unit=' rows'):
         if row.change_ids and row.annotation:
+            author = row.annotation['annotation_author']
+            if author and author_map:
+                row.annotation['annotation_author'] = author_map.get(author)['id']
+
             if commit:
                 try:
                     response = client.add_annotation(**row.change_ids,
