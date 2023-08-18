@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import csv
+from dataclasses import asdict, dataclass
 from docopt import docopt
+import json
 import logging
 import os
 import re
@@ -159,10 +161,19 @@ def sheet_bool(raw):
         raise TypeError(f'Bad value for boolean column: "{raw}"')
 
 
-class AnalystSheet:
-    row_offset = 0
+@dataclass
+class ResultRow:
+    number: int
+    change_ids: dict
+    annotation: dict
 
-    def __init__(self, csv_path, is_important = False) -> None:
+
+class AnalystSheet:
+    schema = ()
+    row_offset = 0
+    is_important = False
+
+    def __init__(self, csv_path, is_important=False) -> None:
         self.path = csv_path
         self.is_important = is_important
 
@@ -238,14 +249,14 @@ class V1ChangesSheet(AnalystSheet):
             #     }
             yield from reader
 
-    def parse(self, is_important_changes=False):
+    def parse(self):
         ids = set()
         for index, row in enumerate(self.read_csv()):
             row_number = index + self.row_offset + 1
             # FIXME: don't use index here
             change_ids = find_change_ids(row[9])
             try:
-                annotation = self.create_annotation(row, index, is_important_changes)
+                annotation = self.create_annotation(row, index)
                 id = annotation['analyst_sheet_id']
                 if id in ids:
                     logger.warn(f"DUPLICATE ID: {id}")
@@ -257,13 +268,9 @@ class V1ChangesSheet(AnalystSheet):
             if not annotation:
                 logger.warning(f'failed to extract annotation data from row {row_number}')
 
-            yield {
-                'row': row_number,
-                'change': change_ids,
-                'annotation': annotation
-            }
+            yield ResultRow(row_number, change_ids, annotation)
 
-    def create_annotation(self, csv_row, row_index, is_important_changes=False):
+    def create_annotation(self, csv_row, row_index):
         annotation = {
             'annotation_schema': 'edgi_analyst_v1',
             'annotation_author': csv_row[17],
@@ -279,7 +286,7 @@ class V1ChangesSheet(AnalystSheet):
         del annotation['notes_2_b']
 
         significance = 0.0
-        if is_important_changes:
+        if self.is_important:
             significance = self.get_row_significance(row_index)
         annotation['significance'] = significance
 
@@ -427,12 +434,12 @@ Options:
     csv_path = arguments['<csv_path>']
 
     if schema_version == 'v1':
-        sheet = V1ChangesSheet(csv_path)
+        sheet = V1ChangesSheet(csv_path, is_important_changes)
         for row in tqdm(sheet.parse(), unit=' rows'):
             # FIXME: just for testing
             sleep(0.001)
-            if commit:
-                if row['change'] and row['annotation']:
+            if row.change_ids and row.annotation:
+                if commit:
                     raise Exception('OH NO')
                     try:
                         response = client.add_annotation(**change_ids,
@@ -441,8 +448,8 @@ Options:
                     except db.WebMonitoringDbError as e:
                         logger.warning(
                             f'failed to post annotation for row {row} with error: {e}')
-            else:
-                print(row)
+                else:
+                    print(json.dumps(asdict(row)))
         return
 
     client = db.Client.from_env()
