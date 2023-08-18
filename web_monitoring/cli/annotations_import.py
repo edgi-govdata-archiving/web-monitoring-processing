@@ -1,31 +1,135 @@
 #!/usr/bin/env python
 import csv
+from dataclasses import asdict, dataclass
 from docopt import docopt
+import json
 import logging
+import math
 import os
 import re
+from time import sleep
 from tqdm import tqdm
 from web_monitoring import db
 
-logger = logging.getLogger(__name__)
-log_level = os.getenv('LOG_LEVEL', 'WARNING')
-logger.setLevel(logging.__dict__[log_level])
+logger = logging.getLogger('annotations_import')
 
-class DictReaderStrip(csv.DictReader):
-    @property
-    def fieldnames(self):
-        return [name.strip() for name in super().fieldnames]
+IMPORTANCE_SIGNIFICANCE_MAP = {
+    'low': 0.5,
+    'medium': 0.75,
+    'high': 1.0
+}
 
-def read_csv(csv_path):
-    with open(csv_path, newline='') as csvfile:
-        reader = DictReaderStrip(csvfile)
-        for row in reader:
-            yield row
+# These were set in the original sheet by color coding, so we've just kept an
+# index here. Not great. 2 types of data in this list:
+#   1. (row_number, significance)
+#   2. (start_row_number_inclusive, end_row_number_exclusive, significance)
+#
+# Row numbers are from the original sheet, which has 5 header rows and is
+# 1-based. So subtract 6 from these to get the indexes used in this script.
+V1_SIGNIFICANT_ROWS = [
+    (6, 'low'),
+    (8, 'low'),
+    (14, 'high'),
+    (37, 'low'),
+    (41, 'high'),
+    (45, 'low'),
+    (47, 'low'),
+    (48, 'low'),
+    (49, 'low'),
+    (51, 'low'),
+    (55, 'high'),
+    (58, 'low'),
+    (61, 'low'),
+    (68, 'low'),
+    (83, 'low'),
+    (89, 'high'),
+    (93, 'low'),
+    (94, 'low'),
+    (95, 'low'),
+    (96, 'low'),
+    (98, 'low'),
+    (99, 'low'),
+    (100, 'low'),
+    (101, 'low'),
+    (105, 'low'),
+    (106, 'low'),
+    (107, 'low'),
+    (108, 'low'),
+    (109, 'low'),
+    (110, 'low'),
+    (111, 'low'),
+    (112, 'low'),
+    (113, 'low'),
+    (114, 'low'),
+    (115, 'low'),
+    (116, 'low'),
+    (117, 'low'),
+    (118, 'low'),
+    (119, 'low'),
+    (120, 'low'),
+    (121, 'low'),
+    (122, 'low'),
+    (123, 'low'),
+    (124, 'low'),
+    (125, 'low'),
+    (126, 'low'),
+    (127, 'low'),
+    (128, 'low'),
+    (129, 'low'),
+    (130, 'low'),
+    (131, 'low'),
+    (132, 'low'),
+    (133, 'low'),
+    (134, 'low'),
+    (135, 'low'),
+    (136, 'low'),
+    (137, 'low'),
+    (141, 'high'),
+    (145, 193, 'low'),
+    (195, 'low'),
+    (201, 'high'),
+    (218, 238, 'low'),
+    (263, 'high'),
+    (266, 'high'),
+    (271, 'low'),
+    (273, 'low'),
+    (274, 'low'),
+    (276, 'low'),
+    (277, 'low'),
+    (279, 'low'),
+    (283, 288, 'low'),
+    (291, 'low'),
+    (353, 'high'),
+    (359, 'high'),
+    (367, 'high'),
+    (369, 372, 'high'),
+    (416, 'high'),
+    (428, 'high'),
+    (432, 'low'),
+    (447, 'high'),
+    (451, 'high'),
+    (469, 473, 'low'),
+    (492, 'high'),
+    (511, 'high'),
+    (537, 542, 'high'),
+    (549, 'high'),
+    (552, 'low'),
+    (553, 556, 'high'),
+    (565, 570, 'high'),
+    (572, 'low'),
+    (573, 'low'),
+    (666, 'low'),
+    (683, 'low'),
+    (684, 'low'),
+    (1322, 'high'),
+]
 
-DIFF_URL_REGEX = re.compile(r'^.*/page/(.*)/(.*)\.\.(.*)')
-def find_change_ids(csv_row):
-    diff_url = csv_row['Last Two - Side by Side']
-    regex_result = DIFF_URL_REGEX.match(diff_url)
+
+CHANGE_URL_REGEX = re.compile(r'^.*/page/(.*)/(.*)\.\.(.*)')
+
+
+def parse_change_url(diff_url):
+    regex_result = CHANGE_URL_REGEX.match(diff_url)
     if regex_result:
         (page_id, from_version_id, to_version_id) = regex_result.groups()
         return {'page_id': page_id,
@@ -34,132 +138,329 @@ def find_change_ids(csv_row):
     else:
         return None
 
-class AnnotationAttributeInfo:
-    def __init__(self, column_names, json_key):
-        self.column_names = column_names
-        self.json_key = json_key
+
+def sheet_str(raw):
+    return raw.strip()
+
+
+def sheet_bool(raw):
+    value = raw.lower().strip()
+    if value == '1' or value == 'y' or value == 'yes' or value == 'x':
+        return True
+    elif value == '' or value == '0' or value == 'n' or value == 'no':
+        return False
+    else:
+        raise TypeError(f'Bad value for boolean column: "{raw}"')
+
 
 class CsvSchemaError(Exception):
     ...
 
-# If column names ever change while leaving the value semantics intact,
-# add the new  name to the correct list of column names here
-BOOL_ANNOTATION_ATTRIBUTES = [AnnotationAttributeInfo(*info) for info in [
-    (['Language alteration'],
-     'language_alteration'),
-    (['Link change/addition/removal'],
-     'link_change'),
-    (['Repeated Change across many pages or a domain'],
-     'repeated_change'),
-    (['Alteration within sections of a webpage'],
-     'alteration_within_sections'),
-    (['Alteration, removal, or addition of entire section(s) of a webpage'],
-     'alteration_entire_sections'),
-    (['Alteration, removal, or addition of an entire webpage or document'],
-     'alteration_entire_webpage_or_document'),
-    (['Overhaul, removal, or addition of an entire website'],
-     'alteration_entire_website'),
-    (['Alteration, removal, or addition of datasets'],
-     'alteration_dataset')]]
 
-STRING_ANNOTATION_ATTRIBUTES = [AnnotationAttributeInfo(*info) for info in [
-    (['Is this primarily a content or access change (or both)?'],
-     'content_or_access_change'),
-    (['Brief Description'],
-     'brief_description'),
-    (['Topic 1'],
-     'topic_1'),
-    (['Subtopic 1a'],
-     'subtopic_1a'),
-    (['Subtopic 1b'],
-     'subtopic_1b'),
-    (['Topic 2'],
-     'topic_2'),
-    (['Subtopic 2a'],
-     'subtopic_2a'),
-    (['Subtopic 2b'],
-     'subtopic_2b'),
-    (['Topic 3'],
-     'topic_3'),
-    (['Subtopic 3a'],
-     'subtopic_3a'),
-    (['Subtopic 3b'],
-     'subtopic_3b'),
-    (['Any keywords to monitor (e.g. for term analyses)?'],
-     'keywords_to_monitor'),
-    (['Further Notes'],
-     'further_notes'),
-    (['Ask/tell other working groups?'],
-     'ask_tell_other_working_groups'),
+@dataclass
+class ResultRow:
+    number: int
+    change_ids: dict
+    annotation: dict
 
-    # Including this so that we can eventually map it to
-    # users in the database
-    (['Who Found This?'],
-     'annotation_author')]]
 
-def get_attribute_value(attribute_info, csv_row):
-    for column_name in attribute_info.column_names:
-        if column_name in csv_row:
-            return csv_row[column_name].strip()
+class AnalystSheet:
+    schema_name = ''
+    schema = ()
+    row_offset = 0
+    is_important = False
 
-    # Despite being raised in a row-level function, this error means that the
-    # whole sheet is missing a column, so we don't catch and allow it to crash
-    raise CsvSchemaError(f'Expected to find one of {attribute_info.column_names} '
-                         f'in {csv_row.keys()}')
+    def __init__(self, csv_path, is_important=False) -> None:
+        self.path = csv_path
+        self.is_important = is_important
 
-def create_annotation(csv_row, is_important_changes):
-    annotation = {}
+    def get(self, field_name, row):
+        if not getattr(self, 'field_index', None):
+            self.field_index = {}
+            for index, field in enumerate(self.schema):
+                if field[0] in self.field_index:
+                    self.field_index[field[0]].append(index)
+                else:
+                    self.field_index[field[0]] = [index]
 
-    for attribute_info in BOOL_ANNOTATION_ATTRIBUTES:
-        attribute_value = get_attribute_value(attribute_info, csv_row)
-        annotation[attribute_info.json_key] = attribute_value == '1'
-    for attribute_info in STRING_ANNOTATION_ATTRIBUTES:
-        attribute_value = get_attribute_value(attribute_info, csv_row)
-        annotation[attribute_info.json_key] = attribute_value
+        indexes = self.field_index[field_name]
+        if len(indexes) == 1:
+            return row[indexes[0]]
+        else:
+            raise KeyError(f'{len(indexes)} fields named "{field_name}"')
 
-    # This will need additional logic to determine the actual sheet schema
-    annotation['annotation_schema'] = 'edgi_analyst_v2'
+    def get_change_ids(self, row):
+        return parse_change_url(self.get('Last Two - Side by Side', row))
 
-    significance = 0.0
-    if is_important_changes:
-        importance_significance_mapping = {
-            'low': 0.5,
-            'medium': 0.75,
-            'high': 1.0
+    def assert_schema(self, header_row):
+        expected = [header[0] for header in self.schema]
+        actual = [cell.strip() for cell in header_row[0:len(expected)]]
+        if actual != expected:
+            raise CsvSchemaError(f'Sheet did not have expected header row!\n  Expected: {expected}\n    Actual: {actual}')
+
+    def read_csv(self):
+        with open(self.path, newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            for i in range(self.row_offset):
+                raw_headers = next(reader)
+            self.assert_schema(raw_headers)
+            yield from reader
+
+    def parse(self):
+        ids = set()
+        for index, row in enumerate(self.read_csv()):
+            row_number = index + self.row_offset + 1
+            change_ids = self.get_change_ids(row)
+            if not change_ids:
+                logger.error(f'failed to extract IDs from row {row_number}')
+
+            try:
+                annotation = self.create_annotation(row, index)
+                id = annotation['sheet_change_id']
+                if id in ids:
+                    logger.warn(f"DUPLICATE ID: {id}")
+            except Exception as error:
+                logger.exception(TypeError(f'Could not parse row {row_number}: {error}'))
+                annotation = None
+
+            yield ResultRow(row_number, change_ids, annotation)
+
+    def create_annotation(self, csv_row, row_index):
+        annotation = {
+            'annotation_schema': self.schema_name,
+            'significance': (self.get_row_significance(csv_row, row_index)
+                             if self.is_important
+                             else 0.0)
         }
-        row_importance = csv_row['Importance?'].lower().strip()
-        significance = importance_significance_mapping.get(row_importance, 0.0)
-    annotation['significance'] = significance
+        for index, field in enumerate(self.schema):
+            value = csv_row[index]
+            key = field[1]
+            if key:
+                annotation[key] = field[2](value)
 
-    return annotation
+        return annotation
+
+
+class V1ChangesSheet(AnalystSheet):
+    schema_name = 'edgi_analyst_v1'
+    row_offset = 5
+
+    schema = (
+        # Useful info for analysts, but mostly duplicative of data in DB.
+        ('Checked (2-significant)', None),
+        ('Index', None),
+        ('Unique ID', 'sheet_change_id', sheet_str),
+        ('Output Date/Time', None),
+        ('Agency', None),
+        ('Site Name', None),
+        ('Page Name', None),
+        ('URL', None),
+        ('Page View URL', None),
+        ('Last Two - Side by Side', None),
+        ('Latest to Base - Side by Side', None),
+        ('Date Found - Latest', None),
+        ('Date Found - Base', None),
+        ('Diff length', None),
+        ('Diff hash', None),
+        ('Text diff length', None),
+        ('Text diff hash', None),
+        ('Who Found This?', 'annotation_author', sheet_str),
+
+        ('1', 'date_time_change_only', sheet_bool),  # Individual page: Date and time change only
+        ('2', 'text_or_numeric_content_change', sheet_bool),  # Individual page: Text or numeric content removal or change
+        ('3', 'image_content_change', sheet_bool),  # Individual page: Image content removal or change
+        ('4', 'hyperlink_change', sheet_bool),  # Individual page: Hyperlink removal or change
+        ('5', 'form_or_interactive_component_change', sheet_bool),  # Individual page: Text-box, entry field, or interactive component removal or change
+        ('6', 'page_removal', sheet_bool),  # Individual page: Page removal (whether it has happened in the past or is currently removed)
+        ('7', 'repeat__header_menu_change', sheet_bool),  # Repeated change: Header menu removal or change
+        ('8', 'repeat__template_text_page_format_or_comment_change', sheet_bool),  # Repeated change: Template text, page format, or comment field removal or change
+        ('9', 'repeat__footer_or_site_map_change', sheet_bool),  # Repeated change: Footer or site map removal or change
+        ('10', 'repeat__sidebar_change', sheet_bool),  # Repeated change: Sidebar removal or change
+        ('11', 'repeat__banner_or_ad_change', sheet_bool),  # Repeated change: Banner/advertisement removal or change
+        ('12', 'repeat__scrolling_news', sheet_bool),  # Repeated change: Scrolling news/reports
+        ('1', 'significance__energy_environment_climate', sheet_bool),  # Significant: Change related to energy, environment, or climate
+        ('2', 'significance__language', sheet_bool),  # Significant: Language is significantly altered
+        ('3', 'significance__content_removed', sheet_bool),  # Significant: Content is removed
+        ('4', 'significance__page_removed', sheet_bool),  # Significant: Page is removed
+        ('5', 'significance__not_significant', sheet_bool),  # Significant: Insignificant
+        ('6', 'significance__repeated_insignificant_change', sheet_bool),  # Significant: Repeated Insignificant
+        ('Further Notes', 'notes', sheet_str),
+        ('Choose from drop down menu', 'broad_topic', sheet_str),  # Broad Topic
+        ('', 'keywords', str),  # Keywords
+
+        # There are extra notes in the second of these two columns. Sometimes
+        # they are accidentally put in the first one, so they should be merged.
+        ('Leave blank (used on Patterns sheet)', 'notes_2_a', sheet_str),
+        ('', 'notes_2_b', sheet_str),
+
+        # Ignore this column
+        ('', None),
+    )
+
+    def create_annotation(self, csv_row, row_index):
+        annotation = super().create_annotation(csv_row, row_index)
+
+        annotation['notes_2'] = f"{annotation['notes_2_a']} {annotation['notes_2_b']}".strip()
+        del annotation['notes_2_a']
+        del annotation['notes_2_b']
+
+        return annotation
+
+    def get_row_significance(self, _row, row_number):
+        value = 'medium'
+        offset = self.row_offset + 1
+        for candidate in V1_SIGNIFICANT_ROWS:
+            if row_number == candidate[0] - offset:
+                value = candidate[1] if len(candidate) == 2 else candidate[2]
+                break
+            elif len(candidate) == 3 and row_number > candidate[0] - offset and row_number < candidate[1] - offset:
+                value = candidate[2]
+                break
+
+        return IMPORTANCE_SIGNIFICANCE_MAP[value]
+
+
+class V2ChangesSheet(AnalystSheet):
+    schema_name = 'edgi_analyst_v2'
+    row_offset = 1
+
+    schema = (
+        ('Index', None, sheet_str),
+        ('Unique ID', 'sheet_change_id', sheet_str),
+        ('Output Date/Time', None, sheet_str),
+        ('Agency', None, sheet_str),
+        ('Site Name', None, sheet_str),
+        ('Page Name', None, sheet_str),
+        ('URL', None, sheet_str),
+        ('Page View URL', None, sheet_str),
+        ('Last Two - Side by Side', None, sheet_str),
+        ('Latest to Base - Side by Side', None, sheet_str),
+        ('Date Found - Latest', None, sheet_str),
+        ('Date Found - Base', None, sheet_str),
+        ('Diff length', None, sheet_str),
+        ('Diff hash', None, sheet_str),
+        ('Text diff length', None, sheet_str),
+        ('Text diff hash', None, sheet_str),
+        ('# of Changes this Week', None, sheet_str),
+        ('Priority (algorithm)', None, sheet_str),
+        ('Who Found This?', 'annotation_author', sheet_str),
+        ('Importance?', None, sheet_str),
+
+        ('Language alteration', 'language_alteration', sheet_bool),
+        ('Content change/addition/removal', 'content_change', sheet_bool),
+        ('Link change/addition/removal', 'link_change', sheet_bool),
+        ('Repeated Change across many pages or a domain', 'repeated_change', sheet_bool),
+        ('Alteration within sections of a webpage', 'alteration_within_sections', sheet_bool),
+        ('Alteration, removal, or addition of entire section(s) of a webpage', 'alteration_entire_sections', sheet_bool),
+        ('Alteration, removal, or addition of an entire webpage or document', 'alteration_entire_webpage_or_document', sheet_bool),
+        ('Overhaul, removal, or addition of an entire website', 'alteration_entire_website', sheet_bool),
+        ('Alteration, removal, or addition of datasets', 'alteration_dataset', sheet_bool),
+
+        ('Is this primarily a content or access change (or both)?', 'content_or_access_change', sheet_str),
+        ('Brief Description', 'brief_description', sheet_str),
+        ('Topic 1', 'topic_1', sheet_str),
+        ('Subtopic 1a', 'subtopic_1a', sheet_str),
+        ('Subtopic 1b', 'subtopic_1b', sheet_str),
+        ('Topic 2', 'topic_2', sheet_str),
+        ('Subtopic 2a', 'subtopic_2a', sheet_str),
+        ('Subtopic 2b', 'subtopic_2b', sheet_str),
+        ('Topic 3', 'topic_3', sheet_str),
+        ('Subtopic 3a', 'subtopic_3a', sheet_str),
+        ('Subtopic 3b', 'subtopic_3b', sheet_str),
+        ('Any keywords to monitor (e.g. for term analyses)?', 'keywords_to_monitor', sheet_str),
+        ('Further Notes', 'further_notes', sheet_str),
+
+        ('Ask/tell other working groups?', None, sheet_str),
+    )
+
+    def get_row_significance(self, row, _row_index):
+        row_importance = self.get('Importance?', row).lower().strip()
+        return IMPORTANCE_SIGNIFICANCE_MAP.get(row_importance, 0.0)
+
+
+class AuthorNameMapper:
+    data = {}
+
+    def __init__(self, file_path):
+        self.path = file_path
+
+    def read(self):
+        with open(self.path, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                row['id'] = int(row['id'])
+                self.data[row['name'].strip().lower()] = row
+
+    def get(self, name):
+        if not self.data:
+            self.read()
+        return self.data[name.strip().lower()]
+
 
 def main():
+    log_level = os.getenv('LOG_LEVEL', 'INFO')
+    logging.basicConfig(level=log_level)
+
     doc = """Add analyst annotations from a csv file to the Web Monitoring db.
 
 Usage:
-path/to/annotations_import.py <csv_path> [--is_important_changes]
+path/to/annotations_import.py <csv_path> [options]
 
 Options:
---is_important_changes  Was this CSV generated from an Important Changes sheet?
+--is-important-changes  Was this CSV generated from an Important Changes sheet?
+--commit                Send annotatins to DB
+--schema <version>      Should be 'v1' or 'v2'
+--author-map <map_path> Use this CSV to map annotation author names to IDs
+--start <start_row>
+--end <end_row>
 """
     arguments = docopt(doc)
-    is_important_changes = arguments['--is_important_changes']
+    is_important_changes = arguments['--is-important-changes']
+    commit = arguments['--commit']
+    schema_version = arguments.get('--schema') or 'v2'
     csv_path = arguments['<csv_path>']
+    start_row = int(arguments.get('--start') or 0)
+    end_row = int(arguments.get('--end') or 0) or math.inf
+    author_map = None
+    if arguments.get('--author-map'):
+        author_map = AuthorNameMapper(arguments.get('--author-map'))
+
+    if schema_version == 'v1':
+        sheet = V1ChangesSheet(csv_path, is_important_changes)
+    elif schema_version == 'v2':
+        sheet = V2ChangesSheet(csv_path, is_important_changes)
+    else:
+        logger.error(f'Unknown schema: "{schema_version}"')
+        exit(1)
 
     client = db.Client.from_env()
-    # Missing step: Analyze CSV to determine spreadsheet schema version
-    for row in tqdm(read_csv(csv_path), unit=' rows'):
-        change_ids = find_change_ids(row)
-        annotation = create_annotation(row, is_important_changes)
-        if not change_ids:
-            logger.warning(f'failed to extract IDs from {row}')
-        if not annotation:
-            logger.warning(f'failed to extract annotation data from {row}')
-        if change_ids and annotation:
-            try:
-                response = client.add_annotation(**change_ids,
-                                                 annotation=annotation)
-                logger.debug(response)
-            except db.WebMonitoringDbError as e:
-                logger.warning(
-                    f'failed to post annotation for row {row} with error: {e}')
+    for index, row in tqdm(enumerate(sheet.parse()), unit=' rows'):
+        if start_row > row.number:
+            continue
+        elif row.number >= end_row:
+            break
+
+        if commit and index > 0 and index % 50 == 0:
+            logger.info('Pausing for 15s to give server breathing room...')
+            sleep(15)
+
+        if row.change_ids and row.annotation:
+            author = row.annotation['annotation_author']
+            if author and author_map:
+                row.annotation['annotation_author'] = author_map.get(author)['id']
+
+            if commit:
+                try:
+                    for existing in client.get_annotations(**row.change_ids):
+                        if existing['annotation'] == row.annotation:
+                            print(f'Annotation already exists for row {row.number}')
+                            break
+                    else:
+                        response = client.add_annotation(**row.change_ids,
+                                                         annotation=row.annotation)
+                        logger.debug(response)
+                except db.WebMonitoringDbError as e:
+                    logger.warning(
+                        f'failed to post annotation for row {row} with error: {e}')
+            else:
+                print(json.dumps(asdict(row)))
