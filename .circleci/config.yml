@@ -19,10 +19,10 @@ commands:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
-            - processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-
-            - processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-
-            - processing-{{ arch }}-<< parameters.python-version >>-v2-
+            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
+            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-
+            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-
+            - processing-{{ arch }}-<< parameters.python-version >>-v3-
 
       # Bundle install dependencies
       - run:
@@ -47,7 +47,7 @@ commands:
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-<< parameters.python-version >>-v2-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
+          key: processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
           paths:
             - venv
 
