@@ -2,7 +2,7 @@
 Installation
 ************
 
-This package uses new features of Python and it requires Python 3.9+.
+This package uses new features of Python and it requires Python 3.10+.
 The easiest way to get a modern version of Python is to
 `install conda <https://conda.io/docs/user-guide/install/index.html#regular-installation>`_.
 Happily, conda will not interfere with any existing Python installation(s), and
