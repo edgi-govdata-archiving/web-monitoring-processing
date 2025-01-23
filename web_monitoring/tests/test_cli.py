@@ -153,7 +153,7 @@ def test_format_memento_pdf():
                 'expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
                 'last-modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
                 'server': 'AkamaiNetStorage',
-                'server-timing': 'cdn-cache; desc=HIT, edge; dur=141',
+                'server-timing': 'cdn-cache; desc=HIT',
                 'strict-transport-security': 'max-age=31536000; preload;',
                 'x-content-type-options': 'nosniff'
             },

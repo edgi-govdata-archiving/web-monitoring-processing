@@ -21,17 +21,13 @@ interactions:
       Content-Type:
       - text/plain
       Date:
-      - Thu, 23 Jan 2025 17:35:53 GMT
+      - Thu, 23 Jan 2025 19:30:01 GMT
       Permissions-Policy:
       - interest-cohort=()
       Referrer-Policy:
       - no-referrer-when-downgrade
       Server:
       - nginx
-      Server-Timing:
-      - exclusion.robots;dur=0.079975, exclusion.robots.policy;dur=0.044177, esindex;dur=0.016916
-      - TR;dur=0,Tw;dur=0,Tc;dur=0
-      - BYPASS
       Transfer-Encoding:
       - chunked
       X-NA:
@@ -45,13 +41,13 @@ interactions:
       X-location:
       - cdx
       server-timing:
-      - exclusion.robots;dur=0.079975, exclusion.robots.policy;dur=0.044177, esindex;dur=0.016916
+      - exclusion.robots;dur=0.060670, exclusion.robots.policy;dur=0.045489, esindex;dur=0.012639
       - TR;dur=0,Tw;dur=0,Tc;dur=0
       - BYPASS
       x-app-server:
       - wwwb-app206
       x-tr:
-      - '1411'
+      - '377'
       x-ts:
       - '200'
     status:
@@ -6674,20 +6670,13 @@ interactions:
       Content-Type:
       - application/pdf
       Date:
-      - Thu, 23 Jan 2025 17:35:54 GMT
+      - Thu, 23 Jan 2025 19:30:02 GMT
       Permissions-Policy:
       - interest-cohort=()
       Referrer-Policy:
       - no-referrer-when-downgrade
       Server:
       - nginx
-      Server-Timing:
-      - captures_list;dur=0.613349, exclusion.robots;dur=0.034787, exclusion.robots.policy;dur=0.020346,
-        esindex;dur=0.011800, cdx.remote;dur=12.940278, LoadShardBlock;dur=457.162781,
-        PetaboxLoader3.datanode;dur=511.449555, PetaboxLoader3.resolve;dur=396.372546,
-        load_resource;dur=526.436649
-      - TR;dur=0,Tw;dur=0,Tc;dur=0
-      - BYPASS
       X-NA:
       - '0'
       X-NID:
@@ -6717,14 +6706,13 @@ interactions:
       memento-datetime:
       - Thu, 30 Apr 2020 02:42:32 GMT
       server-timing:
-      - captures_list;dur=0.613349, exclusion.robots;dur=0.034787, exclusion.robots.policy;dur=0.020346,
-        esindex;dur=0.011800, cdx.remote;dur=12.940278, LoadShardBlock;dur=457.162781,
-        PetaboxLoader3.datanode;dur=511.449555, PetaboxLoader3.resolve;dur=396.372546,
-        load_resource;dur=526.436649
+      - captures_list;dur=0.846650, exclusion.robots;dur=0.051273, exclusion.robots.policy;dur=0.033945,
+        esindex;dur=0.019604, cdx.remote;dur=16.501622, LoadShardBlock;dur=275.209723,
+        PetaboxLoader3.datanode;dur=404.711476, load_resource;dur=1011.478305, PetaboxLoader3.resolve;dur=782.497758
       - TR;dur=0,Tw;dur=0,Tc;dur=0
       - BYPASS
       x-app-server:
-      - wwwb-app213
+      - wwwb-app221
       x-archive-orig-accept-ranges:
       - bytes
       x-archive-orig-cache-control:
@@ -6753,7 +6741,7 @@ interactions:
       x-archive-src:
       - epa.gov3-20190924-190603/IA-FOC-epa.gov3-20200430020845-00000.warc.gz
       x-tr:
-      - '1047'
+      - '1392'
       x-ts:
       - '200'
     status:
