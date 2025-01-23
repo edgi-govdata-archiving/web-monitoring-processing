@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 import os
 from pathlib import Path
 from unittest.mock import patch
-import vcr
+from vcr import VCR
+from vcr.record_mode import RecordMode
 from wayback import WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
                                     WaybackRecordsWorker, import_ia_db_urls,
@@ -19,10 +20,10 @@ AUTH_ENVIRON = {
 # This stashes HTTP responses in local files (one per test) so that an actual
 # server does not have to be running.
 cassette_library_dir = str(Path(__file__).parent / Path('cassettes/cli'))
-ia_vcr = vcr.VCR(
+ia_vcr = VCR(
          serializer='yaml',
          cassette_library_dir=cassette_library_dir,
-         record_mode='once',
+         record_mode=RecordMode.NONE if os.getenv('CI') else RecordMode.ONCE,
          match_on=['uri', 'method'],
          filter_headers=['authorization'],
 )
