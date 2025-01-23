@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 import os
 from pathlib import Path
 from unittest.mock import patch
-import vcr
+from vcr import VCR
+from vcr.record_mode import RecordMode
 from wayback import WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
                                     WaybackRecordsWorker, import_ia_db_urls,
@@ -11,7 +12,7 @@ from web_monitoring.cli.cli import (_filter_unchanged_versions,
 
 # The only matters when re-recording the tests for vcr.
 AUTH_ENVIRON = {
-    'WEB_MONITORING_DB_URL': 'https://api.monitoring-staging.envirodatagov.org',
+    'WEB_MONITORING_DB_URL': 'https://api.monitoring.envirodatagov.org',
     'WEB_MONITORING_DB_EMAIL': 'public.access@envirodatagov.org',
     'WEB_MONITORING_DB_PASSWORD': 'PUBLIC_ACCESS'
 }
@@ -19,10 +20,10 @@ AUTH_ENVIRON = {
 # This stashes HTTP responses in local files (one per test) so that an actual
 # server does not have to be running.
 cassette_library_dir = str(Path(__file__).parent / Path('cassettes/cli'))
-ia_vcr = vcr.VCR(
+ia_vcr = VCR(
          serializer='yaml',
          cassette_library_dir=cassette_library_dir,
-         record_mode='once',
+         record_mode=RecordMode.NONE if os.getenv('CI') else RecordMode.ONCE,
          match_on=['uri', 'method'],
          filter_headers=['authorization'],
 )
@@ -152,7 +153,7 @@ def test_format_memento_pdf():
                 'expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
                 'last-modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
                 'server': 'AkamaiNetStorage',
-                'server-timing': 'cdn-cache; desc=HIT, edge; dur=141',
+                'server-timing': 'cdn-cache; desc=HIT',
                 'strict-transport-security': 'max-age=31536000; preload;',
                 'x-content-type-options': 'nosniff'
             },
@@ -175,9 +176,10 @@ def test_html_title_parsing():
 
 # TODO: this test covers some of the various error cases, but probably not all
 # of them, and has a pretty big cassette file. We should *probably* rewrite it
-# with mock db.client and wayback.WaybackCLient instances that exercise all the
+# with mock db.client and wayback.WaybackClient instances that exercise all the
 # various errors (BlockedByRobots, Unplaybackable, RetryError, etc.) that could
 # arise from the clients.
+# NOTE: generating the cassette also requires special access.
 @ia_vcr.use_cassette()
 @patch.dict(os.environ, AUTH_ENVIRON)
 def test_complete_import_ia_db_urls():

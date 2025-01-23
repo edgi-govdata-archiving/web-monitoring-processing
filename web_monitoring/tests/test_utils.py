@@ -82,13 +82,12 @@ def test_extract_pdf_title_encrypted_unsupported_algorithm():
 
 def test_extract_pdf_title_no_eof():
     """
-    Get the title of a PDF that has no end-of-file marker. We don't [currently]
-    supported PDFs that are malformed in this way, but we should not raise an
-    error -- instead, return None.
+    Get the title of a PDF that has no end-of-file marker. This is malformed,
+    but we should still be able to extract some metadata.
     """
     pdf_bytes = get_fixture_bytes('no_eof_marker.pdf')
     title = extract_pdf_title(pdf_bytes)
-    assert title is None
+    assert title == 'Untitled'
 
 
 def test_extract_pdf_title_no_metadata():

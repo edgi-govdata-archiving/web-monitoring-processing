@@ -1,11 +1,14 @@
 cchardet ==2.1.7
-cloudpathlib[s3] ~=0.13.0
-python-dateutil ~=2.8.2
+cloudpathlib[s3] ~=0.20.0
+python-dateutil ~=2.9.0
 docopt ~=0.6.2
-lxml ~=4.9.2
-pypdf[crypto] ~=3.3.0
+lxml ~=5.3.0
+pypdf[crypto] ~=5.1.0
 sentry-sdk ~=1.14.0
-requests ~=2.28.2
-toolz ~=0.12.0
-tqdm ~=4.64.1
-wayback ~=0.4.0
+requests ~=2.32.3
+# We need to specify urllib3 to make sure everyone is using the same version;
+# there are messy details between v1 & v2 even though requests supports both.
+urllib3 ~=2.3.0
+toolz ~=1.0.0
+tqdm ~=4.67.1
+wayback ~=0.4.5
