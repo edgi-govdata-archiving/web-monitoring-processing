@@ -11,7 +11,7 @@ from web_monitoring.cli.cli import (_filter_unchanged_versions,
 
 # The only matters when re-recording the tests for vcr.
 AUTH_ENVIRON = {
-    'WEB_MONITORING_DB_URL': 'https://api.monitoring-staging.envirodatagov.org',
+    'WEB_MONITORING_DB_URL': 'https://api.monitoring.envirodatagov.org',
     'WEB_MONITORING_DB_EMAIL': 'public.access@envirodatagov.org',
     'WEB_MONITORING_DB_PASSWORD': 'PUBLIC_ACCESS'
 }
@@ -175,9 +175,10 @@ def test_html_title_parsing():
 
 # TODO: this test covers some of the various error cases, but probably not all
 # of them, and has a pretty big cassette file. We should *probably* rewrite it
-# with mock db.client and wayback.WaybackCLient instances that exercise all the
+# with mock db.client and wayback.WaybackClient instances that exercise all the
 # various errors (BlockedByRobots, Unplaybackable, RetryError, etc.) that could
 # arise from the clients.
+# NOTE: generating the cassette also requires special access.
 @ia_vcr.use_cassette()
 @patch.dict(os.environ, AUTH_ENVIRON)
 def test_complete_import_ia_db_urls():

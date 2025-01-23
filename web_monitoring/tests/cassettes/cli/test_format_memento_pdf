@@ -5,29 +5,33 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
+      - wayback/0.4.5 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
     uri: https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.epa.gov%2Fsites%2Fproduction%2Ffiles%2F2016-08%2Fdocuments%2Foar-climate-change-adaptation-plan.pdf&limit=1000&from=20200430024232&to=20200430024232&showResumeKey=true&resolveRevisits=true
   response:
     body:
-      string: !!binary |
-        H4sIAAAAAAAAAK2NSw6CMBQA956iWxNL64OAcecGiSZ+EL+7l7ZAE6ANFHp98Q5uJ5mZykwrZXHJ
-        Bu3UwGxv5CicNh0rdTMD4OuY8g2TRoyt6tzADPZUNLpFp6iosasURYnW4c+itsEusLIkwIHzKOQc
-        IgiB1M7ZYcuY9z6Yf0Flpr8vPfaC9WrSc5hQksD5AO802RX5Pcs/t+fpei+yS56lrz08jgmJ43Dx
-        BbJW6yMAAQAA
+      string: 'gov,epa)/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf
+        20200430024232 https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf
+        warc/revisit - 72OJ2YF7ATRUHRZSWNQUTHPRHFXG2VK7 663
+
+        '
     headers:
       Connection:
       - keep-alive
       Content-Type:
-      - text/plain;charset=UTF-8
+      - text/plain
       Date:
-      - Fri, 02 Dec 2022 01:19:36 GMT
+      - Thu, 23 Jan 2025 17:35:53 GMT
       Permissions-Policy:
       - interest-cohort=()
       Referrer-Policy:
       - no-referrer-when-downgrade
       Server:
-      - nginx/1.19.5
+      - nginx
+      Server-Timing:
+      - exclusion.robots;dur=0.079975, exclusion.robots.policy;dur=0.044177, esindex;dur=0.016916
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      - BYPASS
       Transfer-Encoding:
       - chunked
       X-NA:
@@ -37,15 +41,17 @@ interactions:
       X-Page-Cache:
       - BYPASS
       X-RL:
-      - '0'
+      - '1'
       X-location:
       - cdx
-      content-encoding:
-      - gzip
+      server-timing:
+      - exclusion.robots;dur=0.079975, exclusion.robots.policy;dur=0.044177, esindex;dur=0.016916
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      - BYPASS
       x-app-server:
-      - wwwb-app14
+      - wwwb-app206
       x-tr:
-      - '41'
+      - '1411'
       x-ts:
       - '200'
     status:
@@ -57,7 +63,7 @@ interactions:
       Accept-Encoding:
       - gzip, deflate
       User-Agent:
-      - wayback/0.4.0 (+https://github.com/edgi-govdata-archiving/wayback)
+      - wayback/0.4.5 (+https://github.com/edgi-govdata-archiving/wayback)
     method: GET
     uri: https://web.archive.org/web/20200430024232id_/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf
   response:
@@ -6668,28 +6674,36 @@ interactions:
       Content-Type:
       - application/pdf
       Date:
-      - Fri, 02 Dec 2022 01:19:37 GMT
+      - Thu, 23 Jan 2025 17:35:54 GMT
       Permissions-Policy:
       - interest-cohort=()
       Referrer-Policy:
       - no-referrer-when-downgrade
       Server:
-      - nginx/1.19.5
+      - nginx
+      Server-Timing:
+      - captures_list;dur=0.613349, exclusion.robots;dur=0.034787, exclusion.robots.policy;dur=0.020346,
+        esindex;dur=0.011800, cdx.remote;dur=12.940278, LoadShardBlock;dur=457.162781,
+        PetaboxLoader3.datanode;dur=511.449555, PetaboxLoader3.resolve;dur=396.372546,
+        load_resource;dur=526.436649
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      - BYPASS
       X-NA:
       - '0'
       X-NID:
       - '-'
       X-Page-Cache:
-      - HIT
+      - BYPASS
       X-RL:
-      - '0'
+      - '1'
       X-location:
       - _pdf
       cache-control:
       - max-age=1800
       content-security-policy:
       - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
-        web.archive.org analytics.archive.org pragma.archivelab.org'
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org'
       link:
       - <https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
         rel="original", <https://web.archive.org/web/timemap/link/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
@@ -6698,17 +6712,19 @@ interactions:
         rel="first memento"; datetime="Wed, 18 Jan 2017 01:11:57 GMT", <https://web.archive.org/web/20200429023007/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
         rel="prev memento"; datetime="Wed, 29 Apr 2020 02:30:07 GMT", <https://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
         rel="memento"; datetime="Thu, 30 Apr 2020 02:42:32 GMT", <https://web.archive.org/web/20200501040326/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="next memento"; datetime="Fri, 01 May 2020 04:03:26 GMT", <https://web.archive.org/web/20221128214249/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
-        rel="last memento"; datetime="Mon, 28 Nov 2022 21:42:49 GMT"
+        rel="next memento"; datetime="Fri, 01 May 2020 04:03:26 GMT", <https://web.archive.org/web/20241010083638/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf>;
+        rel="last memento"; datetime="Thu, 10 Oct 2024 08:36:38 GMT"
       memento-datetime:
       - Thu, 30 Apr 2020 02:42:32 GMT
       server-timing:
-      - captures_list;dur=126.062358, exclusion.robots;dur=0.322762, exclusion.robots.policy;dur=0.308693,
-        RedisCDXSource;dur=2.677645, esindex;dur=0.011994, LoadShardBlock;dur=58.365449,
-        PetaboxLoader3.datanode;dur=125.525449, CDXLines.iter;dur=34.622135, load_resource;dur=255.324183,
-        PetaboxLoader3.resolve;dur=134.836218
+      - captures_list;dur=0.613349, exclusion.robots;dur=0.034787, exclusion.robots.policy;dur=0.020346,
+        esindex;dur=0.011800, cdx.remote;dur=12.940278, LoadShardBlock;dur=457.162781,
+        PetaboxLoader3.datanode;dur=511.449555, PetaboxLoader3.resolve;dur=396.372546,
+        load_resource;dur=526.436649
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      - BYPASS
       x-app-server:
-      - wwwb-app223
+      - wwwb-app213
       x-archive-orig-accept-ranges:
       - bytes
       x-archive-orig-cache-control:
@@ -6737,7 +6753,7 @@ interactions:
       x-archive-src:
       - epa.gov3-20190924-190603/IA-FOC-epa.gov3-20200430020845-00000.warc.gz
       x-tr:
-      - '399'
+      - '1047'
       x-ts:
       - '200'
     status:
