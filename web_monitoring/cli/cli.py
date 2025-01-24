@@ -286,6 +286,11 @@ class RequestStatistics:
 # Ideally this is incorporated into our shared HTTP adapter/session.
 MEMENTO_STATISTICS = RequestStatistics(leaderboard_size=10, leaderboard_min=10)
 
+# TODO: wrap this up in something nicer so we don't need to manage the lock
+# in the middle of business logic.
+STORED_CONTENT_HASHES = set()
+STORED_CONTENT_HASHES_LOCK = threading.Lock()
+
 
 class WaybackRecordsWorker(threading.Thread):
     """
@@ -382,10 +387,18 @@ class WaybackRecordsWorker(threading.Thread):
             version = self.format_memento(memento, record, self.maintainers,
                                           self.tags)
             if self.archive and version['version_hash']:
-                path = self.archive / version['version_hash']
-                if not path.exists():
-                    logger.info(f'Uploading to S3: {record.raw_url}')
+                hash = version['version_hash']
+                upload = True
+                with STORED_CONTENT_HASHES_LOCK:
+                    upload = hash not in STORED_CONTENT_HASHES
+                    if upload:
+                        STORED_CONTENT_HASHES.add(hash)
+
+                path = self.archive / hash
+                if upload and not path.exists():
+                    logger.info(f'Uploading to S3 (hash={hash}, url="{record.raw_url}")')
                     path.write_bytes(memento.content)
+
                 version['uri'] = path.as_url()
 
             return version
