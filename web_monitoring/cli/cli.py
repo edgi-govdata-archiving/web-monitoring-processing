@@ -160,6 +160,7 @@ PDF_MEDIA_TYPES = frozenset((
 SNIFF_MEDIA_TYPES = frozenset((
     'application/octet-stream',
     'application/x-download',
+    'binary/octet-stream',
 ))
 
 # Identifies a bare media type (that is, one without parameters)
