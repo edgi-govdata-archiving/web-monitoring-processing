@@ -320,14 +320,7 @@ class WaybackRecordsWorker(threading.Thread):
                                        user_agent=USER_AGENT,
                                        **session_options)
         self.wayback = wayback.WaybackClient(session=session)
-        self.archive = None
-        if archive_bucket:
-            self.archive = S3Path(f's3://{archive_bucket}', client=S3Client(extra_args={
-                'ACL': 'public-read',
-                # Ideally, we'd gzip stuff, but the DB needs to learn to correctly
-                # read gzipped items first.
-                # 'ContentEncoding': 'gzip'
-            }))
+        self.archive_bucket = archive_bucket
 
     def is_active(self):
         return not self.cancel.is_set()
@@ -386,7 +379,7 @@ class WaybackRecordsWorker(threading.Thread):
         with memento:
             version = self.format_memento(memento, record, self.maintainers,
                                           self.tags)
-            if self.archive and version['version_hash']:
+            if self.archive_bucket and version['version_hash']:
                 hash = version['version_hash']
                 upload = True
                 with STORED_CONTENT_HASHES_LOCK:
@@ -394,7 +387,14 @@ class WaybackRecordsWorker(threading.Thread):
                     if upload:
                         STORED_CONTENT_HASHES.add(hash)
 
-                path = self.archive / hash
+                archive = S3Path(f's3://{self.archive_bucket}', client=S3Client(extra_args={
+                    'ACL': 'public-read',
+                    'ContentType': version['media_type'] or 'application/octet-stream',
+                    # Ideally, we'd gzip stuff, but the DB needs to learn to correctly
+                    # read gzipped items first.
+                    # 'ContentEncoding': 'gzip'
+                }))
+                path = archive / hash
                 if upload and not path.exists():
                     logger.info(f'Uploading to S3 (hash={hash}, url="{record.raw_url}")')
                     path.write_bytes(memento.content)
