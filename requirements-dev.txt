@@ -1,5 +1,5 @@
-coverage ~=7.1
-pyflakes ~=3.0.1
+coverage ~=7.6.10
+pyflakes ~=3.2.0
 pytest ~=7.2.1
-vcrpy ~=4.2.1
-requests-mock ~=1.10.0
+vcrpy ~=7.0.0
+requests-mock ~=1.12.1

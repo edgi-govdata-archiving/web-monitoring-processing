@@ -1,5 +1,5 @@
 # Base Image  -----------------------------------------------------------------
-FROM python:3.10.10-slim AS base
+FROM python:3.10.16-slim AS base
 LABEL org.opencontainers.image.authors="enviroDGI@gmail.com"
 LABEL maintainer="enviroDGI@gmail.com"
 

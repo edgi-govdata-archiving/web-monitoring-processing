@@ -1,5 +1,9 @@
 [![Code of Conduct](https://img.shields.io/badge/%E2%9D%A4-code%20of%20conduct-blue.svg?style=flat)](https://github.com/edgi-govdata-archiving/overview/blob/main/CONDUCT.md) &nbsp;[![Project Status Board](https://img.shields.io/badge/✔-Project%20Status%20Board-green.svg?style=flat)](https://github.com/orgs/edgi-govdata-archiving/projects/4)
 
+
+⚠️ **This project is no longer maintained.** ⚠️ It may receive security updates, but we are no longer making major changes or improvements. EDGI no longer makes active use of this toolset and it is hard to re-deploy in other contexts.
+
+
 # web-monitoring-processing
 
 A component of the EDGI [Web Monitoring Project](https://github.com/edgi-govdata-archiving/web-monitoring).
@@ -31,7 +35,7 @@ Legacy projects that may be revisited:
 
 ## Installation Instructions
 
-1. Get Python 3.7 or later. If you don't have the right version, we recommend using
+1. Get Python 3.10 or later. If you don't have the right version, we recommend using
    [conda](https://conda.io/miniconda.html) or [pyenv](https://github.com/pyenv/pyenv) to install it. (You don't need admin privileges to install or use them, and they won't interfere with any other installations of Python already on your system.)
 
 2. Install libxml2 and libxslt. (This package uses lxml, which requires your system to have the libxml2 and libxslt libraries.)
