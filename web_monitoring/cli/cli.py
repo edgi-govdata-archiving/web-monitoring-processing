@@ -286,10 +286,42 @@ class RequestStatistics:
 # Ideally this is incorporated into our shared HTTP adapter/session.
 MEMENTO_STATISTICS = RequestStatistics(leaderboard_size=10, leaderboard_min=10)
 
-# TODO: wrap this up in something nicer so we don't need to manage the lock
-# in the middle of business logic.
-STORED_CONTENT_HASHES = set()
-STORED_CONTENT_HASHES_LOCK = threading.Lock()
+
+class S3HashStore:
+    """
+    Store and track content-addressed data in S3.
+    """
+
+    def __init__(self, bucket: str, extra_args: dict = {}) -> None:
+        self.bucket = bucket
+        self.extra_args = extra_args
+        self.seen_hashes = set()
+        self.lock = threading.Lock()
+
+    def store(self, data: bytes, hash: str = '', content_type: str = '') -> str:
+        if not hash:
+            hash = utils.hash_content(data)
+
+        if not content_type:
+            content_type = 'application/octet-stream'
+
+        archive = S3Path(f's3://{self.bucket}', client=S3Client(extra_args={
+            **self.extra_args,
+            'ContentType': content_type
+        }))
+        path = archive / hash
+
+        upload = False
+        with self.lock:
+            if hash not in self.seen_hashes:
+                self.seen_hashes.add(hash)
+                upload = True
+
+        if upload and not path.exists():
+            logger.info(f'Uploading to S3 (hash={hash})')
+            path.write_bytes(data)
+
+        return path.as_url()
 
 
 class WaybackRecordsWorker(threading.Thread):
@@ -303,7 +335,7 @@ class WaybackRecordsWorker(threading.Thread):
 
     def __init__(self, records, results_queue, maintainers, tags, cancel,
                  failure_queue=None, session_options=None, adapter=None,
-                 unplaybackable=None, version_cache=None, archive_bucket=None):
+                 unplaybackable=None, version_cache=None, archive_storage=None):
         super().__init__()
         self.results_queue = results_queue
         self.failure_queue = failure_queue
@@ -320,7 +352,7 @@ class WaybackRecordsWorker(threading.Thread):
                                        user_agent=USER_AGENT,
                                        **session_options)
         self.wayback = wayback.WaybackClient(session=session)
-        self.archive_bucket = archive_bucket
+        self.archive_storage = archive_storage
 
     def is_active(self):
         return not self.cancel.is_set()
@@ -379,27 +411,13 @@ class WaybackRecordsWorker(threading.Thread):
         with memento:
             version = self.format_memento(memento, record, self.maintainers,
                                           self.tags)
-            if self.archive_bucket and version['version_hash']:
-                hash = version['version_hash']
-                upload = True
-                with STORED_CONTENT_HASHES_LOCK:
-                    upload = hash not in STORED_CONTENT_HASHES
-                    if upload:
-                        STORED_CONTENT_HASHES.add(hash)
-
-                archive = S3Path(f's3://{self.archive_bucket}', client=S3Client(extra_args={
-                    'ACL': 'public-read',
-                    'ContentType': version['media_type'] or 'application/octet-stream',
-                    # Ideally, we'd gzip stuff, but the DB needs to learn to correctly
-                    # read gzipped items first.
-                    # 'ContentEncoding': 'gzip'
-                }))
-                path = archive / hash
-                if upload and not path.exists():
-                    logger.info(f'Uploading to S3 (hash={hash}, url="{record.raw_url}")')
-                    path.write_bytes(memento.content)
-
-                version['uri'] = path.as_url()
+            if self.archive_storage and version['version_hash']:
+                url = self.archive_storage.store(
+                    memento.content,
+                    hash=version['version_hash'],
+                    content_type=version['media_type']
+                )
+                version['uri'] = url
 
             return version
 
@@ -595,7 +613,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
                       tags=None, skip_unchanged='resolved-response',
                       url_pattern=None, worker_count=0,
                       unplaybackable_path=None, dry_run=False,
-                      precheck_versions=False, archive_bucket=None):
+                      precheck_versions=False, archive_storage=None):
     client = db.Client.from_env()
     logger.info('Loading known pages from web-monitoring-db instance...')
     urls, version_filter = _get_db_page_url_info(client, url_pattern)
@@ -627,7 +645,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         db_client=client,
         dry_run=dry_run,
         version_cache=version_cache,
-        archive_bucket=archive_bucket)
+        archive_storage=archive_storage)
 
 
 # TODO: this function probably be split apart so `dry_run` doesn't need to
@@ -638,7 +656,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
                    db_client=None, dry_run=False, version_cache=None,
-                   archive_bucket=None):
+                   archive_storage=None):
     for url in urls:
         if not _is_valid(url):
             raise ValueError(f'Invalid URL: "{url}"')
@@ -673,7 +691,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             stop_event,
             unplaybackable=unplaybackable,
             version_cache=version_cache,
-            archive_bucket=archive_bucket))
+            archive_storage=archive_storage))
         memento_thread.start()
 
         # Show a progress meter
@@ -1039,6 +1057,16 @@ Options:
         if not arguments.get('--dry-run'):
             validate_db_credentials()
 
+        archive_storage = None
+        archive_bucket = arguments.get('--archive-s3')
+        if archive_bucket:
+            archive_storage = S3HashStore(archive_bucket, {
+                'ACL': 'public-read',
+                # Ideally, we'd gzip stuff, but the DB needs to learn to
+                # correctly read gzipped items first.
+                # 'ContentEncoding': 'gzip'
+            })
+
         start_time = datetime.now(tz=timezone.utc)
         if arguments['ia']:
             import_ia_urls(
@@ -1050,7 +1078,7 @@ Options:
                 skip_unchanged=skip_unchanged,
                 unplaybackable_path=unplaybackable_path,
                 dry_run=arguments.get('--dry-run'),
-                archive_bucket=arguments.get('--archive-s3'))
+                archive_storage=archive_storage)
         elif arguments['ia-known-pages']:
             import_ia_db_urls(
                 from_date=_parse_date_argument(arguments['<from_date>']),
@@ -1063,7 +1091,7 @@ Options:
                 unplaybackable_path=unplaybackable_path,
                 dry_run=arguments.get('--dry-run'),
                 precheck_versions=arguments.get('--precheck'),
-                archive_bucket=arguments.get('--archive-s3'))
+                archive_storage=archive_storage)
 
         end_time = datetime.now(tz=timezone.utc)
         print(f'Completed at {end_time.isoformat()}')
