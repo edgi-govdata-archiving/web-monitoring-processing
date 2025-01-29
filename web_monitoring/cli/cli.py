@@ -56,6 +56,7 @@ from os.path import splitext
 from pathlib import Path
 import re
 import requests
+import sentry_sdk
 import signal
 import threading
 import time
@@ -1045,6 +1046,7 @@ Options:
 --archive-s3 <bucket>         Pre-upload response bodies to this S3 bucket
                               before sending import data to web-monitoring-db.
 """
+    sentry_sdk.init()
     arguments = docopt(doc, version='0.0.1')
     if arguments['import']:
         skip_unchanged = arguments['--skip-unchanged']
