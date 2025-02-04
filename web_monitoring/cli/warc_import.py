@@ -324,6 +324,8 @@ def main():
         print('For now, you *must* supply a Browsertrix `pages.jsonl` file as the `--seeds` option')
         sys.exit(1)
 
+    db_client = db.Client.from_env()
+
     storage = S3HashStore(args.archive_s3, gzip=True, dry_run=True, extra_args={
         'ACL': 'public-read'
     })
@@ -337,17 +339,27 @@ def main():
         versions = islice(versions, args.limit)
         total = args.limit
 
+    import_ids = []
     with tqdm_logging_redirect(versions, total=total) as progress:
         if args.dry_run:
             for version in progress:
                 print(json.dumps(version))
         else:
-            db_client = db.Client.from_env()
-            db_client.add_versions(
+            import_ids = db_client.add_versions(
                 versions,
                 create_pages=False,
                 skip_unchanged_versions=False
             )
+
+    if len(import_ids):
+        print('Wiating for import jobs to complete...', file=sys.stderr)
+        errors = db_client.monitor_import_statuses(import_ids)
+        total = sum(len(job_errors) for job_errors in errors.values())
+        if total > 0:
+            print('Import job errors:', file=sys.stderr)
+            for job_id, job_errors in errors.items():
+                print(f'  {job_id}: {len(job_errors):>3} errors {job_errors}', file=sys.stderr)
+            print(f'  Total: {total:>3} errors', file=sys.stderr)
 
 
 if __name__ == '__main__':
