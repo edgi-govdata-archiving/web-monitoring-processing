@@ -349,7 +349,11 @@ def main():
                 print(json.dumps(version))
         else:
             import_ids = db_client.add_versions(
-                progress,
+                # HACK: this generator expression comprehension is here to make
+                # sure the sequence of versions has no known length. (tqdm's
+                # iterator has a length, which causes problems for batching).
+                # https://github.com/pytoolz/toolz/issues/602
+                (version for version in progress),
                 create_pages=False,
                 skip_unchanged_versions=False
             )
