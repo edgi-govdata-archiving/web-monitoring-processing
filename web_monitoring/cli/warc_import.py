@@ -174,6 +174,7 @@ def each_redirect_chain(warc_path: str, seeds: set[str]) -> Generator[RedirectCh
     max_open_request_age = 250
     open_requests: dict[str, RequestRecords] = {}
     open_redirects: dict[str, RedirectChain] = {}
+    seen_seeds = set()
 
     warc_info = {'warc_name': Path(warc_path).name}
 
@@ -200,6 +201,7 @@ def each_redirect_chain(warc_path: str, seeds: set[str]) -> Generator[RedirectCh
             if not chain:
                 chain = RedirectChain()
                 open_redirects[target] = chain
+                seen_seeds.add(request.url)
             chain.add(request)
 
             if request.redirect_target:
@@ -216,6 +218,14 @@ def each_redirect_chain(warc_path: str, seeds: set[str]) -> Generator[RedirectCh
 
         for chain in set(open_redirects.values()):
             yield chain
+
+    # What's happening with not always getting as many chains as seeds?
+    missing_seeds = seeds - seen_seeds
+    new_seeds = seen_seeds - seeds
+    if len(missing_seeds):
+        logger.warning(f'{len(missing_seeds)} seed URLs did not have initial requests: {missing_seeds}')
+    if len(new_seeds):
+        logger.warning(f'{len(new_seeds)} URLs had initial requests but were not in seed list: {new_seeds}')
 
 
 def get_response_media(response: ArcWarcRecord) -> tuple[str, str]:
