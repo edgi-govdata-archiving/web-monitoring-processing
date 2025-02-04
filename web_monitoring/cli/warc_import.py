@@ -359,7 +359,7 @@ def main():
             )
 
     if len(import_ids):
-        print('Wiating for import jobs to complete...', file=sys.stderr)
+        print('Waiting for import jobs to complete...', file=sys.stderr)
         errors = db_client.monitor_import_statuses(import_ids)
         total = sum(len(job_errors) for job_errors in errors.values())
         if total > 0:
