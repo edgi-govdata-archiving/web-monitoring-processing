@@ -326,9 +326,12 @@ def main():
 
     db_client = db.Client.from_env()
 
-    storage = S3HashStore(args.archive_s3, gzip=True, dry_run=True, extra_args={
-        'ACL': 'public-read'
-    })
+    storage = S3HashStore(
+        args.archive_s3,
+        gzip=True,
+        dry_run=args.dry_run,
+        extra_args={'ACL': 'public-read'}
+    )
 
     seeds = set(read_seeds_file(args.seeds))
     total = len(seeds)
