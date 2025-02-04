@@ -346,7 +346,7 @@ def main():
                 print(json.dumps(version))
         else:
             import_ids = db_client.add_versions(
-                versions,
+                progress,
                 create_pages=False,
                 skip_unchanged_versions=False
             )
