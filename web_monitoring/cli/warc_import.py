@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import sys
 import threading
-from typing import Generator, Iterable
+from typing import Generator
 from cloudpathlib import S3Client, S3Path
 import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
@@ -307,16 +307,14 @@ def format_version(chain: RedirectChain) -> dict:
     )
 
 
-def format_and_preupload(redirect_chains: Iterable[RedirectChain], storage: S3HashStore) -> Generator[dict, None, None]:
-    for chain in redirect_chains:
-        version = format_version(chain)
-        url = storage.store(
-            chain.requests[-1].response_body,
-            hash=version['body_hash'],
-            content_type=version['media_type']
-        )
-        version['body_url'] = url
-        yield version
+def preupload(storage: S3HashStore, version: dict, body: bytes) -> tuple[dict, bytes]:
+    url = storage.store(
+        body,
+        hash=version['body_hash'],
+        content_type=version['media_type']
+    )
+    version['body_url'] = url
+    return version, body
 
 
 def main():
@@ -344,31 +342,30 @@ def main():
     )
 
     seeds = set(read_seeds_file(args.seeds))
-    total = len(seeds)
+    total = min(len(seeds), args.limit or 0)
 
-    records = each_redirect_chain(args.warc_path, seeds=seeds)
-    versions = format_and_preupload(records, storage)
-    if args.limit:
-        versions = islice(versions, args.limit)
-        total = args.limit
+    chains = islice(each_redirect_chain(args.warc_path, seeds=seeds),
+                    args.limit)
+    versions = ((format_version(c), c.requests[-1].response_body)
+                for c in chains)
+
+    if not args.dry_run:
+        versions = (preupload(storage, version, body)
+                    for version, body in versions)
 
     import_ids = []
     with tqdm_logging_redirect(versions, total=total) as progress:
         if args.dry_run:
-            for version in progress:
+            for version, _ in progress:
                 print(json.dumps(version))
         else:
             import_ids = db_client.add_versions(
-                # HACK: this generator expression comprehension is here to make
-                # sure the sequence of versions has no known length. (tqdm's
-                # iterator has a length, which causes problems for batching).
-                # https://github.com/pytoolz/toolz/issues/602
-                (version for version in progress),
+                (version for version, _ in progress),
                 create_pages=False,
                 skip_unchanged_versions=False
             )
 
-    if len(import_ids):
+    if import_ids:
         print('Waiting for import jobs to complete...', file=sys.stderr)
         errors = db_client.monitor_import_statuses(import_ids)
         total = sum(len(job_errors) for job_errors in errors.values())
