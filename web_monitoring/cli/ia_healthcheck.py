@@ -63,7 +63,7 @@ def wayback_has_captures(url, from_date=None):
     list of JSON
     """
     with WaybackClient() as wayback:
-        versions = wayback.search(url, from_date=from_date)
+        versions = wayback.search(url, from_date=from_date, limit=1)
         try:
             next(versions)
         except StopIteration:
