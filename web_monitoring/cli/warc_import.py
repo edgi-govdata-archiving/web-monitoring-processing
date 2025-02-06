@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import sys
 import threading
-from typing import Generator
+from typing import Any, Generator
 from cloudpathlib import S3Client, S3Path
 import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
@@ -115,6 +115,7 @@ def read_seeds_file(seeds_path: str) -> list[str]:
 class RequestRecords:
     url: str
     records: list[ArcWarcRecord] = field(default_factory=list)
+    metadata: list[dict] = field(default_factory=list)
     request: ArcWarcRecord | None = None
     response: ArcWarcRecord | None = None
     response_body: bytes = b''
@@ -131,14 +132,27 @@ class RequestRecords:
 
         return ''
 
-    def add(self, record: ArcWarcRecord, index: int) -> None:
-        self.records.append(record)
+    def add(self, record: ArcWarcRecord, index: int, offset: int, length: int) -> None:
         self.last_index = index
-        if record.rec_type == 'response':
+        meta = {
+            'id': record.rec_headers.get('WARC-Record-ID'),
+            'type': record.rec_type,
+            'offset': offset,
+            'length': length
+        }
+        if record.rec_type == 'request':
+            self.request = record
+            self.records.insert(0, record)
+            self.metadata.insert(0, meta)
+        elif record.rec_type == 'response':
             self.response = record
             self.response_body = record.content_stream().read()
-        elif record.rec_type == 'request':
-            self.request = record
+            position = 1 if self.request else 0
+            self.records.insert(position, record)
+            self.metadata.insert(position, meta)
+        else:
+            self.records.append(record)
+            self.metadata.append(meta)
 
     def __hash__(self) -> int:
         return id(self)
@@ -170,16 +184,30 @@ def parse_warc_fields(record: ArcWarcRecord) -> StatusAndHeaders:
     return parser.parse(record.content_stream(), 'WARC/1.1').headers
 
 
-def each_redirect_chain(warc_path: str, seeds: set[str]) -> Generator[RedirectChain, None, None]:
+def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, None, None]:
     max_open_request_age = 250
+    # TODO: maybe should be using the WARC-Concurrent-To header to match up
+    # request & response records? Browsertrix reliably does this, but it's not
+    # required and I don't know about other crawlers.
     open_requests: dict[str, RequestRecords] = {}
+    # TODO: should we use the WARC-Page-ID header for this? It's non-standard,
+    # but seems to be designed sort of for this purpose in Browsertrix. Info:
+    # - https://github.com/webrecorder/browsertrix-crawler/issues/429#issuecomment-2389762045
+    # - https://github.com/webrecorder/browsertrix/issues/1588#issuecomment-1998128354
     open_redirects: dict[str, RedirectChain] = {}
-    seen_seeds = set()
+    seen_seeds: set[str] = set()
+    warc_info: dict[str, Any] = {}
 
-    warc_info = {'warc_name': Path(warc_path).name}
+    warc_path = Path(warc).absolute()
+    warc_info['warc_name'] = warc_path.name
+    if warc_path.parent.name == 'archive' and warc_path.parent.parent.parent.name == 'collections':
+        # Not sure if we want this.
+        # warc_info['warc_name'] = str(warc_path.relative_to(warc_path.parent.parent.parent))
+        warc_info['crawl'] = warc_path.parent.parent.name
 
-    with open(warc_path, 'rb') as warc_file:
-        for index, record in enumerate(ArchiveIterator(warc_file)):
+    with warc_path.open('rb') as warc_file:
+        reader = ArchiveIterator(warc_file)
+        for index, record in enumerate(reader):
             if record.rec_type == 'warcinfo':
                 info = parse_warc_fields(record)
                 if 'software' in info:
@@ -195,7 +223,12 @@ def each_redirect_chain(warc_path: str, seeds: set[str]) -> Generator[RedirectCh
                 request = RequestRecords(target, warc_info=warc_info)
                 open_requests[target] = request
 
-            request.add(record, index)
+            request.add(
+                record,
+                index,
+                reader.get_record_offset(),
+                reader.get_record_length()
+            )
 
             chain = open_redirects.get(target)
             if not chain:
@@ -258,9 +291,9 @@ def format_version(chain: RedirectChain) -> dict:
     metadata = {
         **final.warc_info,
         'warc_page_id': final.response.rec_headers.get('WARC-Page-ID'),
-        'warc_record_ids': [r.rec_headers.get('WARC-Record-ID')
-                            for requests in chain.requests
-                            for r in requests.records],
+        'warc_records': [meta
+                         for requests in chain.requests
+                         for meta in requests.metadata],
     }
 
     record_metadata = final.response.rec_headers.get('WARC-JSON-Metadata')
