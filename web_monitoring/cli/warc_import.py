@@ -212,6 +212,8 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
         reader = ArchiveIterator(warc_file)
         for index, record in enumerate(reader):
             if record.rec_type == 'warcinfo':
+                # TODO: There might be other stuff we want to read in WARCs
+                # generated from non-Browsertrix sources.
                 info = parse_warc_fields(record)
                 if 'software' in info:
                     warc_info['crawler'] = info['software']
@@ -361,6 +363,8 @@ def main():
                         help='Update existing records in DB instead of skipping')
     args = parser.parse_args()
 
+    # TODO: we'll probably eventually want to support WARCs from IA or maybe
+    # other sources. This will need
     if not args.seeds:
         print('For now, you *must* supply a Browsertrix `pages.jsonl` file as the `--seeds` option')
         sys.exit(1)
