@@ -357,6 +357,8 @@ def main():
     parser.add_argument('--archive-s3', help='S3 bucket to upload raw response bodies to.', required=True)
     parser.add_argument('--dry-run', action='store_true', help='Do not actually upload results')
     parser.add_argument('--limit', type=int, help='Stop after this many records')
+    parser.add_argument('--update', action='store_const', default='skip', const='replace',
+                        help='Update existing records in DB instead of skipping')
     args = parser.parse_args()
 
     if not args.seeds:
@@ -391,7 +393,8 @@ def main():
             import_ids = db_client.add_versions(
                 (version for version, _ in progress),
                 create_pages=False,
-                skip_unchanged_versions=False
+                skip_unchanged_versions=False,
+                update=args.update
             )
 
     if import_ids:
