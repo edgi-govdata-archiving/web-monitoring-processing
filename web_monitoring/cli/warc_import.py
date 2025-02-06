@@ -375,7 +375,7 @@ def main():
     )
 
     seeds = set(read_seeds_file(args.seeds))
-    total = min(len(seeds), args.limit or 0)
+    total = min(len(seeds), args.limit or float('inf'))
 
     chains = islice(each_redirect_chain(args.warc_path, seeds=seeds),
                     args.limit)
