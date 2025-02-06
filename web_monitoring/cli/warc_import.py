@@ -88,7 +88,7 @@ class S3HashStore:
                 self.seen_hashes.add(hash)
                 upload = True
 
-        if upload and not path.exists():
+        if upload and not self.dry_run and not path.exists():
             logger.info(f'Uploading to S3 (hash={hash})')
             if self.gzip:
                 data = gzip.compress(data)
@@ -132,13 +132,16 @@ class RequestRecords:
 
         return ''
 
-    def add(self, record: ArcWarcRecord, index: int, offset: int, length: int) -> None:
+    def add(self, record: ArcWarcRecord, index: int, reader: ArchiveIterator) -> None:
         self.last_index = index
+        # The body must be read *before* getting record offset/length!
+        # Getting either of those first consumes the stream and throws it away.
+        body = record.content_stream().read()
         meta = {
             'id': record.rec_headers.get('WARC-Record-ID'),
             'type': record.rec_type,
-            'offset': offset,
-            'length': length
+            'offset': reader.get_record_offset(),
+            'length': reader.get_record_length(),
         }
         if record.rec_type == 'request':
             self.request = record
@@ -146,7 +149,7 @@ class RequestRecords:
             self.metadata.insert(0, meta)
         elif record.rec_type == 'response':
             self.response = record
-            self.response_body = record.content_stream().read()
+            self.response_body = body
             position = 1 if self.request else 0
             self.records.insert(position, record)
             self.metadata.insert(position, meta)
@@ -223,12 +226,7 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 request = RequestRecords(target, warc_info=warc_info)
                 open_requests[target] = request
 
-            request.add(
-                record,
-                index,
-                reader.get_record_offset(),
-                reader.get_record_length()
-            )
+            request.add(record, index, reader)
 
             chain = open_redirects.get(target)
             if not chain:
@@ -381,10 +379,8 @@ def main():
                     args.limit)
     versions = ((format_version(c), c.requests[-1].response_body)
                 for c in chains)
-
-    if not args.dry_run:
-        versions = (preupload(storage, version, body)
-                    for version, body in versions)
+    versions = (preupload(storage, version, body)
+                for version, body in versions)
 
     import_ids = []
     with tqdm_logging_redirect(versions, total=total) as progress:
