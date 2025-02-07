@@ -667,7 +667,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
     worker_count = worker_count if worker_count > 0 else PARALLEL_REQUESTS
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
-    with utils.QuitSignal((signal.SIGINT, signal.SIGTERM)) as stop_event:
+    with utils.QuitSignal() as stop_event:
         cdx_records = utils.FiniteQueue()
         cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
             cdx_records,

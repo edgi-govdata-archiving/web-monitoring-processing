@@ -381,8 +381,9 @@ def main():
     seeds = set(read_seeds_file(args.seeds))
     total = min(len(seeds), args.limit or float('inf'))
 
-    chains = islice(each_redirect_chain(args.warc_path, seeds=seeds),
-                    args.limit)
+    chains = each_redirect_chain(args.warc_path, seeds=seeds)
+    chains = utils.QuitSignal().stop_iteration(islice(chains, args.limit))
+
     versions = ((format_version(c), c.requests[-1].response_body)
                 for c in chains)
     versions = (preupload(storage, version, body)
