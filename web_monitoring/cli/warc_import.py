@@ -280,7 +280,7 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                             else:
                                 break
 
-                        if not chain.requests[-1].redirect_target:
+                        if chain.requests[-1].response and not chain.requests[-1].redirect_target:
                             for request in chain.requests:
                                 del open_redirects[request.url]
 
