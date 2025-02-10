@@ -287,7 +287,9 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                     logger.warning(f'No WARC records for seed: "{seed}"')
                 else:
                     logger.error(f'Incomplete redirect chain for seed: "{seed}" (no records for "{next_url}")')
-                continue
+                chain = None
+                next_url = None
+                break
 
             request = next((r for r in requests if r.timestamp > next_timestamp), requests[-1])
             assert request.response, f'Request index entry missing response record for "{request.uri}" at {request.timestamp}'
@@ -315,7 +317,8 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
             next_url = request_set.redirect_target
             next_timestamp = request.timestamp + timedelta(minutes=1)
 
-        yield chain
+        if chain:
+            yield chain
 
 
 # def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, None, None]:
