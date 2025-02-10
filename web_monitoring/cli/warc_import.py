@@ -281,8 +281,12 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
         chain = RedirectChain()
         next_url = seed
         next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
+        seen_entries = []
         while next_url:
             requests = request_index[next_url]
+            if not requests and next_url.startswith('http://'):
+                requests = request_index['https' + next_url[4:]]
+
             if not requests:
                 if next_url == seed:
                     logger.warning(f'No WARC records for seed: "{seed}"')
@@ -292,8 +296,15 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 next_url = None
                 break
 
-            request = next((r for r in requests if r.timestamp > next_timestamp), requests[-1])
+            request = next(
+                (
+                    r for r in requests
+                    if r.timestamp > next_timestamp and r not in seen_entries
+                ),
+                requests[-1]
+            )
             assert request.response, f'Request index entry missing response record for "{request.uri}" at {request.timestamp}'
+            seen_entries.append(request)
 
             request_set = RequestRecords(request.uri, warc_info=warc_info)
             response_record, body = extract_record(warc_path, request.response.offset)
@@ -315,7 +326,7 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 )
             chain.add(request_set)
             next_url = request_set.redirect_target
-            next_timestamp = request.timestamp + timedelta(minutes=1)
+            next_timestamp = request.timestamp
 
         if chain:
             yield chain
