@@ -13,6 +13,7 @@ import re
 import sys
 import threading
 from typing import Any, Generator
+from urllib.parse import urljoin
 from cloudpathlib import S3Client, S3Path
 import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
@@ -132,7 +133,7 @@ class RequestRecords:
             status = self.response.http_headers.get_statuscode()
             location = self.response.http_headers.get_header('location')
             if status.startswith('3') and location:
-                return location
+                return urljoin(self.url, location)
 
         return ''
 
