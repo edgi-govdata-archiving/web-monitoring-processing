@@ -296,7 +296,6 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
 
             request_set = RequestRecords(request.uri, warc_info=warc_info)
             response_record, body = extract_record(warc_path, request.response.offset)
-            logger.warning(f'Adding {response_record.rec_type} for "{next_url}" (seed "{seed}")')
             request_set.add(
                 response_record,
                 index=0,
