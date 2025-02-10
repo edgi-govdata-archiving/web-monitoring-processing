@@ -189,6 +189,7 @@ def parse_warc_fields(record: ArcWarcRecord) -> StatusAndHeaders:
 @lru_cache(maxsize=256)
 def extract_record(warc: str, offset: int) -> tuple[ArcWarcRecord, bytes]:
     with open(warc, 'rb') as file:
+        file.seek(offset)
         record = next(iter(ArchiveIterator(file)))
         return record, record.content_stream().read()
 
