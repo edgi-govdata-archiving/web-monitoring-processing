@@ -58,7 +58,6 @@ from pathlib import Path
 import re
 import requests
 import sentry_sdk
-import signal
 import threading
 import time
 from tqdm import tqdm
