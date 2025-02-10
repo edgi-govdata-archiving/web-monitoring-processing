@@ -208,7 +208,7 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
     seen_seeds: set[str] = set()
     warc_info: dict[str, Any] = {}
 
-    response_index = {}
+    response_index: dict[str, int] = {}
 
     warc_path = Path(warc).absolute()
     warc_info['warc_name'] = warc_path.name
@@ -271,7 +271,8 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                                 offset = response_index.get(redirect)
                                 if offset:
                                     target_record, body = extract_record(warc_path, offset)
-                                    request = RequestRecords(redirect)
+                                    assert target_record.rec_type == 'response', f'Record should be response, but was "{target_record.rec_type}" (in middle)'
+                                    request = RequestRecords(redirect, warc_info=warc_info)
                                     request.add(target_record, last.last_index, offset=offset, length=0, body=body)
                                     chain.add(request)
                                     if request.redirect_target:
@@ -294,7 +295,8 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                     offset = response_index.get(redirect)
                     if offset:
                         target_record, body = extract_record(warc_path, offset)
-                        request = RequestRecords(redirect)
+                        assert target_record.rec_type == 'response', f'Record should be response, but was "{target_record.rec_type}" (after end)'
+                        request = RequestRecords(redirect, warc_info=warc_info)
                         request.add(target_record, last.last_index, offset=offset, length=0, body=body)
                         chain.add(request)
                     else:
