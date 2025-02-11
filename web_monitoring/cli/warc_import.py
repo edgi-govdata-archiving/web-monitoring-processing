@@ -501,10 +501,11 @@ def format_version(chain: RedirectChain) -> dict:
 
     metadata = {
         **final.warc_info,
-        'warc_page_id': final.response.rec_headers.get('WARC-Page-ID'),
+        # 'warc_page_id': final.response.rec_headers.get('WARC-Page-ID'),
         'warc_records': [meta
                          for requests in chain.requests
-                         for meta in requests.metadata],
+                         for meta in requests.metadata
+                         if meta['type'] == 'response'],
     }
 
     record_metadata = final.response.rec_headers.get('WARC-JSON-Metadata')
