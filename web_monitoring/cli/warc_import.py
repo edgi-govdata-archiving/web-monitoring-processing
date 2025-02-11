@@ -204,6 +204,7 @@ class RecordIndexEntry:
     timestamp: datetime
     uri: str
     type: str
+    file: str
     offset: int
     length: int
 
@@ -234,58 +235,63 @@ class RequestIndexEntry:
             self.response = record
 
 
-def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, None, None]:
+def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[RedirectChain, None, None]:
     record_index: dict[str, RecordIndexEntry] = {}
     request_index: dict[str, list[RequestIndexEntry]] = defaultdict(list)
     indexable = set(['request', 'response'])  # TODO: support metadata, revist
+    # This only supports one warcinfo record per WARC; not technically correct.
+    warc_infos: dict[str, dict[str, Any]] = {}
 
-    warc_path = Path(warc).absolute()
-    warc_info: dict[str, Any] = {'warc_name': warc_path.name}
-    if warc_path.parent.name == 'archive' and warc_path.parent.parent.parent.name == 'collections':
-        # Not sure if we want this.
-        # warc_info['warc_name'] = str(warc_path.relative_to(warc_path.parent.parent.parent))
-        warc_info['crawl'] = warc_path.parent.parent.name
+    for warc in warcs:
+        warc_path = Path(warc).absolute()
+        warc_info: dict[str, Any] = {'warc_name': warc_path.name}
+        warc_infos[warc] = warc_info
+        if warc_path.parent.name == 'archive' and warc_path.parent.parent.parent.name == 'collections':
+            # Not sure if we want this.
+            # warc_info['warc_name'] = str(warc_path.relative_to(warc_path.parent.parent.parent))
+            warc_info['crawl'] = warc_path.parent.parent.name
 
-    logger.info(f'Indexing {warc_path}...')
-    with warc_path.open('rb') as warc_file:
-        reader = ArchiveIterator(warc_file)
-        for record in reader:
-            if record.rec_type == 'warcinfo':
-                # TODO: There might be other stuff we want to read in WARCs
-                # generated from non-Browsertrix sources.
-                info = parse_warc_fields(record)
-                if 'software' in info:
-                    warc_info['crawler'] = info['software']
+        logger.info(f'Indexing {warc_path}...')
+        with warc_path.open('rb') as warc_file:
+            reader = ArchiveIterator(warc_file)
+            for record in reader:
+                if record.rec_type == 'warcinfo':
+                    # TODO: There might be other stuff we want to read in WARCs
+                    # generated from non-Browsertrix sources.
+                    info = parse_warc_fields(record)
+                    if 'software' in info:
+                        warc_info['crawler'] = info['software']
 
-            elif record.rec_type in indexable:
-                entry = RecordIndexEntry(
-                    id=record.rec_headers.get('WARC-Record-ID'),
-                    timestamp=dateutil.parser.parse(record.rec_headers.get('WARC-Date')).astimezone(timezone.utc),
-                    uri=record.rec_headers.get('WARC-Target-URI'),
-                    type=record.rec_type,
-                    offset=reader.get_record_offset(),
-                    length=reader.get_record_length()
-                )
-                record_index[entry.id] = entry
+                elif record.rec_type in indexable:
+                    entry = RecordIndexEntry(
+                        id=record.rec_headers.get('WARC-Record-ID'),
+                        timestamp=dateutil.parser.parse(record.rec_headers.get('WARC-Date')).astimezone(timezone.utc),
+                        uri=record.rec_headers.get('WARC-Target-URI'),
+                        type=record.rec_type,
+                        file=warc,
+                        offset=reader.get_record_offset(),
+                        length=reader.get_record_length()
+                    )
+                    record_index[entry.id] = entry
 
-                # TODO: handle looking up related entries in record_index via
-                # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
-                # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
-                requests = request_index[entry.uri]
-                for existing in requests:
-                    if existing.timestamp == entry.timestamp:
-                        existing.add(entry)
-                        break
-                else:
-                    requests.append(RequestIndexEntry([entry]))
+                    # TODO: handle looking up related entries in record_index via
+                    # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
+                    # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
+                    requests = request_index[entry.uri]
+                    for existing in requests:
+                        if existing.timestamp == entry.timestamp:
+                            existing.add(entry)
+                            break
+                    else:
+                        requests.append(RequestIndexEntry([entry]))
 
-            # TODO: optimize by tracking the last few records and yielding
-            # immediately for any request/response pairs that do not redirect.
-            # This won't work if we are expecting metadata records, but
-            # Browsertrix (our only source right now) does not produce them.
-            # (It does produce related resource records that are a bit more
-            # complicated to match up, and they don't have anything we want
-            # right now.)
+                # TODO: optimize by tracking the last few records and yielding
+                # immediately for any request/response pairs that do not redirect.
+                # This won't work if we are expecting metadata records, but
+                # Browsertrix (our only source right now) does not produce them.
+                # (It does produce related resource records that are a bit more
+                # complicated to match up, and they don't have anything we want
+                # right now.)
 
     logger.info('Yielding matching records for seeds...')
     for seed in seeds:
@@ -320,8 +326,9 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 raise RuntimeError(f'Request index entry missing response record for "{request.uri}" at {request.timestamp}')
             seen_entries.append(request)
 
+            warc_info = warc_infos[request.response.file]
             request_set = RequestRecords(request.uri, warc_info=warc_info)
-            response_record, body = extract_record(warc_path, request.response.offset)
+            response_record, body = extract_record(request.response.file, request.response.offset)
             request_set.add(
                 response_record,
                 index=0,
@@ -330,7 +337,7 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 body=body
             )
             if request.request:
-                request_record, _ = extract_record(warc_path, request.request.offset)
+                request_record, _ = extract_record(request.request.file, request.request.offset)
                 request_set.add(
                     request_record,
                     index=0,
@@ -566,7 +573,7 @@ def main():
     sentry_sdk.init()
 
     parser = ArgumentParser()
-    parser.add_argument('warc_path', help='Path to WARC file to extract data from')
+    parser.add_argument('warc_path', nargs='+', help='Path to WARC file to extract data from')
     parser.add_argument('--seeds', help='List of seed URLs to extract from WARC.')
     parser.add_argument('--archive-s3', help='S3 bucket to upload raw response bodies to.', required=True)
     parser.add_argument('--dry-run', action='store_true', help='Do not actually upload results')
