@@ -268,6 +268,9 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 )
                 record_index[entry.id] = entry
 
+                # TODO: handle looking up related entries in record_index via
+                # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
+                # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
                 requests = request_index[entry.uri]
                 for existing in requests:
                     if existing.timestamp == entry.timestamp:
@@ -276,7 +279,15 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 else:
                     requests.append(RequestIndexEntry([entry]))
 
-    logger.info('Gathering records...')
+            # TODO: optimize by tracking the last few records and yielding
+            # immediately for any request/response pairs that do not redirect.
+            # This won't work if we are expecting metadata records, but
+            # Browsertrix (our only source right now) does not produce them.
+            # (It does produce related resource records that are a bit more
+            # complicated to match up, and they don't have anything we want
+            # right now.)
+
+    logger.info('Yielding matching records for seeds...')
     for seed in seeds:
         chain = RedirectChain()
         next_url = seed
@@ -303,7 +314,10 @@ def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, 
                 ),
                 requests[-1]
             )
-            assert request.response, f'Request index entry missing response record for "{request.uri}" at {request.timestamp}'
+            if request in seen_entries:
+                raise RuntimeError(f'Circular redirect detected for "{request.uri}" at {request.timestamp}')
+            elif not request.response:
+                raise RuntimeError(f'Request index entry missing response record for "{request.uri}" at {request.timestamp}')
             seen_entries.append(request)
 
             request_set = RequestRecords(request.uri, warc_info=warc_info)
