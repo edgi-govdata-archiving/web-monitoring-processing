@@ -550,7 +550,7 @@ def format_version(chain: RedirectChain) -> dict:
         body_url=None,
         body_hash=utils.hash_content(final.response_body),
         status=int(final.response.http_headers.get_statuscode()),
-        headers=dict(final.response.http_headers.headers),
+        headers={k.lower(): v for k, v in final.response.http_headers.headers},
         source_type='edgi_crawl_v0',
         source_metadata=metadata,
         media_type=media_type or None,
