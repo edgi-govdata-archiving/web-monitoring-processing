@@ -1,5 +1,7 @@
 import cchardet
 import codecs
+from datetime import datetime, timedelta, timezone
+import dateutil.parser
 import hashlib
 import io
 import logging
@@ -432,3 +434,40 @@ class QuitSignal(Signal):
     def __enter__(self):
         super().__enter__()
         return self.event
+
+
+# Values correspond to `timedelta` keyword arguments.
+CLI_DATETIME_UNITS = {
+    'd': 'days',
+    'h': 'hours',
+    'm': 'minutes',
+    '': 'hours'
+}
+
+
+def cli_datetime(raw) -> datetime:
+    """
+    Parse a CLI argument that should represent a datetime or time delta from
+    now as a datetime. Datetimes are expected to be in ISO 8601 format, deltas
+    are a number and optional unit, e.g. "5d" for 5 days. By default, deltas
+    are negative (representing time *ago*), but specifying "+5d" treats as the
+    future (time *from now*).
+
+    Returned datetimes are always in UTC.
+    """
+    input = raw.strip()
+    # Could also support ISO 8601 durations here, but probably not worthwhile.
+    delta = re.match(r'^([+-]?)(\d+)([dhm]?)$', input)
+    if delta:
+        unit = CLI_DATETIME_UNITS[delta.group(3).lower()]
+        value = float(delta.group(2))
+        if delta.group(1) != '+':
+            value *= -1
+        return datetime.now(timezone.utc) + timedelta(**{unit: value})
+
+    parsed = dateutil.parser.isoparse(input)
+    # If it's a date, treat it as UTC.
+    if re.match(r'^\d{4}-\d\d-\d\d$', input):
+        return parsed.replace(tzinfo=timezone.utc)
+    else:
+        return parsed.astimezone(timezone.utc)

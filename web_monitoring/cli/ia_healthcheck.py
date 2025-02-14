@@ -6,13 +6,12 @@
 # to check that each has been captured at least once in the last few days.
 
 from argparse import ArgumentParser
-from datetime import datetime, timedelta, timezone
-import dateutil.parser
 import random
 import sentry_sdk
 import sys
 from wayback import WaybackClient
 from .. import db
+from ..utils import cli_datetime
 
 
 # The current Sentry client truncates string values at 512 characters. It
@@ -106,27 +105,11 @@ def output_results(statuses):
             sentry_sdk.capture_message(f'{message}\n{log_string}')
 
 
-def cli_time(date_string) -> datetime:
-    """
-    Parse a CLI argument that should represent a date/time or time delta from
-    now into a datetime
-    """
-    try:
-        # TODO: handle a unit specifier, e.g. "3d" for 3 days.
-        hours = float(date_string)
-        return datetime.now(timezone.utc) - timedelta(hours=hours)
-    except ValueError:
-        pass
-
-    return dateutil.parser.parse(date_string)
-
-
 def main():
     sentry_sdk.init()
-    default_from = datetime.now() - timedelta(days=3)
     parser = ArgumentParser()
-    parser.add_argument('--from', type=cli_time, default=default_from,
-                        dest='from_time',
+    parser.add_argument('--from', type=cli_datetime,
+                        default=cli_datetime('3d'), dest='from_time',
                         help='Check for captures later than this time.')
     parser.add_argument('--sample', type=int, default=10,
                         help='Sample this many URLs for captures.')
