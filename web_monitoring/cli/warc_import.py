@@ -295,6 +295,10 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
 
     logger.info('Yielding matching records for seeds...')
     for seed in seeds:
+        # FIXME: This approach expects each seed will only be requested once in
+        # the collection of WARCs being examined, which is not necessarily
+        # accurate. It's good enough for WARCs we create with Browsertrix, but
+        # not other sources that may have been collected differently.
         chain = RedirectChain()
         next_url = seed
         next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
