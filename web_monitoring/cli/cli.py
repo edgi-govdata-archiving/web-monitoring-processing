@@ -44,7 +44,8 @@ and results between them.
 from cloudpathlib import CloudPath, S3Client, S3Path
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from web_monitoring.utils import detect_encoding, sniff_media_type
+from web_monitoring.utils import (cli_datetime, detect_encoding,
+                                  sniff_media_type)
 import dateutil.parser
 from docopt import docopt
 from itertools import islice
@@ -942,25 +943,6 @@ def _is_page(version):
             splitext(urlparse(version.url).path)[1] not in SUBRESOURCE_EXTENSIONS)
 
 
-def _parse_date_argument(date_string):
-    """Parse a CLI argument that should represent a date into a datetime"""
-    if not date_string:
-        return None
-
-    try:
-        hours = float(date_string)
-        return datetime.utcnow() - timedelta(hours=hours)
-    except ValueError:
-        pass
-
-    try:
-        return dateutil.parser.parse(date_string)
-    except ValueError:
-        pass
-
-    return None
-
-
 def _parse_path(path_string):
     if path_string is None:
         return None
@@ -1075,16 +1057,16 @@ Options:
                 urls=[arguments['<url>']],
                 maintainers=arguments.get('--maintainer'),
                 tags=arguments.get('--tag'),
-                from_date=_parse_date_argument(arguments['<from_date>']),
-                to_date=_parse_date_argument(arguments['<to_date>']),
+                from_date=cli_datetime(arguments['<from_date>']),
+                to_date=cli_datetime(arguments['<to_date>']) if arguments['<to_date>'] else None,
                 skip_unchanged=skip_unchanged,
                 unplaybackable_path=unplaybackable_path,
                 dry_run=arguments.get('--dry-run'),
                 archive_storage=archive_storage)
         elif arguments['ia-known-pages']:
             import_ia_db_urls(
-                from_date=_parse_date_argument(arguments['<from_date>']),
-                to_date=_parse_date_argument(arguments['<to_date>']),
+                from_date=cli_datetime(arguments['<from_date>']),
+                to_date=cli_datetime(arguments['<to_date>']) if arguments['<to_date>'] else None,
                 maintainers=arguments.get('--maintainer'),
                 tags=arguments.get('--tag'),
                 skip_unchanged=skip_unchanged,
