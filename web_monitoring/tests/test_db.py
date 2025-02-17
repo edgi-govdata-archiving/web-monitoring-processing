@@ -266,8 +266,8 @@ def test_add_version():
     cli = Client(**AUTH)
     cli.add_version(page_id=PAGE_ID, uuid=NEW_VERSION_ID,
                     capture_time=TIME,
-                    uri='http://example.com',
-                    hash='hash_placeholder',
+                    body_url='http://example.com',
+                    body_hash='hash_placeholder',
                     title='title_placeholder',
                     source_type='test')
 
@@ -301,10 +301,10 @@ def test_add_versions():
         'b8cc3d0f-f2eb-43ef-bfc7-d0b589ee7f49']
     versions = [dict(uuid=version_id,
                      # Notice the importer needs page_url instead of page_id.
-                     page_url='http://example.com',
+                     url='http://example.com',
                      capture_time=TIME,
-                     uri='http://example.com',
-                     version_hash='hash_placeholder',
+                     body_url='http://example.com',
+                     body_hash='hash_placeholder',
                      title='title_placeholder',
                      page_maintainers=['agency_placeholder'],
                      page_tags=['site:site_placeholder'],
