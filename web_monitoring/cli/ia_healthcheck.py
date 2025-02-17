@@ -5,12 +5,13 @@
 # It works by taking a random sample of pages from the DB and using the CDX API
 # to check that each has been captured at least once in the last few days.
 
-from datetime import datetime, timedelta
+from argparse import ArgumentParser
 import random
 import sentry_sdk
 import sys
 from wayback import WaybackClient
 from .. import db
+from ..utils import cli_datetime
 
 
 # The current Sentry client truncates string values at 512 characters. It
@@ -20,14 +21,6 @@ from .. import db
 # That doesn't seem great, so I've asked about this on their forums:
 #   https://forum.sentry.io/t/some-stack-traces-are-truncated/7309/4
 sentry_sdk.utils.MAX_STRING_LENGTH = 2048
-
-
-MAX_CAPTURE_AGE = timedelta(hours=72)
-LINKS_TO_CHECK = 10
-
-# Sentry automatically instantiates with the `SENTRY_DSN` environment variable.
-# If not set, all its methods will operate conveniently as no-ops.
-sentry_sdk.init()
 
 
 def sample_monitored_urls(sample_size):
@@ -113,12 +106,20 @@ def output_results(statuses):
 
 
 def main():
+    sentry_sdk.init()
+    parser = ArgumentParser()
+    parser.add_argument('--from', type=cli_datetime,
+                        default=cli_datetime('3d'), dest='from_time',
+                        help='Check for captures later than this time.')
+    parser.add_argument('--sample', type=int, default=10,
+                        help='Sample this many URLs for captures.')
+    args = parser.parse_args()
+
     try:
-        print(f'Sampling {LINKS_TO_CHECK} pages from Web Monitoring API...')
-        links = sample_monitored_urls(LINKS_TO_CHECK)
-        from_date = datetime.now() - MAX_CAPTURE_AGE
+        print(f'Sampling {args.sample} pages from Web Monitoring API...')
+        links = sample_monitored_urls(args.sample)
         print('Checking for captures in Wayback Machine...')
-        capture_statuses = ((url, wayback_has_captures(url, from_date))
+        capture_statuses = ((url, wayback_has_captures(url, args.from_time))
                             for url in links)
         output_results(capture_statuses)
     except db.MissingCredentials as error:
