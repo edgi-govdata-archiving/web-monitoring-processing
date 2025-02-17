@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import dateutil.parser
 from functools import lru_cache
 import gzip
