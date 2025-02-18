@@ -31,23 +31,23 @@ ia_vcr = VCR(
 
 def test_filter_unchanged_versions():
     versions = (
-        {'page_url': 'http://example.com', 'version_hash': 'a'},
-        {'page_url': 'http://example.com', 'version_hash': 'b'},
-        {'page_url': 'http://example.com', 'version_hash': 'b'},
-        {'page_url': 'http://other.com',   'version_hash': 'b'},
-        {'page_url': 'http://example.com', 'version_hash': 'b'},
-        {'page_url': 'http://example.com', 'version_hash': 'c'},
-        {'page_url': 'http://other.com',   'version_hash': 'd'},
-        {'page_url': 'http://other.com',   'version_hash': 'b'},
+        {'url': 'http://example.com', 'body_hash': 'a'},
+        {'url': 'http://example.com', 'body_hash': 'b'},
+        {'url': 'http://example.com', 'body_hash': 'b'},
+        {'url': 'http://other.com',   'body_hash': 'b'},
+        {'url': 'http://example.com', 'body_hash': 'b'},
+        {'url': 'http://example.com', 'body_hash': 'c'},
+        {'url': 'http://other.com',   'body_hash': 'd'},
+        {'url': 'http://other.com',   'body_hash': 'b'},
     )
 
     assert list(_filter_unchanged_versions(versions)) == [
-        {'page_url': 'http://example.com', 'version_hash': 'a'},
-        {'page_url': 'http://example.com', 'version_hash': 'b'},
-        {'page_url': 'http://other.com',   'version_hash': 'b'},
-        {'page_url': 'http://example.com', 'version_hash': 'c'},
-        {'page_url': 'http://other.com',   'version_hash': 'd'},
-        {'page_url': 'http://other.com',   'version_hash': 'b'},
+        {'url': 'http://example.com', 'body_hash': 'a'},
+        {'url': 'http://example.com', 'body_hash': 'b'},
+        {'url': 'http://other.com',   'body_hash': 'b'},
+        {'url': 'http://example.com', 'body_hash': 'c'},
+        {'url': 'http://other.com',   'body_hash': 'd'},
+        {'url': 'http://other.com',   'body_hash': 'b'},
     ]
 
 
@@ -75,24 +75,24 @@ def test_format_memento():
 
         assert isinstance(version, dict)
 
-        assert version['page_url'] == url
+        assert version['url'] == url
         assert version['page_maintainers'] == ['maintainer']
         assert version['page_tags'] == ['tag']
         assert version['title'] == "U.S. Fish & Wildlife Service - Migratory Bird Program | Conserving America's Birds"
 
         assert version['capture_time'] == '2017-11-24T15:13:15Z'
-        assert version['uri'] == f'https://web.archive.org/web/20171124151315id_/{url}'
-        assert version['version_hash'] == 'ae433414499f91630983fc379d9bafae67250061178930b8779ee76c82485491'
+        assert version['body_url'] == f'https://web.archive.org/web/20171124151315id_/{url}'
+        assert version['body_hash'] == 'ae433414499f91630983fc379d9bafae67250061178930b8779ee76c82485491'
         assert version['source_type'] == 'internet_archive'
         assert version['status'] == 200
         assert version['media_type'] == 'text/html'
+        assert version['headers'] == {
+            'content-type': 'text/html',
+            'date': 'Fri, 24 Nov 2017 15:13:14 GMT',
+            'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+            'transfer-encoding': 'chunked'
+        }
         assert version['source_metadata'] == {
-            'headers': {
-                'content-type': 'text/html',
-                'date': 'Fri, 24 Nov 2017 15:13:14 GMT',
-                'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
-                'transfer-encoding': 'chunked'
-            },
             'view_url': 'https://web.archive.org/web/20171124151315/https://www.fws.gov/birds/'
         }
 
@@ -131,32 +131,32 @@ def test_format_memento_pdf():
 
         assert isinstance(version, dict)
 
-        assert version['page_url'] == url
+        assert version['url'] == url
         assert version['page_maintainers'] == ['maintainer']
         assert version['page_tags'] == ['tag']
         assert version['title'] == "EPA Office of Air and Radiation Climate Change Adaptation Implementation Plan, June 2014"
         assert version['capture_time'] == '2020-04-30T02:42:32Z'
-        assert version['uri'] == f'https://web.archive.org/web/20200430024232id_/{url}'
-        assert version['version_hash'] == 'bdfd8c1ee22b70cd1b8bd513989822e066a9656f4578606ef3d5feb6204e3dc6'
+        assert version['body_url'] == f'https://web.archive.org/web/20200430024232id_/{url}'
+        assert version['body_hash'] == 'bdfd8c1ee22b70cd1b8bd513989822e066a9656f4578606ef3d5feb6204e3dc6'
         assert version['source_type'] == 'internet_archive'
         assert version['status'] == 200
         assert version['media_type'] == 'application/pdf'
+        assert version['headers'] == {
+            'accept-ranges': 'bytes',
+            'cache-control': 'max-age=572',
+            'connection': 'close',
+            'content-length': '375909',
+            'content-type': 'application/pdf',
+            'date': 'Thu, 30 Apr 2020 02:42:32 GMT',
+            'etag': '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"',
+            'expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
+            'last-modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
+            'server': 'AkamaiNetStorage',
+            'server-timing': 'cdn-cache; desc=HIT',
+            'strict-transport-security': 'max-age=31536000; preload;',
+            'x-content-type-options': 'nosniff'
+        }
         assert version['source_metadata'] == {
-            'headers': {
-                'accept-ranges': 'bytes',
-                'cache-control': 'max-age=572',
-                'connection': 'close',
-                'content-length': '375909',
-                'content-type': 'application/pdf',
-                'date': 'Thu, 30 Apr 2020 02:42:32 GMT',
-                'etag': '"12c958e520c9ff580f52ee11446c5e0c:1579909999.298098"',
-                'expires': 'Thu, 30 Apr 2020 02:52:04 GMT',
-                'last-modified': 'Tue, 16 Aug 2016 15:43:21 GMT',
-                'server': 'AkamaiNetStorage',
-                'server-timing': 'cdn-cache; desc=HIT',
-                'strict-transport-security': 'max-age=31536000; preload;',
-                'x-content-type-options': 'nosniff'
-            },
             'view_url': 'https://web.archive.org/web/20200430024232/https://www.epa.gov/sites/production/files/2016-08/documents/oar-climate-change-adaptation-plan.pdf'
         }
 

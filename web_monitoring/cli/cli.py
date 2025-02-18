@@ -413,13 +413,13 @@ class WaybackRecordsWorker(threading.Thread):
         with memento:
             version = self.format_memento(memento, record, self.maintainers,
                                           self.tags)
-            if self.archive_storage and version['version_hash']:
+            if self.archive_storage and version['body_hash']:
                 url = self.archive_storage.store(
                     memento.content,
-                    hash=version['version_hash'],
+                    hash=version['body_hash'],
                     content_type=version['media_type']
                 )
-                version['uri'] = url
+                version['body_url'] = url
 
             return version
 
@@ -434,7 +434,6 @@ class WaybackRecordsWorker(threading.Thread):
             iso_date = f'{no_tz_date}Z'
 
         metadata = {
-            'headers': dict(memento.headers),
             'view_url': cdx_record.view_url
         }
 
@@ -459,19 +458,21 @@ class WaybackRecordsWorker(threading.Thread):
 
         return dict(
             # Page-level info
-            page_url=cdx_record.url,
+            url=cdx_record.url,
             page_maintainers=maintainers,
             page_tags=tags,
             title=title,
 
             # Version/memento-level info
             capture_time=iso_date,
-            uri=cdx_record.raw_url,
+            body_url=cdx_record.raw_url,
             media_type=media_type or None,
-            version_hash=utils.hash_content(memento.content),
+            content_length=len(memento.content),
+            body_hash=utils.hash_content(memento.content),
             source_type='internet_archive',
             source_metadata=metadata,
-            status=memento.status_code
+            status=memento.status_code,
+            headers=dict(memento.headers),
         )
 
     def get_memento_media(self, memento):
@@ -770,8 +771,8 @@ def _filter_unchanged_versions(versions):
     """
     last_hashes = {}
     for version in versions:
-        if last_hashes.get(version['page_url']) != version['version_hash']:
-            last_hashes[version['page_url']] = version['version_hash']
+        if last_hashes.get(version['url']) != version['body_hash']:
+            last_hashes[version['url']] = version['body_hash']
             yield version
 
 
