@@ -12,5 +12,5 @@ requests ~=2.32.3
 urllib3 ~=2.3.0
 toolz ~=1.0.0
 tqdm ~=4.67.1
-warcio ~=1.7.5
+warcio[all] ~=1.7.5
 wayback ~=0.4.5
