@@ -19,6 +19,7 @@ import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
 from warcio import ArchiveIterator
 from warcio.recordloader import ArcWarcRecord, StatusAndHeadersParser, StatusAndHeaders
+import yaml
 from .. import db
 from .. import utils
 from ..utils import detect_encoding, sniff_media_type
@@ -103,7 +104,7 @@ class S3HashStore:
         return path.as_url()
 
 
-def read_seeds_file(seeds_path: str) -> list[str]:
+def read_browsertrix_pages_seeds(seeds_path: str) -> list[str]:
     with open(seeds_path, 'r') as file:
         try:
             first = json.loads(file.readline())
@@ -114,6 +115,25 @@ def read_seeds_file(seeds_path: str) -> list[str]:
 
         pages = (json.loads(line) for line in file if line != '')
         return [page['url'] for page in pages if page['seed']]
+
+
+def read_browsertrix_config_seeds(seeds_path: str) -> list[str]:
+    with open(seeds_path, 'r') as file:
+        data = yaml.safe_load(file)
+        seeds = data.get('seeds')
+        if isinstance(seeds, list) and all(isinstance(url, str) for url in seeds):
+            return seeds
+        else:
+            raise ValueError(f'Seeds file is missing `seeds` key that is an array of URL strings: "{seeds_path}"')
+
+
+def read_seeds_file(seeds_path: str) -> list[str]:
+    if seeds_path.endswith('.yaml') or seeds_path.endswith('.yml'):
+        return read_browsertrix_config_seeds(seeds_path)
+    elif seeds_path.endswith('.json') or seeds_path.endswith('.jsonl'):
+        return read_browsertrix_pages_seeds(seeds_path)
+    else:
+        raise ValueError(f'Unknown seed file type: "{seeds_path}"')
 
 
 @dataclass
