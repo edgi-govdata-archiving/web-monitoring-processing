@@ -15,6 +15,7 @@ import signal
 import sys
 import threading
 import time
+from typing import Generator, Iterable, TypeVar
 
 
 logger = logging.getLogger(__name__)
@@ -387,6 +388,9 @@ class Signal:
             signal.signal(signal_type, self.old_handlers[signal_type])
 
 
+T = TypeVar('T')
+
+
 class QuitSignal(Signal):
     """
     A context manager that handles system signals by triggering a
@@ -414,7 +418,7 @@ class QuitSignal(Signal):
     >>>             break
     >>>         do_some_work()
     """
-    def __init__(self, signals, graceful_message=None, final_message=None):
+    def __init__(self, signals=(signal.SIGINT, signal.SIGTERM), graceful_message=None, final_message=None):
         self.event = threading.Event()
         self.graceful_message = graceful_message or (
             'Attempting to finish existing work before exiting. Press ctrl+c '
@@ -430,6 +434,14 @@ class QuitSignal(Signal):
         else:
             print(self.final_message, file=sys.stderr, flush=True)
             os._exit(100)
+
+    def stop_iteration(self, iterable: Iterable[T]) -> Generator[T, None, None]:
+        with self as cancel:
+            for item in iterable:
+                if cancel.is_set():
+                    break
+                else:
+                    yield item
 
     def __enter__(self):
         super().__enter__()
