@@ -634,6 +634,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         uploadable_versions = importable_queue
         if skip_unchanged == 'resolved-response':
             uploadable_versions = _filter_unchanged_versions(importable_queue)
+        elif skip_unchanged == 'day':
+            uploadable_versions = _filter_unchanged_daily_versions(importable_queue)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
@@ -687,6 +689,29 @@ def _filter_unchanged_versions(versions):
     for version in versions:
         if last_hashes.get(version['url']) != version['body_hash']:
             last_hashes[version['url']] = version['body_hash']
+            yield version
+
+
+def _filter_unchanged_daily_versions(versions):
+    """
+    Take an iteratable of importable version dicts and yield only versions that
+    come from a different day or differ from the previous version of the same
+    page.
+    """
+    last_hashes = {}
+    for version in versions:
+        hash_info = last_hashes.get(version['url'], {
+            'hash': '',
+            'date': '2000-01-01'
+        })
+        if (
+            hash_info['hash'] != version['body_hash']
+            or hash_info['date'] != version['capture_time'][:10]
+        ):
+            last_hashes[version['url']] = {
+                'hash': version['body_hash'],
+                'date': version['capture_time'][:10]
+            }
             yield version
 
 
@@ -928,10 +953,11 @@ def main():
         'Name of entity that maintains the imported pages. '
         'Repeat to add multiple maintainers.'
     ))
-    import_ia.add_argument('--skip-unchanged', choices=['none', 'resolved-response'], help=(
+    import_ia.add_argument('--skip-unchanged', choices=['none', 'resolved-response', 'day'], help=(
         'Skip consecutive captures of the same content. Options: '
         '`none` (no skipping), `resolved-response` (skip if the final '
-        'response after redirects is unchanged)'
+        'response after redirects is unchanged), `day` (only import up to one '
+        'version per day).'
     ))
     import_ia.add_argument('--parallel', type=int, default=PARALLEL_REQUESTS, help=(
         'Number of parallel network requests to support.'
