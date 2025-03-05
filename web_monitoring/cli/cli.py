@@ -719,6 +719,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         uploadable_versions = importable_queue
         if skip_unchanged == 'resolved-response':
             uploadable_versions = _filter_unchanged_versions(importable_queue)
+        elif skip_unchanged == 'day':
+            uploadable_versions = _filter_unchanged_daily_versions(importable_queue)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
@@ -772,6 +774,29 @@ def _filter_unchanged_versions(versions):
     for version in versions:
         if last_hashes.get(version['url']) != version['body_hash']:
             last_hashes[version['url']] = version['body_hash']
+            yield version
+
+
+def _filter_unchanged_daily_versions(versions):
+    """
+    Take an iteratable of importable version dicts and yield only versions that
+    come from a different day or differ from the previous version of the same
+    page.
+    """
+    last_hashes = {}
+    for version in versions:
+        hash_info = last_hashes.get(version['url'], {
+            'hash': '',
+            'date': '2000-01-01'
+        })
+        if (
+            hash_info['hash'] != version['body_hash']
+            or hash_info['date'] != version['capture_time'][:10]
+        ):
+            last_hashes[version['url']] = {
+                'hash': version['body_hash'],
+                'date': version['capture_time'][:10]
+            }
             yield version
 
 
@@ -1032,9 +1057,9 @@ Options:
     arguments = docopt(doc, version='0.0.1')
     if arguments['import']:
         skip_unchanged = arguments['--skip-unchanged']
-        if skip_unchanged not in ('none', 'response', 'resolved-response'):
+        if skip_unchanged not in ('none', 'response', 'resolved-response', 'day'):
             print('--skip-unchanged must be one of `none`, `response`, '
-                  'or `resolved-response`')
+                  '`resolved-response`, or `day`')
             return
 
         unplaybackable_path = _parse_path(arguments.get('--unplaybackable'))
