@@ -702,15 +702,18 @@ def _filter_unchanged_daily_versions(versions):
     for version in versions:
         hash_info = last_hashes.get(version['url'], {
             'hash': '',
-            'date': '2000-01-01'
+            'date': '1900-01-01',
+            'status': 900
         })
         if (
-            hash_info['hash'] != version['body_hash']
-            or hash_info['date'] != version['capture_time'][:10]
+            hash_info['date'] != version['capture_time'][:10]
+            # or hash_info['hash'] != version['body_hash']
+            or version['status'] < hash_info['status']
         ):
             last_hashes[version['url']] = {
                 'hash': version['body_hash'],
-                'date': version['capture_time'][:10]
+                'date': version['capture_time'][:10],
+                'status': version['status'],
             }
             yield version
 
