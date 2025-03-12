@@ -101,8 +101,9 @@ def _time_range_string(start_date, end_date):
     return f'{start_str}..{end_str}'
 
 
-def _build_version(*, page_id, uuid, capture_time, uri, hash, source_type,
-                   title, source_metadata=None, media_type=None):
+def _build_version(*, page_id, uuid, capture_time, body_url, body_hash,
+                   source_type, title, source_metadata=None, media_type=None,
+                   headers=None, content_length=None):
     """
     Build a Version dict from parameters, performing some validation.
     """
@@ -113,42 +114,47 @@ def _build_version(*, page_id, uuid, capture_time, uri, hash, source_type,
     version = {'page_id': page_id,
                'uuid': uuid,
                'capture_time': capture_time,
-               'uri': str(uri),
-               'hash': str(hash),
+               'body_url': str(body_url),
+               'body_hash': str(body_hash),
                'source_type': str(source_type),
                'title': str(title),
                'source_metadata': source_metadata,
-               'media_type': media_type}
+               'media_type': media_type,
+               'headers': headers,
+               'content_length': content_length}
     return version
 
 
-def _build_importable_version(*, page_url, uuid=None, capture_time, uri,
-                              version_hash, source_type, title,
+def _build_importable_version(*, url, uuid=None, capture_time, body_url,
+                              body_hash, source_type, title,
                               page_maintainers=None, page_tags=None,
                               source_metadata=None, status=None,
-                              media_type=None):
+                              media_type=None, headers=None,
+                              content_length=None):
     """
     Build a Version dict from parameters, performing some validation.
 
-    This is different than _build_version because it needs ``page_url`` instead
+    This is different than _build_version because it needs ``url`` instead
     of ``page_id`` of an existing Page.
     """
     if not isinstance(capture_time, str):
         capture_time = _tzaware_isoformat(capture_time)
     if source_metadata is None:
         source_metadata = {}
-    version = {'page_url': page_url,
+    version = {'url': url,
                'uuid': uuid,
                'capture_time': capture_time,
-               'uri': str(uri),
-               'hash': str(version_hash),
+               'body_url': str(body_url),
+               'body_hash': str(body_hash),
                'source_type': str(source_type),
                'title': str(title),
                'source_metadata': source_metadata,
                'status': str(status),
                'page_maintainers': page_maintainers,
                'page_tags': page_tags,
-               'media_type': media_type}
+               'media_type': media_type,
+               'headers': headers,
+               'content_length': content_length}
     return version
 
 
@@ -676,7 +682,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         result = self.request_json(GET, url, params=params)
         return result
 
-    def add_version(self, *, page_id, capture_time, uri, hash,
+    def add_version(self, *, page_id, capture_time, body_url, body_hash,
                     source_type, title, uuid=None, source_metadata=None):
         """
         Submit one new Version.
@@ -687,9 +693,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         ----------
         page_id : string
             Page to which the Version is associated
-        uri : string
+        body_url : string
             URI of content (such as an S3 bucket or InternetArchive URL)
-        hash : string
+        body_hash : string
             SHA256 hash of Version content
         source_type : string
             such as 'versionista' or 'internetarchive'
@@ -710,8 +716,8 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
             page_id=page_id,
             uuid=uuid,
             capture_time=capture_time,
-            uri=uri,
-            hash=hash,
+            body_url=body_url,
+            body_hash=body_hash,
             source_type=source_type,
             title=title,
             source_metadata=source_metadata)
