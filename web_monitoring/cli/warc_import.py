@@ -13,7 +13,7 @@ import re
 import sys
 import threading
 from typing import Any, Generator
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from cloudpathlib import S3Client, S3Path
 import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
@@ -104,6 +104,15 @@ class S3HashStore:
         return path.as_url()
 
 
+def normalize_seed_url(url: str) -> str:
+    """
+    Ensure a URL is an actual, valid URL that could have been sent to a server
+    in an HTTP request and therefore recorded in a WARC record.
+    """
+    parsed = urlparse(url)
+    return parsed._replace(path=(parsed.path or '/'), fragment='').geturl()
+
+
 def read_browsertrix_pages_seeds(seeds_path: str) -> list[str]:
     with open(seeds_path, 'r') as file:
         try:
@@ -114,7 +123,9 @@ def read_browsertrix_pages_seeds(seeds_path: str) -> list[str]:
             raise ValueError('Seeds file is not a Browsertrix "json-pages-1.0" file.')
 
         pages = (json.loads(line) for line in file if line != '')
-        return [page['url'] for page in pages if page['seed']]
+        return [normalize_seed_url(page['url'])
+                for page in pages
+                if page['seed']]
 
 
 def read_browsertrix_config_seeds(seeds_path: str) -> list[str]:
@@ -122,7 +133,7 @@ def read_browsertrix_config_seeds(seeds_path: str) -> list[str]:
         data = yaml.safe_load(file)
         seeds = data.get('seeds')
         if isinstance(seeds, list):
-            return [seed if isinstance(seed, str) else seed['url']
+            return [normalize_seed_url(seed if isinstance(seed, str) else seed['url'])
                     for seed in seeds]
         else:
             raise ValueError(f'Seeds file is missing `seeds` key that is an array of URL strings: "{seeds_path}"')
@@ -316,10 +327,6 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
 
     logger.info('Yielding matching records for seeds...')
     for seed in seeds:
-        # For seeds that have complex hash URLs, the hashes won't be in the
-        # web requests, so strip them. Unfortunately this is a little messy,
-        # but we don't have many of these in practice.
-        seed = seed.partition('#')[0]
         # FIXME: This approach expects each seed will only be requested once in
         # the collection of WARCs being examined, which is not necessarily
         # accurate. It's good enough for WARCs we create with Browsertrix, but
