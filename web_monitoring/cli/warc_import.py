@@ -276,7 +276,7 @@ class RequestIndexEntry:
 def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[RedirectChain, None, None]:
     record_index: dict[str, RecordIndexEntry] = {}
     request_index: dict[str, list[RequestIndexEntry]] = defaultdict(list)
-    indexable = set(['request', 'response'])  # TODO: support metadata, revist
+    indexable = set(['request', 'response'])  # TODO: support metadata, revisit
     # This only supports one warcinfo record per WARC; not technically correct.
     warc_infos: dict[str, dict[str, Any]] = {}
 
@@ -393,132 +393,6 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
 
         if chain:
             yield chain
-
-
-# def each_redirect_chain(warc: str, seeds: set[str]) -> Generator[RedirectChain, None, None]:
-#     max_open_request_age = 250
-#     # TODO: maybe should be using the WARC-Concurrent-To header to match up
-#     # request & response records? Browsertrix reliably does this, but it's not
-#     # required and I don't know about other crawlers.
-#     open_requests: dict[str, RequestRecords] = {}
-#     # TODO: should we use the WARC-Page-ID header for this? It's non-standard,
-#     # but seems to be designed sort of for this purpose in Browsertrix. Info:
-#     # - https://github.com/webrecorder/browsertrix-crawler/issues/429#issuecomment-2389762045
-#     # - https://github.com/webrecorder/browsertrix/issues/1588#issuecomment-1998128354
-#     open_redirects: dict[str, RedirectChain] = {}
-#     seen_seeds: set[str] = set()
-#     warc_info: dict[str, Any] = {}
-
-#     response_index: dict[str, int] = {}
-
-#     warc_path = Path(warc).absolute()
-#     warc_info['warc_name'] = warc_path.name
-#     if warc_path.parent.name == 'archive' and warc_path.parent.parent.parent.name == 'collections':
-#         # Not sure if we want this.
-#         # warc_info['warc_name'] = str(warc_path.relative_to(warc_path.parent.parent.parent))
-#         warc_info['crawl'] = warc_path.parent.parent.name
-
-#     with warc_path.open('rb') as warc_file:
-#         reader = ArchiveIterator(warc_file)
-#         for index, record in enumerate(reader):
-#             if record.rec_type == 'warcinfo':
-#                 # TODO: There might be other stuff we want to read in WARCs
-#                 # generated from non-Browsertrix sources.
-#                 info = parse_warc_fields(record)
-#                 if 'software' in info:
-#                     warc_info['crawler'] = info['software']
-#                 continue
-
-#             target = record.rec_headers.get_header('WARC-Target-URI')
-#             body = record.content_stream().read()
-#             offset = reader.get_record_offset()
-
-#             if target and record.rec_type == 'response':
-#                 response_index[target] = offset
-
-#             request = open_requests.get(target)
-#             if request is None and target not in seeds and target not in open_redirects:
-#                 continue
-
-#             if not request:
-#                 request = RequestRecords(target, warc_info=warc_info)
-#                 open_requests[target] = request
-
-#             request.add(
-#                 record,
-#                 index=index,
-#                 offset=offset,
-#                 length=reader.get_record_length(),
-#                 body=body
-#             )
-
-#             chain = open_redirects.get(target)
-#             if not chain:
-#                 chain = RedirectChain()
-#                 open_redirects[target] = chain
-#                 seen_seeds.add(request.url)
-#             chain.add(request)
-
-#             if request.redirect_target:
-#                 open_redirects[request.redirect_target] = chain
-
-#             if index >= max_open_request_age:
-#                 for chain in set(open_redirects.values()):
-#                     last = chain.requests[-1]
-#                     if last.last_index + max_open_request_age < index:
-#                         for _ in range(10):
-#                             redirect = chain.requests[-1].redirect_target
-#                             if redirect:
-#                                 offset = response_index.get(redirect)
-#                                 if offset:
-#                                     target_record, body = extract_record(warc_path, offset)
-#                                     assert target_record.rec_type == 'response', f'Record should be response, but was "{target_record.rec_type}" (in middle)'
-#                                     request = RequestRecords(redirect, warc_info=warc_info)
-#                                     request.add(target_record, last.last_index, offset=offset, length=0, body=body)
-#                                     chain.add(request)
-#                                     if request.redirect_target:
-#                                         open_redirects[request.redirect_target] = chain
-#                                 else:
-#                                     break
-#                             else:
-#                                 break
-
-#                         if chain.requests[-1].response and not chain.requests[-1].redirect_target:
-#                             for request in chain.requests:
-#                                 del open_redirects[request.url]
-
-#                             yield chain
-
-#         for chain in set(open_redirects.values()):
-#             for _ in range(10):
-#                 redirect = chain.requests[-1].redirect_target
-#                 if redirect:
-#                     offset = response_index.get(redirect)
-#                     if offset:
-#                         target_record, body = extract_record(warc_path, offset)
-#                         assert target_record.rec_type == 'response', f'Record should be response, but was "{target_record.rec_type}" (after end)'
-#                         request = RequestRecords(redirect, warc_info=warc_info)
-#                         request.add(target_record, last.last_index, offset=offset, length=0, body=body)
-#                         chain.add(request)
-#                     else:
-#                         break
-#                 else:
-#                     break
-
-#             if not chain.requests[-1].response:
-#                 logger.warning(f'Chain of requests had no final response (started with {chain.requests[0].url})')
-#             elif chain.requests[-1].redirect_target:
-#                 logger.warning(f'Chain of requests ended with a redirect (started with {chain.requests[0].url})')
-#             else:
-#                 yield chain
-
-#     # What's happening with not always getting as many chains as seeds?
-#     missing_seeds = seeds - seen_seeds
-#     new_seeds = seen_seeds - seeds
-#     if len(missing_seeds):
-#         logger.warning(f'{len(missing_seeds)} seed URLs did not have initial requests: {missing_seeds}')
-#     if len(new_seeds):
-#         logger.warning(f'{len(new_seeds)} URLs had initial requests but were not in seed list: {new_seeds}')
 
 
 def get_response_media(response: ArcWarcRecord) -> tuple[str, str]:
