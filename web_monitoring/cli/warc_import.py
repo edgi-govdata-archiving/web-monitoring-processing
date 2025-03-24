@@ -166,6 +166,12 @@ class RequestRecords:
             location = self.response.http_headers.get_header('location')
             if status.startswith('3') and location:
                 return urljoin(self.url, location)
+            # Amazon WAF browser challenge works reloading the same URL with a
+            # cookie. Treat this like a redirect; we should have captured the
+            # second request to the same URL.
+            elif status == '202' and self.response.http_headers.get_header('x-amzn-waf-action') == 'challenge':
+                logger.warning(f'Handling Amazon WAF challenge: "{self.url}"')
+                return self.url
 
         return ''
 
