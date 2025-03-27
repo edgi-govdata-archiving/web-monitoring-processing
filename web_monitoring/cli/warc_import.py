@@ -4,17 +4,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import dateutil.parser
 from functools import lru_cache
-import gzip
 from itertools import islice
 import json
 import logging
 from pathlib import Path
-import re
 import sys
-import threading
 from typing import Any, Generator
 from urllib.parse import urljoin, urlparse
-from cloudpathlib import S3Client, S3Path
 import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
 from warcio import ArchiveIterator
@@ -22,86 +18,11 @@ from warcio.recordloader import ArcWarcRecord, StatusAndHeadersParser, StatusAnd
 import yaml
 from .. import db
 from .. import utils
-from ..utils import detect_encoding, sniff_media_type
+from ..media import HTML_MEDIA_TYPES, PDF_MEDIA_TYPES, find_media_type
+from ..utils import S3HashStore, detect_encoding
 
 
 logger = logging.getLogger(__name__)
-
-
-# FIXME: share with `cli.py`
-# We do some parsing of HTML and PDF documents to extract the title before
-# importing the document. These media types are used to determine whether and
-# how to parse the document.
-HTML_MEDIA_TYPES = frozenset((
-    'application/html',
-    'application/xhtml',
-    'application/xhtml+xml',
-    'application/xml',
-    'application/xml+html',
-    'application/xml+xhtml',
-    'text/webviewhtml',
-    'text/html',
-    'text/x-server-parsed-html',
-    'text/xhtml',
-))
-PDF_MEDIA_TYPES = frozenset((
-    'application/pdf',
-    'application/x-pdf',
-))
-# These media types are so meaningless that it's worth sniffing the content to
-# see if we can determine an actual media type.
-SNIFF_MEDIA_TYPES = frozenset((
-    'application/octet-stream',
-    'application/x-download',
-    'binary/octet-stream',
-))
-# Identifies a bare media type (that is, one without parameters)
-MEDIA_TYPE_EXPRESSION = re.compile(r'^\w+/\w[\w+_\-.]+$')
-
-
-# FIXME: share with `cli.py`
-class S3HashStore:
-    """
-    Store and track content-addressed data in S3.
-    """
-
-    def __init__(self, bucket: str, gzip: bool = False, extra_args: dict = {}, dry_run: bool = False) -> None:
-        self.bucket = bucket
-        self.extra_args = extra_args
-        self.gzip = gzip
-        if gzip:
-            self.extra_args['ContentEncoding'] = 'gzip'
-        self.seen_hashes = set()
-        self.lock = threading.Lock()
-        self.dry_run = dry_run
-
-    def store(self, data: bytes, hash: str = '', content_type: str = '') -> str:
-        if not hash:
-            hash = utils.hash_content(data)
-
-        if not content_type:
-            content_type = 'application/octet-stream'
-
-        archive = S3Path(f's3://{self.bucket}', client=S3Client(extra_args={
-            **self.extra_args,
-            'ContentType': content_type
-        }))
-        path = archive / hash
-
-        upload = False
-        with self.lock:
-            if hash not in self.seen_hashes:
-                self.seen_hashes.add(hash)
-                upload = True
-
-        if upload and not self.dry_run and not path.exists():
-            logger.info(f'Uploading to S3 (hash={hash})')
-            if self.gzip:
-                data = gzip.compress(data)
-            if not self.dry_run:
-                path.write_bytes(data)
-
-        return path.as_url()
 
 
 def normalize_seed_url(url: str) -> str:
@@ -395,25 +316,6 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
             yield chain
 
 
-def get_response_media(response: ArcWarcRecord) -> tuple[str, str]:
-    """Extract media type and media type parameters from a memento."""
-    media, *parameters = response.http_headers.get('Content-Type', '').split(';')
-
-    # Clean up media type
-    media = media.strip().lower()
-    if not MEDIA_TYPE_EXPRESSION.match(media):
-        url = response.rec_headers.get('WARC-Target-URI')
-        logger.info('Unknown media type "%s" for "%s"', media, url)
-        media = ''
-
-    # Clean up whitespace, remove empty parameters, etc.
-    clean_parameters = (param.strip() for param in parameters)
-    parameters = [param for param in clean_parameters if param]
-    parameter_string = '; '.join(parameters)
-
-    return media, parameter_string
-
-
 def format_version(chain: RedirectChain) -> dict:
     final = chain.requests[-1]
     final_response = final.response
@@ -449,14 +351,16 @@ def format_version(chain: RedirectChain) -> dict:
         metadata['redirects'] = [r.url for r in chain.requests]
         metadata['statuses'] = [r.response.http_headers.get_statuscode() for r in chain.requests]
 
-    media_type, media_type_parameters = get_response_media(final_response)
-    if not media_type or media_type in SNIFF_MEDIA_TYPES:
-        media_type = sniff_media_type(final_response.content_stream().read(), media_type)
+    media_type, _ = find_media_type(final_response.http_headers,
+                                    final.response_body,
+                                    url=chain.requests[0].url)
 
     title = ''
     if media_type in HTML_MEDIA_TYPES:
         encoding = detect_encoding(final.response_body, final.response.http_headers)
-        title = utils.extract_title(final.response_body, encoding)
+        title = utils.extract_html_title(final.response_body, encoding)
+    # FIXME: remove the sniffing here; I think this is an anachronism from
+    # before we had better sniffing support when setting `media_type`.
     elif media_type in PDF_MEDIA_TYPES or final.response_body.startswith(b'%PDF-'):
         title = utils.extract_pdf_title(final.response_body) or title
 

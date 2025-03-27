@@ -41,11 +41,10 @@ Each box represents a thread. Instances of `FiniteQueue` are used to move data
 and results between them.
 """
 
-from cloudpathlib import CloudPath, S3Client, S3Path
+from cloudpathlib import CloudPath
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from web_monitoring.utils import (cli_datetime, detect_encoding,
-                                  sniff_media_type)
+from web_monitoring.utils import cli_datetime, detect_encoding
 import dateutil.parser
 from docopt import docopt
 from itertools import islice
@@ -67,6 +66,8 @@ import wayback
 from wayback.exceptions import (WaybackException, WaybackRetryError,
                                 MementoPlaybackError, NoMementoError,
                                 BlockedByRobotsError)
+from web_monitoring.media import (HTML_MEDIA_TYPES, PDF_MEDIA_TYPES,
+                                  find_media_type)
 from web_monitoring import utils, __version__
 
 
@@ -135,37 +136,6 @@ try:
     WAYBACK_RATE_LIMIT = int(os.getenv('WAYBACK_RATE_LIMIT'))
 except Exception:
     WAYBACK_RATE_LIMIT = 10
-
-# We do some parsing of HTML and PDF documents to extract the title before
-# importing the document. These media types are used to determine whether and
-# how to parse the document.
-HTML_MEDIA_TYPES = frozenset((
-    'application/html',
-    'application/xhtml',
-    'application/xhtml+xml',
-    'application/xml',
-    'application/xml+html',
-    'application/xml+xhtml',
-    'text/webviewhtml',
-    'text/html',
-    'text/x-server-parsed-html',
-    'text/xhtml',
-))
-PDF_MEDIA_TYPES = frozenset((
-    'application/pdf',
-    'application/x-pdf',
-))
-
-# These media types are so meaningless that it's worth sniffing the content to
-# see if we can determine an actual media type.
-SNIFF_MEDIA_TYPES = frozenset((
-    'application/octet-stream',
-    'application/x-download',
-    'binary/octet-stream',
-))
-
-# Identifies a bare media type (that is, one without parameters)
-MEDIA_TYPE_EXPRESSION = re.compile(r'^\w+/\w[\w+_\-.]+$')
 
 
 # These functions lump together library code into monolithic operations for the
@@ -288,43 +258,6 @@ class RequestStatistics:
 MEMENTO_STATISTICS = RequestStatistics(leaderboard_size=10, leaderboard_min=10)
 
 
-class S3HashStore:
-    """
-    Store and track content-addressed data in S3.
-    """
-
-    def __init__(self, bucket: str, extra_args: dict = {}) -> None:
-        self.bucket = bucket
-        self.extra_args = extra_args
-        self.seen_hashes = set()
-        self.lock = threading.Lock()
-
-    def store(self, data: bytes, hash: str = '', content_type: str = '') -> str:
-        if not hash:
-            hash = utils.hash_content(data)
-
-        if not content_type:
-            content_type = 'application/octet-stream'
-
-        archive = S3Path(f's3://{self.bucket}', client=S3Client(extra_args={
-            **self.extra_args,
-            'ContentType': content_type
-        }))
-        path = archive / hash
-
-        upload = False
-        with self.lock:
-            if hash not in self.seen_hashes:
-                self.seen_hashes.add(hash)
-                upload = True
-
-        if upload and not path.exists():
-            logger.info(f'Uploading to S3 (hash={hash})')
-            path.write_bytes(data)
-
-        return path.as_url()
-
-
 class WaybackRecordsWorker(threading.Thread):
     """
     WaybackRecordsWorker is a thread that takes CDX records from a queue and
@@ -444,14 +377,15 @@ class WaybackRecordsWorker(threading.Thread):
                 memento.url
             ]
 
-        media_type, media_type_parameters = self.get_memento_media(memento)
-        if not media_type or media_type in SNIFF_MEDIA_TYPES:
-            media_type = sniff_media_type(memento.content, media_type)
+        media_type, _ = find_media_type(memento.headers, memento.content,
+                                        url=cdx_record.url)
 
         title = ''
         if media_type in HTML_MEDIA_TYPES:
             encoding = detect_encoding(memento.content, memento.headers)
-            title = utils.extract_title(memento.content, encoding)
+            title = utils.extract_html_title(memento.content, encoding)
+        # FIXME: remove the sniffing here; I think this is an anachronism from
+        # before we had better sniffing support when setting `media_type`.
         elif media_type in PDF_MEDIA_TYPES or memento.content.startswith(b'%PDF-'):
             title = utils.extract_pdf_title(memento.content) or title
 
@@ -473,24 +407,6 @@ class WaybackRecordsWorker(threading.Thread):
             status=memento.status_code,
             headers=dict(memento.headers),
         )
-
-    def get_memento_media(self, memento):
-        """Extract media type and media type parameters from a memento."""
-        media, *parameters = memento.headers.get('Content-Type', '').split(';')
-
-        # Clean up media type
-        media = media.strip().lower()
-        if not MEDIA_TYPE_EXPRESSION.match(media):
-            original = memento.history[0] if memento.history else memento
-            logger.info('Unknown media type "%s" for "%s"', media, original.memento_url)
-            media = ''
-
-        # Clean up whitespace, remove empty parameters, etc.
-        clean_parameters = (param.strip() for param in parameters)
-        parameters = [param for param in clean_parameters if param]
-        parameter_string = '; '.join(parameters)
-
-        return media, parameter_string
 
     @classmethod
     def parallel(cls, count, records, results_queue, *args, **kwargs):
@@ -1031,6 +947,8 @@ Options:
     sentry_sdk.init()
     arguments = docopt(doc, version='0.0.1')
     if arguments['import']:
+        dry_run = arguments.get('--dry-run') or False
+
         skip_unchanged = arguments['--skip-unchanged']
         if skip_unchanged not in ('none', 'response', 'resolved-response'):
             print('--skip-unchanged must be one of `none`, `response`, '
@@ -1038,18 +956,18 @@ Options:
             return
 
         unplaybackable_path = _parse_path(arguments.get('--unplaybackable'))
-        if not arguments.get('--dry-run'):
+        if not dry_run:
             validate_db_credentials()
 
         archive_storage = None
         archive_bucket = arguments.get('--archive-s3')
-        if archive_bucket:
-            archive_storage = S3HashStore(archive_bucket, {
+        if archive_bucket and not dry_run:
+            archive_storage = utils.S3HashStore(archive_bucket, extra_args={
                 'ACL': 'public-read',
                 # Ideally, we'd gzip stuff, but the DB needs to learn to
                 # correctly read gzipped items first.
                 # 'ContentEncoding': 'gzip'
-            })
+            }, dry_run=dry_run)
 
         start_time = datetime.now(tz=timezone.utc)
         if arguments['ia']:
@@ -1061,7 +979,7 @@ Options:
                 to_date=cli_datetime(arguments['<to_date>']) if arguments['<to_date>'] else None,
                 skip_unchanged=skip_unchanged,
                 unplaybackable_path=unplaybackable_path,
-                dry_run=arguments.get('--dry-run'),
+                dry_run=dry_run,
                 archive_storage=archive_storage)
         elif arguments['ia-known-pages']:
             import_ia_db_urls(
@@ -1073,7 +991,7 @@ Options:
                 url_pattern=arguments.get('--pattern'),
                 worker_count=int(arguments.get('--parallel')),
                 unplaybackable_path=unplaybackable_path,
-                dry_run=arguments.get('--dry-run'),
+                dry_run=dry_run,
                 precheck_versions=arguments.get('--precheck'),
                 archive_storage=archive_storage)
 
