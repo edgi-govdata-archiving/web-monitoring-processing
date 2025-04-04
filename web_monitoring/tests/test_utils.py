@@ -1,36 +1,30 @@
 from datetime import datetime
 import pytest
 import queue
-from pathlib import Path
+from support import get_fixture_bytes
 import threading
-from web_monitoring.utils import (extract_title, extract_pdf_title, RateLimit,
-                                  FiniteQueue, sniff_media_type)
+from web_monitoring.utils import (extract_html_title, extract_pdf_title,
+                                  RateLimit, FiniteQueue)
 
 
-def get_fixture_bytes(filename):
-    filepath = Path(__file__).parent / 'fixtures' / filename
-    with filepath.open('rb') as file:
-        return file.read()
-
-
-def test_extract_title():
-    title = extract_title(b'''<html>
+def test_extract_html_title():
+    title = extract_html_title(b'''<html>
         <head><title>THIS IS THE TITLE</title></head>
         <body>Blah</body>
     </html>''')
     assert title == 'THIS IS THE TITLE'
 
 
-def test_extract_title_from_titleless_page():
-    title = extract_title(b'''<html>
+def test_extract_html_title_from_titleless_page():
+    title = extract_html_title(b'''<html>
         <head><meta charset="utf-8"></head>
         <body>Blah</body>
     </html>''')
     assert title == ''
 
 
-def test_extract_title_handles_whitespace():
-    title = extract_title(b'''<html>
+def test_extract_html_title_handles_whitespace():
+    title = extract_html_title(b'''<html>
         <head>
             <meta charset="utf-8">
             <title>
@@ -98,33 +92,6 @@ def test_extract_pdf_title_no_metadata():
     pdf_bytes = get_fixture_bytes('no_metadata.pdf')
     title = extract_pdf_title(pdf_bytes)
     assert title is None
-
-
-class TestSniffMediaType:
-    def test_sniff_media_type_detects_html(self):
-        raw_bytes = b'''
-            <!doctype html public "-//w3c//dtd html 4.0 transitional//en">
-            <html>
-            <head>
-                <title>Test Page</title>
-            </head>
-            <body>
-                Test
-            </body>
-            </html>
-        '''
-        media = sniff_media_type(raw_bytes)
-        assert media == 'text/html'
-
-    def test_sniff_media_type_detects_pdf(self):
-        raw_bytes = get_fixture_bytes('basic_title.pdf')
-        media = sniff_media_type(raw_bytes)
-        assert media == 'application/pdf'
-
-    def test_sniff_media_type_uses_default_parameter_as_fallback(self):
-        raw_bytes = b'This is just a random string'
-        media = sniff_media_type(raw_bytes, 'my/default')
-        assert media == 'my/default'
 
 
 class TestRateLimit:

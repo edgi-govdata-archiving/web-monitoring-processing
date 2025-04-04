@@ -1,7 +1,9 @@
 import cchardet
+from cloudpathlib import S3Client, S3Path
 import codecs
 from datetime import datetime, timedelta, timezone
 import dateutil.parser
+import gzip
 import hashlib
 import io
 import logging
@@ -15,6 +17,7 @@ import signal
 import sys
 import threading
 import time
+from typing import Generator, Iterable, TypeVar
 
 
 logger = logging.getLogger(__name__)
@@ -97,76 +100,7 @@ def detect_encoding(content, headers, default='utf-8'):
     return encoding
 
 
-# Patterns used to sniff various media types. Based on:
-# - https://dev.w3.org/html5/cts/html5-type-sniffing.html
-# - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
-#
-# NOTE: a "verbose" regex would be nice here, but they don't seem to work with
-# binary strings.
-SNIFF_HTML_HINTS = (
-    rb'<!DOCTYPE HTML',
-    rb'<HTML',
-    rb'<HEAD',
-    rb'<SCRIPT',
-    rb'<IFRAME',
-    rb'<H1',
-    rb'<DIV',
-    rb'<FONT',
-    rb'<TABLE',
-    rb'<A',
-    rb'<STYLE',
-    rb'<TITLE',
-    rb'<B',
-    rb'<BODY',
-    rb'<BR',
-    rb'<P',
-    rb'<!--',
-)
-
-SNIFF_HTML_PATTERN = re.compile(
-    rb'^[\s\n\r]*(%s)[\s\n\r>]' % b'|'.join(SNIFF_HTML_HINTS),
-    re.IGNORECASE
-)
-
-SNIFF_MEDIA_TYPE_PATTERNS = {
-    SNIFF_HTML_PATTERN: 'text/html',
-    re.compile(rb'^[\s\n\r]*<?xml'): 'text/xml',
-    re.compile(rb'^%PDF-'): 'application/pdf',
-    re.compile(rb'^%!PS-Adobe-'): 'application/postscript',
-    re.compile(rb'^(GIF87a|GIF89a)'): 'image/gif',
-    re.compile(rb'^\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'): 'image/png',
-    re.compile(rb'^\xFF\xD8\xFF'): 'image/jpeg',
-    re.compile(rb'^BM'): 'image/bmp',
-}
-
-
-def sniff_media_type(content, default='application/octet-stream'):
-    """
-    Detect the media type of some content. If the media type can't be detected,
-    the value of the ``default`` parameter will be returned.
-
-    This is similar to how browsers do it and is based on:
-    - https://dev.w3.org/html5/cts/html5-type-sniffing.html
-    - https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type
-
-    Parameters
-    ----------
-    content : bytes
-    default : str or None
-
-    Returns
-    -------
-    str
-        The detected media type of the content.
-    """
-    for pattern, media_type in SNIFF_MEDIA_TYPE_PATTERNS.items():
-        if pattern.match(content):
-            return media_type
-
-    return default
-
-
-def extract_title(content_bytes, encoding='utf-8'):
+def extract_html_title(content_bytes, encoding='utf-8'):
     "Return content of <title> tag as string. On failure return empty string."
     content_str = content_bytes.decode(encoding=encoding, errors='ignore')
     # The parser expects a file-like, so we mock one.
@@ -387,6 +321,9 @@ class Signal:
             signal.signal(signal_type, self.old_handlers[signal_type])
 
 
+T = TypeVar('T')
+
+
 class QuitSignal(Signal):
     """
     A context manager that handles system signals by triggering a
@@ -414,7 +351,7 @@ class QuitSignal(Signal):
     >>>             break
     >>>         do_some_work()
     """
-    def __init__(self, signals, graceful_message=None, final_message=None):
+    def __init__(self, signals=(signal.SIGINT, signal.SIGTERM), graceful_message=None, final_message=None):
         self.event = threading.Event()
         self.graceful_message = graceful_message or (
             'Attempting to finish existing work before exiting. Press ctrl+c '
@@ -431,9 +368,75 @@ class QuitSignal(Signal):
             print(self.final_message, file=sys.stderr, flush=True)
             os._exit(100)
 
+    def stop_iteration(self, iterable: Iterable[T]) -> Generator[T, None, None]:
+        with self as cancel:
+            for item in iterable:
+                if cancel.is_set():
+                    break
+                else:
+                    yield item
+
     def __enter__(self):
         super().__enter__()
         return self.event
+
+
+class S3HashStore:
+    """
+    Store and track content-addressed data in S3. This relies on standard
+    AWS environment variables or configuration files for authentication.
+
+    Parameters
+    ----------
+    bucket : str
+        The name of the S3 bucket to store content in.
+    gzip : bool, default=False
+        Whether to gzip data before storing it.
+    extra_args : dict, optional
+        Boto3 "extra args" that are used with various operations as applicable.
+        For more info, see: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.S3Transfer
+    dry_run : bool, default=False
+        If true, calls to ``store`` do not actually upload. Allows this to be
+        used in test/debug workflows without significantly altering logic.
+    """
+
+    def __init__(self, bucket: str, gzip: bool = False, extra_args: dict = {}, dry_run: bool = False) -> None:
+        self.bucket = bucket
+        self.extra_args = extra_args
+        self.gzip = gzip
+        if gzip:
+            self.extra_args['ContentEncoding'] = 'gzip'
+        self.seen_hashes = set()
+        self.lock = threading.Lock()
+        self.dry_run = dry_run
+
+    def store(self, data: bytes, hash: str = '', content_type: str = '') -> str:
+        if not hash:
+            hash = hash_content(data)
+
+        if not content_type:
+            content_type = 'application/octet-stream'
+
+        archive = S3Path(f's3://{self.bucket}', client=S3Client(extra_args={
+            **self.extra_args,
+            'ContentType': content_type
+        }))
+        path = archive / hash
+
+        upload = False
+        with self.lock:
+            if hash not in self.seen_hashes:
+                self.seen_hashes.add(hash)
+                upload = True
+
+        if upload and not self.dry_run and not path.exists():
+            logger.info(f'Uploading to S3 (hash={hash})')
+            if self.gzip:
+                data = gzip.compress(data)
+            if not self.dry_run:
+                path.write_bytes(data)
+
+        return path.as_url()
 
 
 # Values correspond to `timedelta` keyword arguments.
