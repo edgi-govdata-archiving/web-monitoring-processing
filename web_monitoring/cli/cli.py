@@ -636,7 +636,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if skip_unchanged == 'resolved-response':
             uploadable_versions = _filter_unchanged_versions(importable_queue)
         elif skip_unchanged == 'day':
-            uploadable_versions = _filter_unchanged_daily_versions(importable_queue)
+            uploadable_versions = _filter_daily_versions(importable_queue)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
@@ -693,26 +693,27 @@ def _filter_unchanged_versions(versions):
             yield version
 
 
-def _filter_unchanged_daily_versions(versions):
+def _filter_daily_versions(versions):
     """
     Take an iteratable of importable version dicts and yield only versions that
     come from a different day or differ from the previous version of the same
     page.
+
+    This can't filter down to a single best version for a day because, at this
+    point, versions are unordered and there's no way to know when we've seen
+    all the versions for a given day.
     """
-    last_hashes = {}
+    daily_info = {}
     for version in versions:
-        hash_info = last_hashes.get(version['url'], {
-            'hash': '',
+        info = daily_info.get(version['url'], {
             'date': '1900-01-01',
             'status': 900
         })
         if (
-            hash_info['date'] != version['capture_time'][:10]
-            # or hash_info['hash'] != version['body_hash']
-            or version['status'] < hash_info['status']
+            info['date'] != version['capture_time'][:10]
+            or version['status'] < info['status']
         ):
-            last_hashes[version['url']] = {
-                'hash': version['body_hash'],
+            daily_info[version['url']] = {
                 'date': version['capture_time'][:10],
                 'status': version['status'],
             }
@@ -955,7 +956,8 @@ Options:
                               Can be:
                                 `none` (no skipping) or
                                 `resolved-response` (if the final response
-                                    after redirects is unchanged)
+                                    after redirects is unchanged) or
+                                `day` (attempt only import one version per day)
                               [default: resolved-response]
 --pattern <url_pattern>       A pattern to match when retrieving URLs from a
                               web-monitoring-db instance.
