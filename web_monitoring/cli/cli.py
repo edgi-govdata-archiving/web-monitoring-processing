@@ -582,10 +582,14 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
     with utils.QuitSignal() as stop_event:
+        cdx_filter = _identity_iterator
+        if skip_unchanged == 'day':
+            cdx_filter = _filter_daily_cdx
+
         cdx_records = utils.FiniteQueue()
         cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
             cdx_records,
-            _list_ia_versions_for_urls(
+            cdx_filter(_list_ia_versions_for_urls(
                 urls,
                 from_date,
                 to_date,
@@ -595,7 +599,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                                                                     retries=4,
                                                                     backoff=4,
                                                                     search_calls_per_second=WAYBACK_RATE_LIMIT)),
-                stop=stop_event)))
+                stop=stop_event))))
         cdx_thread.start()
 
         versions_queue = utils.FiniteQueue()
@@ -717,6 +721,42 @@ def _filter_daily_versions(versions):
                 'status': version['status'],
             }
             yield version
+
+
+def _filter_daily_cdx(records):
+    url = ''
+    day = None
+    day_records = []
+
+    def best_of_batch(batch):
+        # We want to prefer OK over error responses, but we can't know which
+        # they are for records with missing or 3xx status codes.
+        viable = [r for r in batch
+                  if (r.status_code
+                      and (r.status_code < 300 or r.status_code >= 400))]
+        best = min(viable, key=lambda r: r.status_code) if viable else None
+        if best:
+            yield best
+        else:
+            yield from viable or batch
+
+    for record in records:
+        if url != record.key or day != record.timestamp.date():
+            yield from best_of_batch(day_records)
+
+            url = record.key
+            day = record.timestamp.date()
+            day_records.clear()
+            day_records.append(record)
+        else:
+            day_records.append(record)
+
+    if len(day_records):
+        yield from best_of_batch(day_records)
+
+
+def _identity_iterator(inputs):
+    yield from inputs
 
 
 def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
