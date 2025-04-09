@@ -55,8 +55,7 @@ Legacy projects that may be revisited:
 3. Install the package.
 
     ```sh
-    pip install -r requirements.txt
-    python setup.py develop
+    pip install .
     ```
 
 4. Copy the script `.env.example` to `.env` and supply any local configuration
@@ -75,10 +74,10 @@ Legacy projects that may be revisited:
    ```
 
 6. To run the tests or build the documentation, first install the development
-   requirements.
+   dependencies.
 
    ```sh
-   pip install -r requirements-dev.txt
+   pip install '.[dev]'
    ```
 
 7. To build the docs:

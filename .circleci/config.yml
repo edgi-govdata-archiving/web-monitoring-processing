@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   primary-python-version:
     type: string
-    default: "3.10.7"
+    default: "3.10.16"
 
 commands:
   setup_pip:
@@ -19,10 +19,8 @@ commands:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
-            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-
-            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-
-            - processing-{{ arch }}-<< parameters.python-version >>-v3-
+            - processing-{{ arch }}-<< parameters.python-version >>-v5-{{ checksum "pyproject.toml" }}
+            - processing-{{ arch }}-<< parameters.python-version >>-v5-
 
       # Bundle install dependencies
       - run:
@@ -31,9 +29,7 @@ commands:
             python -m venv ~/venv
             . ~/venv/bin/activate
             pip install --upgrade pip
-            pip install wheel
-            pip install .
-            pip install -r requirements-dev.txt
+            pip install '.[test]'
 
       # Docs dependencies are only compatible on Python 3.10+, so only install
       # them on demand.
@@ -43,11 +39,11 @@ commands:
             - run:
                 command: |
                   . ~/venv/bin/activate
-                  pip install -r requirements-docs.txt
+                  pip install '.[test,docs]'
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}-{{ checksum "requirements-docs.txt" }}
+          key: processing-{{ arch }}-<< parameters.python-version >>-v5-{{ checksum "pyproject.toml" }}
           paths:
             - venv
 
