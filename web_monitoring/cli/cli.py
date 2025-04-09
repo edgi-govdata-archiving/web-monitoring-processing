@@ -583,10 +583,14 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
     unplaybackable = load_unplaybackable_mementos(unplaybackable_path)
 
     with utils.QuitSignal() as stop_event:
+        cdx_filter = _identity_iterator
+        if skip_unchanged == 'day':
+            cdx_filter = _filter_daily_cdx
+
         cdx_records = utils.FiniteQueue()
         cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
             cdx_records,
-            _list_ia_versions_for_urls(
+            cdx_filter(_list_ia_versions_for_urls(
                 urls,
                 from_date,
                 to_date,
@@ -596,7 +600,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
                                                                     retries=4,
                                                                     backoff=4,
                                                                     search_calls_per_second=WAYBACK_RATE_LIMIT)),
-                stop=stop_event)))
+                stop=stop_event))))
         cdx_thread.start()
 
         versions_queue = utils.FiniteQueue()
@@ -635,6 +639,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         uploadable_versions = importable_queue
         if skip_unchanged == 'resolved-response':
             uploadable_versions = _filter_unchanged_versions(importable_queue)
+        elif skip_unchanged == 'day':
+            uploadable_versions = _filter_daily_versions(importable_queue)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
@@ -689,6 +695,69 @@ def _filter_unchanged_versions(versions):
         if last_hashes.get(version['url']) != version['body_hash']:
             last_hashes[version['url']] = version['body_hash']
             yield version
+
+
+def _filter_daily_versions(versions):
+    """
+    Take an iteratable of importable version dicts and yield only versions that
+    come from a different day or differ from the previous version of the same
+    page.
+
+    This can't filter down to a single best version for a day because, at this
+    point, versions are unordered and there's no way to know when we've seen
+    all the versions for a given day.
+    """
+    daily_info = {}
+    for version in versions:
+        info = daily_info.get(version['url'], {
+            'date': '1900-01-01',
+            'status': 900
+        })
+        if (
+            info['date'] != version['capture_time'][:10]
+            or version['status'] < info['status']
+        ):
+            daily_info[version['url']] = {
+                'date': version['capture_time'][:10],
+                'status': version['status'],
+            }
+            yield version
+
+
+def _filter_daily_cdx(records):
+    url = ''
+    day = None
+    day_records = []
+
+    def best_of_batch(batch):
+        # We want to prefer OK over error responses, but we can't know which
+        # they are for records with missing or 3xx status codes.
+        viable = [r for r in batch
+                  if (r.status_code
+                      and (r.status_code < 300 or r.status_code >= 400))]
+        best = min(viable, key=lambda r: r.status_code) if viable else None
+        if best:
+            yield best
+        else:
+            yield from viable or batch
+
+    for record in records:
+        if url != record.key or day != record.timestamp.date():
+            yield from best_of_batch(day_records)
+
+            url = record.key
+            day = record.timestamp.date()
+            day_records.clear()
+            day_records.append(record)
+        else:
+            day_records.append(record)
+
+    if len(day_records):
+        yield from best_of_batch(day_records)
+
+
+def _identity_iterator(inputs):
+    yield from inputs
 
 
 def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
@@ -927,7 +996,8 @@ Options:
                               Can be:
                                 `none` (no skipping) or
                                 `resolved-response` (if the final response
-                                    after redirects is unchanged)
+                                    after redirects is unchanged) or
+                                `day` (attempt only import one version per day)
                               [default: resolved-response]
 --pattern <url_pattern>       A pattern to match when retrieving URLs from a
                               web-monitoring-db instance.
@@ -950,9 +1020,9 @@ Options:
         dry_run = arguments.get('--dry-run') or False
 
         skip_unchanged = arguments['--skip-unchanged']
-        if skip_unchanged not in ('none', 'response', 'resolved-response'):
+        if skip_unchanged not in ('none', 'response', 'resolved-response', 'day'):
             print('--skip-unchanged must be one of `none`, `response`, '
-                  'or `resolved-response`')
+                  '`resolved-response`, or `day`')
             return
 
         unplaybackable_path = _parse_path(arguments.get('--unplaybackable'))
