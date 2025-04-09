@@ -32,8 +32,7 @@ commands:
             . ~/venv/bin/activate
             pip install --upgrade pip
             pip install wheel
-            pip install .
-            pip install -r requirements-dev.txt
+            pip install '.[test]'
 
       # Docs dependencies are only compatible on Python 3.10+, so only install
       # them on demand.
@@ -43,7 +42,7 @@ commands:
             - run:
                 command: |
                   . ~/venv/bin/activate
-                  pip install -r requirements-docs.txt
+                  pip install '.[test,docs]'
 
       # Store bundle cache
       - save_cache:

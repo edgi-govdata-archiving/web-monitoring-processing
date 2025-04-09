@@ -1,0 +1,87 @@
+[project]
+name = "web_monitoring"
+# version = "0.0.1"
+dynamic=["version"]
+description = "Python tools and scripts for EDGI's Web Monitoring projects"
+readme = "README.md"
+maintainers = [
+  { name = "Rob Brackett", email = "rob@robbrackett.com" },
+  { name="Environmental Data Governance Initiative", email="EnviroDGI@protonmail.com" },
+]
+license = "GPL-3.0-only"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+]
+dependencies = [
+    "brotli ~=1.1.0",
+    "cchardet ==2.1.7",
+    "cloudpathlib[s3] ~=0.20.0",
+    "python-dateutil ~=2.9.0",
+    "docopt ~=0.6.2",
+    "lxml ~=5.3.0",
+    "pypdf[crypto] ~=5.1.0",
+    "PyYAML ~=6.0.2",
+    "sentry-sdk ~=1.14.0",
+    "requests ~=2.32.3",
+    "urllib3 ~=2.3.0",
+    "toolz ~=1.0.0",
+    "tqdm ~=4.67.1",
+    "warcio[all] ~=1.7.5",
+    "wayback ~=0.4.5",
+]
+
+[project.optional-dependencies]
+# For developing the package (running tests, packaging, etc.) but not needed
+# for _using_ it. Some tooling requires newer Python versions than the package
+# itself (>=3.8). This depends on the `test` extra, which _does_ work on the
+# same Python versions as the main package source.
+dev = [
+    "web_monitoring[test]",
+    "web_monitoring[docs]",
+]
+# For building documentation. These are separated from dev because there are a
+# a variety of compatibility issues with our other dev dependencies on Python
+# versions < 3.10 (which we support), so you have to install them in a separate
+# environment from the other dev dependencies.
+docs = [
+    "ipython ~=8.5",
+    "numpydoc ~=1.5",
+    "sphinx ~=5.3.0",
+    "sphinx_rtd_theme ~=1.1.1",
+]
+# For running tests.
+test = [
+    "coverage ~=7.6.10",
+    "pyflakes ~=3.2.0",
+    "pytest ~=7.2.1",
+    "vcrpy ~=7.0.0",
+    "requests-mock ~=1.12.1",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/edgi-govdata-archiving/web-monitoring-processing"
+"Source code" = "https://github.com/edgi-govdata-archiving/web-monitoring-processing"
+"Issues" = "https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues"
+
+[build-system]
+requires = ["hatchling ~=1.27", "hatch-vcs ~=0.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch]
+version.source = "vcs"
+# build.hooks.vcs.version-file = "src/web_monitoring/_version.py"
+build.hooks.vcs.version-file = "web_monitoring/_version.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [".git_archival.txt"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["web_monitoring"]
+exclude = ["web_monitoring/tests/*"]
+
+[tool.check-wheel-contents]
+toplevel = "web_monitoring"

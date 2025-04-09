@@ -16,10 +16,14 @@ WORKDIR /app
 
 # Copy the requirements.txt alone into the container at /app
 # so that they can be cached more aggressively than the rest of the source.
-ADD requirements.txt /app
+ADD pyproject.toml /app
+ADD README.md /app
+RUN mkdir /app/web_monitoring
 
+ENV SETUPTOOLS_SCM_PRETEND_VERSION=1.0.0
 # Install any needed packages specified in requirements.txt
-RUN pip install --user --trusted-host pypi.python.org -r requirements.txt
+# RUN pip install --user --trusted-host pypi.python.org -r requirements.txt
+RUN pip install --user --trusted-host pypi.python.org .
 
 # Copy the rest of the source.
 ADD . /app
