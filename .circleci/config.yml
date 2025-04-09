@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   primary-python-version:
     type: string
-    default: "3.10.7"
+    default: "3.10.16"
 
 commands:
   setup_pip:
@@ -19,8 +19,8 @@ commands:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "pyproject.toml" }}
-            - processing-{{ arch }}-<< parameters.python-version >>-v3-
+            - processing-{{ arch }}-<< parameters.python-version >>-v4-{{ checksum "pyproject.toml" }}
+            - processing-{{ arch }}-<< parameters.python-version >>-v4-
 
       # Bundle install dependencies
       - run:
@@ -44,7 +44,7 @@ commands:
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-<< parameters.python-version >>-v3-{{ checksum "pyproject.toml" }}
+          key: processing-{{ arch }}-<< parameters.python-version >>-v4-{{ checksum "pyproject.toml" }}
           paths:
             - venv
 
