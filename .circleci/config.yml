@@ -19,8 +19,8 @@ commands:
       - checkout
       - restore_cache:
           keys:
-            - processing-{{ arch }}-<< parameters.python-version >>-v4-{{ checksum "pyproject.toml" }}
-            - processing-{{ arch }}-<< parameters.python-version >>-v4-
+            - processing-{{ arch }}-<< parameters.python-version >>-v5-{{ checksum "pyproject.toml" }}
+            - processing-{{ arch }}-<< parameters.python-version >>-v5-
 
       # Bundle install dependencies
       - run:
@@ -29,7 +29,6 @@ commands:
             python -m venv ~/venv
             . ~/venv/bin/activate
             pip install --upgrade pip
-            pip install wheel
             pip install '.[test]'
 
       # Docs dependencies are only compatible on Python 3.10+, so only install
@@ -44,7 +43,7 @@ commands:
 
       # Store bundle cache
       - save_cache:
-          key: processing-{{ arch }}-<< parameters.python-version >>-v4-{{ checksum "pyproject.toml" }}
+          key: processing-{{ arch }}-<< parameters.python-version >>-v5-{{ checksum "pyproject.toml" }}
           paths:
             - venv
 
