@@ -62,6 +62,12 @@ test = [
     "requests-mock ~=1.12.1",
 ]
 
+[project.scripts]
+wm = "web_monitoring.cli.cli:main"
+wm-warc-import = "web_monitoring.cli.warc_import:main"
+wm-ia-healthcheck = "web_monitoring.cli.ia_healthcheck:main"
+wm-annotations-import = "web_monitoring.cli.annotations_import:main"
+
 [project.urls]
 "Homepage" = "https://github.com/edgi-govdata-archiving/web-monitoring-processing"
 "Source code" = "https://github.com/edgi-govdata-archiving/web-monitoring-processing"
