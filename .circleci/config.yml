@@ -15,6 +15,9 @@ commands:
         description: Install docs dependencies
         type: boolean
         default: false
+      install-extras:
+        type: string
+        default: ''
     steps:
       - checkout
       - restore_cache:
@@ -22,26 +25,22 @@ commands:
             - processing-{{ arch }}-<< parameters.python-version >>-v5-{{ checksum "pyproject.toml" }}
             - processing-{{ arch }}-<< parameters.python-version >>-v5-
 
-      # Bundle install dependencies
       - run:
           name: Install Dependencies
           command: |
+            extras='test'
+            if [[ -n '<< parameters.install-docs >>' ]]; then
+              extras="${extras},docs"
+            fi
+            if [[ -n '<< parameters.install-extras >>' ]]; then
+              extras="${extras},<< parameters.install-extras >>"
+            fi
+
             python -m venv ~/venv
             . ~/venv/bin/activate
             pip install --upgrade pip
-            pip install '.[test]'
+            pip install ".[${extras}]"
 
-      # Docs dependencies are only compatible on Python 3.10+, so only install
-      # them on demand.
-      - when:
-          condition: << parameters.install-docs >>
-          steps:
-            - run:
-                command: |
-                  . ~/venv/bin/activate
-                  pip install '.[test,docs]'
-
-      # Store bundle cache
       - save_cache:
           key: processing-{{ arch }}-<< parameters.python-version >>-v5-{{ checksum "pyproject.toml" }}
           paths:
@@ -52,6 +51,9 @@ jobs:
     parameters:
       python-version:
         type: string
+      extras:
+        type: string
+        default: ''
     working_directory: ~/web-monitoring-processing
     docker:
       - image: cimg/python:<< parameters.python-version >>
@@ -59,6 +61,7 @@ jobs:
       - checkout
       - setup_pip:
           python-version: << parameters.python-version >>
+          install-extras: << parameters.extras >>
       - run:
           name: Tests
           command: |
@@ -141,7 +144,11 @@ workflows:
       - test:
           matrix:
             parameters:
-              python-version: ["3.10"]
+              python-version: ["3.10", "3.11", "3.12", "3.13"]
+              extras: ["", "cchardet"]
+            exclude:
+              - python-version: "3.13"
+                extras: "cchardet"
       - lint
       - docs
       - build_docker
