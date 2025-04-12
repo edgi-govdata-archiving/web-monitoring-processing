@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import csv
 from dataclasses import asdict, dataclass
-from docopt import docopt
 import json
 import logging
 import math
@@ -398,49 +397,43 @@ class AuthorNameMapper:
 
 
 def main():
+    from argparse import ArgumentParser
+
     log_level = os.getenv('LOG_LEVEL', 'INFO')
     logging.basicConfig(level=log_level)
 
-    doc = """Add analyst annotations from a csv file to the Web Monitoring db.
+    parser = ArgumentParser(description='Add analyst annotations from a csv file to the Web Monitoring db.')
+    parser.add_argument('csv_path', help='Path to CSV to read annotations from.')
+    parser.add_argument('--is-important-changes', action='store_true', help=(
+        'Was this CSV generated from an Important Changes sheet?'
+    ))
+    parser.add_argument('--commit', action='store_true', help='Send annotations to DB.')
+    parser.add_argument('--schema', choices=['v1', 'v2'], default='v2', help='Spreadsheet schema to use.')
+    parser.add_argument('--author-map', help='Use this CSV to map annotation author names to IDs.')
+    parser.add_argument('--start', type=int, default=0, help='Start from this row.')
+    parser.add_argument('--end', type=int, default=math.inf, help='End at this row.')
+    args = parser.parse_args()
 
-Usage:
-path/to/annotations_import.py <csv_path> [options]
-
-Options:
---is-important-changes  Was this CSV generated from an Important Changes sheet?
---commit                Send annotatins to DB
---schema <version>      Should be 'v1' or 'v2'
---author-map <map_path> Use this CSV to map annotation author names to IDs
---start <start_row>
---end <end_row>
-"""
-    arguments = docopt(doc)
-    is_important_changes = arguments['--is-important-changes']
-    commit = arguments['--commit']
-    schema_version = arguments.get('--schema') or 'v2'
-    csv_path = arguments['<csv_path>']
-    start_row = int(arguments.get('--start') or 0)
-    end_row = int(arguments.get('--end') or 0) or math.inf
     author_map = None
-    if arguments.get('--author-map'):
-        author_map = AuthorNameMapper(arguments.get('--author-map'))
+    if args.author_map:
+        author_map = AuthorNameMapper(args.author_map)
 
-    if schema_version == 'v1':
-        sheet = V1ChangesSheet(csv_path, is_important_changes)
-    elif schema_version == 'v2':
-        sheet = V2ChangesSheet(csv_path, is_important_changes)
+    if args.schema == 'v1':
+        sheet = V1ChangesSheet(args.csv_path, args.is_important_changes)
+    elif args.schema == 'v2':
+        sheet = V2ChangesSheet(args.csv_path, args.is_important_changes)
     else:
-        logger.error(f'Unknown schema: "{schema_version}"')
+        logger.error(f'Unknown schema: "{args.schema}"')
         exit(1)
 
     client = db.Client.from_env()
     for index, row in tqdm(enumerate(sheet.parse()), unit=' rows'):
-        if start_row > row.number:
+        if args.start_row > row.number:
             continue
-        elif row.number >= end_row:
+        elif row.number >= args.end_row:
             break
 
-        if commit and index > 0 and index % 50 == 0:
+        if args.commit and index > 0 and index % 50 == 0:
             logger.info('Pausing for 15s to give server breathing room...')
             sleep(15)
 
@@ -449,7 +442,7 @@ Options:
             if author and author_map:
                 row.annotation['annotation_author'] = author_map.get(author)['id']
 
-            if commit:
+            if args.commit:
                 try:
                     for existing in client.get_annotations(**row.change_ids):
                         if existing['annotation'] == row.annotation:
