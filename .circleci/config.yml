@@ -29,7 +29,7 @@ commands:
           name: Install Dependencies
           command: |
             extras='test'
-            if [[ -n '<< parameters.install-docs >>' ]]; then
+            if [[ '<< parameters.install-docs >>' == 'true' ]]; then
               extras="${extras},docs"
             fi
             if [[ -n '<< parameters.install-extras >>' ]]; then
