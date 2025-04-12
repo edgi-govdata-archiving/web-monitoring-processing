@@ -31,7 +31,7 @@ RUN pip install --user --trusted-host pypi.python.org .
 ADD . /app
 
 # Install package.
-RUN pip install --user .
+RUN pip install --user '.[cchardet]'
 
 
 # Deployable Image w/out Build-Only Dependencies ------------------------------

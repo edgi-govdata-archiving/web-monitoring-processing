@@ -1,4 +1,3 @@
-import cchardet
 from cloudpathlib import S3Client, S3Path
 import codecs
 from datetime import datetime, timedelta, timezone
@@ -18,6 +17,11 @@ import sys
 import threading
 import time
 from typing import Generator, Iterable, TypeVar
+
+try:
+    from cchardet import detect as detect_charset
+except ImportError:
+    from charset_normalizer import detect as detect_charset
 
 
 logger = logging.getLogger(__name__)
@@ -74,11 +78,9 @@ def detect_encoding(content, headers, default='utf-8'):
 
     # Make an educated guess.
     if not encoding:
-        # try to identify encoding using cchardet. Use up to 18kb of the
-        # content for detection. Its not necessary to use the full content
-        # as it could be huge. Also, if you use too little, detection is not
-        # accurate.
-        detected = cchardet.detect(content[:18432])
+        # Try to identify encoding. Use up to 18kb of the content, since it
+        # could be huge otherwise (this should be enough for accuracy).
+        detected = detect_charset(content[:18432])
         if detected:
             detected_encoding = detected.get('encoding')
             if detected_encoding:
