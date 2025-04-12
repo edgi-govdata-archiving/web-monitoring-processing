@@ -21,7 +21,6 @@ dependencies = [
     "charset_normalizer ~=3.4.1",
     "cloudpathlib[s3] ~=0.20.0",
     "python-dateutil ~=2.9.0",
-    "docopt ~=0.6.2",
     "lxml ~=5.3.0",
     "pypdf[crypto] ~=5.1.0",
     "PyYAML ~=6.0.2",

@@ -46,7 +46,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from web_monitoring.utils import cli_datetime, detect_encoding
 import dateutil.parser
-from docopt import docopt
 from itertools import islice
 import json
 import logging
@@ -911,88 +910,87 @@ def validate_db_credentials():
 
 
 def main():
-    doc = f"""Command Line Interface to the web_monitoring Python package
+    from argparse import ArgumentParser
 
-Usage:
-wm import ia <url> [--from <from_date>] [--to <to_date>] [--tag <tag>...] [--maintainer <maintainer>...] [options]
-wm import ia-known-pages [--from <from_date>] [--to <to_date>] [--pattern <url_pattern>] [--tag <tag>...] [--maintainer <maintainer>...] [options]
-
-Options:
--h --help                     Show this screen.
---version                     Show version.
---maintainer <maintainer>     Name of entity that maintains the imported pages.
-                              Repeat to add multiple maintainers.
---tag <tag>                   Tags to apply to pages. Repeat for multiple tags.
---skip-unchanged <skip_type>  Skip consecutive captures of the same content.
-                              Can be:
-                                `none` (no skipping) or
-                                `resolved-response` (if the final response
-                                    after redirects is unchanged)
-                              [default: resolved-response]
---pattern <url_pattern>       A pattern to match when retrieving URLs from a
-                              web-monitoring-db instance.
---parallel <parallel_count>   Number of parallel network requests to support.
-                              [default: {PARALLEL_REQUESTS}]
---unplaybackable <play_path>  A file in which to list memento URLs that can not
-                              be played back. When importing is complete, a
-                              list of unplaybackable mementos will be written
-                              to this file. If it exists before importing,
-                              memento URLs listed in it will be skipped.
---precheck                    Check the list of versions in web-monitoring-db
-                              and avoid re-importing duplicates.
---dry-run                     Don't upload data to web-monitoring-db.
---archive-s3 <bucket>         Pre-upload response bodies to this S3 bucket
-                              before sending import data to web-monitoring-db.
-"""
     sentry_sdk.init()
-    arguments = docopt(doc, version='0.0.1')
-    if arguments['import']:
-        dry_run = arguments.get('--dry-run') or False
 
-        skip_unchanged = arguments['--skip-unchanged']
-        if skip_unchanged not in ('none', 'response', 'resolved-response'):
-            print('--skip-unchanged must be one of `none`, `response`, '
-                  'or `resolved-response`')
-            return
+    parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
+    subparsers = parser.add_subparsers()
 
-        unplaybackable_path = _parse_path(arguments.get('--unplaybackable'))
-        if not dry_run:
+    import_ia = subparsers.add_parser('import-ia', help='Import versions from the Internet Archive.')
+    import_ia.set_defaults(command='import-ia')
+    import_ia.add_argument('url', help='A URL to import or "active-pages" to import all active URLs from web-monitoring-db.')
+    import_ia.add_argument('--pattern', help='When importing "active-pages", only import URLs matching this pattern.')
+    import_ia.add_argument('--from', dest='_from', type=cli_datetime, help='Find versions after this date/time.')
+    import_ia.add_argument('--to', type=cli_datetime, help='Find versions before this date/time.')
+    import_ia.add_argument('--tag', action='append', help='Tags to apply to pages. Repeat for multiple tags.')
+    import_ia.add_argument('--maintainer', action='append', help=(
+        'Name of entity that maintains the imported pages. '
+        'Repeat to add multiple maintainers.'
+    ))
+    import_ia.add_argument('--skip-unchanged', choices=['none', 'resolved-response'], help=(
+        'Skip consecutive captures of the same content. Options: '
+        '`none` (no skipping), `resolved-response` (skip if the final '
+        'response after redirects is unchanged)'
+    ))
+    import_ia.add_argument('--parallel', type=int, default=PARALLEL_REQUESTS, help=(
+        'Number of parallel network requests to support.'
+    ))
+    import_ia.add_argument('--unplaybackable', help=(
+        'A file in which to list memento URLs that can not be played back. '
+        'When importing is complete, a list of unplaybackable mementos will '
+        'be written to this file. If it exists before importing, memento URLs '
+        'listed in it will be skipped.'
+    ))
+    import_ia.add_argument('--precheck', action='store_true', help=(
+        'Check the list of versions in web-monitoring-db before starting and '
+        'avoid loading IA mementos for already recorded versions.'
+    ))
+    import_ia.add_argument('--dry-run', action='store_true', help="Don't upload data to web-monitoring-db.")
+    import_ia.add_argument('--archive-s3', help=(
+        'Pre-upload response bodies to this S3 bucket before sending import '
+        'data to web-monitoring-db.'
+    ))
+    args = parser.parse_args()
+
+    if args.command == 'import-ia':
+        unplaybackable_path = _parse_path(args.unplaybackable)
+        if not args.dry_run:
             validate_db_credentials()
 
         archive_storage = None
-        archive_bucket = arguments.get('--archive-s3')
-        if archive_bucket and not dry_run:
-            archive_storage = utils.S3HashStore(archive_bucket, extra_args={
+        if args.archive_s3 and not args.dry_run:
+            archive_storage = utils.S3HashStore(args.archive_s3, extra_args={
                 'ACL': 'public-read',
                 # Ideally, we'd gzip stuff, but the DB needs to learn to
                 # correctly read gzipped items first.
                 # 'ContentEncoding': 'gzip'
-            }, dry_run=dry_run)
+            }, dry_run=args.dry_run)
 
         start_time = datetime.now(tz=timezone.utc)
-        if arguments['ia']:
-            import_ia_urls(
-                urls=[arguments['<url>']],
-                maintainers=arguments.get('--maintainer'),
-                tags=arguments.get('--tag'),
-                from_date=cli_datetime(arguments['<from_date>']),
-                to_date=cli_datetime(arguments['<to_date>']) if arguments['<to_date>'] else None,
-                skip_unchanged=skip_unchanged,
-                unplaybackable_path=unplaybackable_path,
-                dry_run=dry_run,
-                archive_storage=archive_storage)
-        elif arguments['ia-known-pages']:
+        if args.url == 'active-pages':
             import_ia_db_urls(
-                from_date=cli_datetime(arguments['<from_date>']),
-                to_date=cli_datetime(arguments['<to_date>']) if arguments['<to_date>'] else None,
-                maintainers=arguments.get('--maintainer'),
-                tags=arguments.get('--tag'),
-                skip_unchanged=skip_unchanged,
-                url_pattern=arguments.get('--pattern'),
-                worker_count=int(arguments.get('--parallel')),
+                from_date=args._from,
+                to_date=args.to,
+                maintainers=args.maintainer,
+                tags=args.tag,
+                skip_unchanged=args.skip_unchanged,
+                url_pattern=args.pattern,
+                worker_count=args.parallel,
                 unplaybackable_path=unplaybackable_path,
-                dry_run=dry_run,
-                precheck_versions=arguments.get('--precheck'),
+                dry_run=args.dry_run,
+                precheck_versions=args.precheck,
+                archive_storage=archive_storage)
+        else:
+            import_ia_urls(
+                urls=[args.url],
+                maintainers=args.maintainer,
+                tags=args.tag,
+                from_date=args._from,
+                to_date=args.to,
+                skip_unchanged=args.skip_unchanged,
+                unplaybackable_path=unplaybackable_path,
+                dry_run=args.dry_run,
                 archive_storage=archive_storage)
 
         end_time = datetime.now(tz=timezone.utc)
