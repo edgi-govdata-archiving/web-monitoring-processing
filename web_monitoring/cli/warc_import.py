@@ -400,6 +400,9 @@ def main():
     parser.add_argument('--limit', type=int, help='Stop after this many records')
     parser.add_argument('--update', action='store_const', default='skip', const='replace',
                         help='Update existing records in DB instead of skipping')
+    parser.add_argument('--progress', action='store_true',
+                        help='Show progress bar (only for non-interactive '
+                             'sessions; it shows automatically on a TTY).')
     args = parser.parse_args()
 
     # TODO: we'll probably eventually want to support WARCs from IA or maybe
@@ -430,7 +433,8 @@ def main():
                 for version, body in versions)
 
     import_ids = []
-    with tqdm_logging_redirect(versions, total=total) as progress:
+    hide_progress = False if args.progress else None
+    with tqdm_logging_redirect(versions, total=total, disable=hide_progress) as progress:
         if args.dry_run:
             for version, _ in progress:
                 print(json.dumps(version))
