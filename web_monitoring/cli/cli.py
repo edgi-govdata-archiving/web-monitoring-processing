@@ -724,6 +724,13 @@ def _filter_daily_versions(versions):
 
 
 def _filter_daily_cdx(records):
+    """
+    Filter CDX records to one per day per URL when possible. If all CDX
+    records for a given day have missing or 3xx status codes, we can't
+    meaningfully filter, so in that case this will let all CDX records through
+    for that day. When choosing the best record for the day, this will
+    prioritize the earliest, lowest status code (e.g. 200 instead of 400).
+    """
     url = ''
     day = None
     day_records = []
