@@ -4,6 +4,7 @@
 # The purpose is to test that the Python API can exercise all parts of the REST
 # API. It is not meant to thoroughly check the correctness of the REST API.
 from datetime import datetime, timedelta, timezone
+import json
 import os
 from pathlib import Path
 import pytest
@@ -313,6 +314,49 @@ def test_add_versions():
     # lines matches the number of new_version_ids
     import_ids = cli.add_versions(versions, batch_size=5)
     global_stash['import_ids'] = import_ids
+
+
+def test_add_versions_for_network_errors(requests_mock):
+    def json_callback(request, _context):
+        data = json.loads(request.body)
+        if data['network_error'] != 'ERR_NAME_NOT_RESOLVED':
+            raise ValueError(f'Received wrong POST data: `{request.body}`')
+        return {'data': {'id': 12345}}
+
+    requests_mock.post('/api/v0/imports', json=json_callback)
+    cli = Client(**AUTH)
+    cli.add_versions([{
+        'url': 'https://example.com/hello',
+        'capture_time': TIME,
+        'network_error': 'ERR_NAME_NOT_RESOLVED',
+        'source_type': 'edgi_crawl',
+    }])
+
+
+def test_add_versions_mixed_non_error_fields(requests_mock):
+    requests_mock.post('/api/v0/imports', json={'data': {'id': 12345}})
+    cli = Client(**AUTH)
+
+    with pytest.raises(ValueError):
+        cli.add_versions([{
+            'url': 'https://example.com/hello',
+            'capture_time': TIME,
+            'network_error': 'ERR_NAME_NOT_RESOLVED',
+            'body_url': 'https://somewhere.com/archive_data',
+            'source_type': 'edgi_crawl',
+        }])
+
+
+def test_add_versions_missing_required_fields(requests_mock):
+    requests_mock.post('/api/v0/imports', json={'data': {'id': 12345}})
+    cli = Client(**AUTH)
+
+    with pytest.raises(ValueError):
+        cli.add_versions([{
+            'url': 'https://example.com/hello',
+            'capture_time': TIME,
+            'source_type': 'edgi_crawl',
+        }])
 
 
 @db_vcr.use_cassette()
