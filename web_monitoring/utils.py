@@ -153,6 +153,9 @@ def extract_pdf_title(content_bytes, password=''):
         return pdf.metadata.title if pdf.metadata else None
     except PyPdfError:
         return None
+    except Exception as error:
+        logger.exception(error)
+        return None
 
 
 def hash_content(content_bytes):
