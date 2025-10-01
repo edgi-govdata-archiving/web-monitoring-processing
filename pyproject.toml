@@ -55,7 +55,7 @@ docs = [
 ]
 # For running tests.
 test = [
-    "coverage ~=7.6.10",
+    "coverage ~=7.10.7",
     "pyflakes ~=3.4.0",
     "pytest ~=8.4.2",
     "vcrpy ~=7.0.0",
