@@ -47,6 +47,10 @@ def _tzaware_isoformat(dt):
     return dt.isoformat()
 
 
+def _str_or_none(value):
+    return None if value is None else str(value)
+
+
 class WebMonitoringDbError(Exception):
     ...
 
@@ -125,12 +129,12 @@ def _build_version(*, page_id, uuid, capture_time, body_url, body_hash,
     return version
 
 
-def _build_importable_version(*, url, uuid=None, capture_time, body_url,
-                              body_hash, source_type, title,
+def _build_importable_version(*, url, uuid=None, capture_time, body_url=None,
+                              body_hash=None, source_type, title=None,
                               page_maintainers=None, page_tags=None,
                               source_metadata=None, status=None,
                               media_type=None, headers=None,
-                              content_length=None):
+                              content_length=None, network_error=None):
     """
     Build a Version dict from parameters, performing some validation.
 
@@ -141,20 +145,27 @@ def _build_importable_version(*, url, uuid=None, capture_time, body_url,
         capture_time = _tzaware_isoformat(capture_time)
     if source_metadata is None:
         source_metadata = {}
+    if network_error:
+        if body_url is not None or body_hash is not None:
+            raise ValueError('Network errors cannot include `body_url` or `body_hash`')
+    elif body_url is None or body_hash is None:
+        raise ValueError('You must set either `network_error` or `body_url` and `body_hash`')
+
     version = {'url': url,
                'uuid': uuid,
                'capture_time': capture_time,
-               'body_url': str(body_url),
-               'body_hash': str(body_hash),
+               'body_url': _str_or_none(body_url),
+               'body_hash': _str_or_none(body_hash),
                'source_type': str(source_type),
-               'title': str(title),
+               'title': title,
                'source_metadata': source_metadata,
-               'status': str(status),
+               'status': _str_or_none(status),
                'page_maintainers': page_maintainers,
                'page_tags': page_tags,
                'media_type': media_type,
                'headers': headers,
-               'content_length': content_length}
+               'content_length': content_length,
+               'network_error': _str_or_none(network_error)}
     return version
 
 
