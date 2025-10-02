@@ -14,15 +14,6 @@ from .. import db
 from ..utils import cli_datetime
 
 
-# The current Sentry client truncates string values at 512 characters. It
-# appears that monkey-patching this module global is only way to change it and
-# that doing so is the intended method:
-#   https://github.com/getsentry/sentry-python/blob/5f9f7c469af16a731948a482ea162c2348800999/sentry_sdk/utils.py#L662-L664
-# That doesn't seem great, so I've asked about this on their forums:
-#   https://forum.sentry.io/t/some-stack-traces-are-truncated/7309/4
-sentry_sdk.utils.MAX_STRING_LENGTH = 2048
-
-
 def sample_monitored_urls(sample_size):
     """
     Get a random sample of `sample_size` URLs that are tracked in a Web
@@ -91,18 +82,16 @@ def output_results(statuses):
 
     # At this point, everything is OK; we don't need breadcrumbs and other
     # extra noise to come with the message we are about to send.
-    with sentry_sdk.configure_scope() as scope:
-        scope.clear()
-
-    if healthy_links + unhealthy_links == 0:
-        print('Failed to sampled any pages!')
-        sentry_sdk.capture_message('Failed to sampled any pages!')
-    else:
-        message = f'\nFound: {healthy_links} healthy links and {unhealthy_links} unhealthy links.'
-        print(message)
-        if unhealthy_links > 0:
-            log_string = '\n'.join(logs)
-            sentry_sdk.capture_message(f'{message}\n{log_string}')
+    with sentry_sdk.isolation_scope():
+        if healthy_links + unhealthy_links == 0:
+            print('Failed to sampled any pages!')
+            sentry_sdk.capture_message('Failed to sampled any pages!')
+        else:
+            message = f'\nFound: {healthy_links} healthy links and {unhealthy_links} unhealthy links.'
+            print(message)
+            if unhealthy_links > 0:
+                log_string = '\n'.join(logs)
+                sentry_sdk.capture_message(f'{message}\n{log_string}')
 
 
 def main():
