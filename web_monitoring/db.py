@@ -264,9 +264,9 @@ class Client:
         https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry
         Default: ``(2, 2)``
     """
-    def __init__(self, email=None, password=None, url=DEFAULT_URL, timeout=None,
+    def __init__(self, email=None, password=None, url=None, timeout=None,
                  retries=None):
-        clean_url = url.rstrip('/')
+        clean_url = (url or DEFAULT_URL).rstrip('/')
         self._api_url = f'{clean_url}/api/v0'
         self._base_url = clean_url
         self._session = DbSession(retries=retries, timeout=timeout)
