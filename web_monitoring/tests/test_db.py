@@ -3,11 +3,13 @@
 
 # The purpose is to test that the Python API can exercise all parts of the REST
 # API. It is not meant to thoroughly check the correctness of the REST API.
+from base64 import b64decode
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 import json
-import os
 from pathlib import Path
 import pytest
+from requests import PreparedRequest
 from unittest.mock import patch
 import urllib3.util
 from web_monitoring.db import (Client,
@@ -15,7 +17,8 @@ from web_monitoring.db import (Client,
                                UnauthorizedCredentials,
                                DEFAULT_RETRIES,
                                DEFAULT_BACKOFF,
-                               DEFAULT_TIMEOUT)
+                               DEFAULT_TIMEOUT,
+                               DEFAULT_URL)
 import vcr
 
 
@@ -49,26 +52,60 @@ AUTH = {'url': "http://localhost:3000",
         'password': "PASSWORD"}
 
 
-def test_partial_creds():
-    try:
-        env = os.environ.copy()
-        os.environ.clear()
+def auth_matcher(match_user, match_password) -> Callable[[PreparedRequest], bool]:
+    def matcher(request: PreparedRequest) -> bool:
+        raw_auth = request.headers["authorization"]
+        if match_user or match_password:
+            if raw_auth.startswith('Basic '):
+                user, _, password = b64decode(raw_auth[6:]).decode().partition(':')
+                return user == match_user and password == match_password
+            return False
+        else:
+            return raw_auth is None
 
-        # Should work with no credentials.
-        Client.from_env()
+    return matcher
 
-        # Should fail with partial credentials.
+
+class TestFromEnv:
+    @pytest.fixture(autouse=True)
+    def clear_env(self, monkeypatch):
+        monkeypatch.delenv('WEB_MONITORING_DB_URL', raising=False)
+        monkeypatch.delenv('WEB_MONITORING_DB_EMAIL', raising=False)
+        monkeypatch.delenv('WEB_MONITORING_DB_PASSOWRD', raising=False)
+
+    @pytest.fixture(autouse=True)
+    def get_page_x(self, requests_mock):
+        requests_mock.get(f'{DEFAULT_URL}/api/v0/pages/x', json={'data': {'uuid': 'x'}})
+
+    def test_no_env_vars(self):
+        client = Client.from_env()
+        assert client.get_page('x') == {'data': {'uuid': 'x'}}
+
+    def test_all_env_vars(self, monkeypatch, requests_mock):
+        monkeypatch.setenv('WEB_MONITORING_DB_URL', AUTH['url'])
+        monkeypatch.setenv('WEB_MONITORING_DB_EMAIL', AUTH['email'])
+        monkeypatch.setenv('WEB_MONITORING_DB_PASSWORD', AUTH['password'])
+
+        requests_mock.get(
+            f'{AUTH["url"]}/api/v0/pages/x',
+            additional_matcher=auth_matcher(AUTH['email'], AUTH['password']),
+            json={'data': {'uuid': 'x'}}
+        )
+
+        client = Client.from_env()
+        assert client.get_page('x') == {'data': {'uuid': 'x'}}
+
+    def test_errors_with_partial_credentials(self, monkeypatch):
+        monkeypatch.setenv('WEB_MONITORING_DB_EMAIL', AUTH['email'])
+
         with pytest.raises(MissingCredentials):
-            os.environ.update({'WEB_MONITORING_DB_EMAIL': AUTH['email']})
             Client.from_env()
 
-        # Should work with complete credentials.
-        os.environ.update({'WEB_MONITORING_DB_URL': AUTH['url'],
-                           'WEB_MONITORING_DB_EMAIL': AUTH['email'],
-                           'WEB_MONITORING_DB_PASSWORD': AUTH['password']})
-        Client.from_env()
-    finally:
-        os.environ.update(env)
+    def test_ignores_empty_DB_URL(self, monkeypatch):
+        monkeypatch.setenv('WEB_MONITORING_DB_URL', '')
+
+        client = Client.from_env()
+        assert client.get_page('x') == {'data': {'uuid': 'x'}}
 
 
 # DEPRECATED
