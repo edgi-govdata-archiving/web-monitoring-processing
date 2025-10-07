@@ -17,6 +17,7 @@ import sys
 import threading
 import time
 from typing import Generator, Iterable, TypeVar
+from urllib.parse import ParseResult, urlparse
 
 try:
     from cchardet import detect as detect_charset
@@ -161,6 +162,43 @@ def extract_pdf_title(content_bytes, password=''):
 def hash_content(content_bytes):
     "Create a version_hash for the content of a snapshot."
     return hashlib.sha256(content_bytes).hexdigest()
+
+
+def normalize_netloc(url: ParseResult) -> str:
+    """
+    Get a parsed URL's netloc in a normalized form.
+    """
+    assert url.hostname
+
+    result = ''
+    if url.username:
+        result += url.username
+        if url.password:
+            result += ':' + url.password
+        result += '@'
+    result += url.hostname.lower()
+    if (
+        url.port
+        and not (url.scheme == 'https' and url.port == 443)
+        and not (url.scheme == 'http' and url.port == 80)
+    ):
+        result += f':{url.port}'
+
+    return result
+
+
+def normalize_url(url: str) -> str:
+    """
+    Normalize a URL into an unambiguous, standardized form. The output of this
+    should always be handled by a server or HTTP library exactly the same as
+    the input would have been.
+    """
+    parsed = urlparse(url)
+    return parsed._replace(
+        netloc=normalize_netloc(parsed),
+        path=(parsed.path or '/'),
+        fragment=''
+    ).geturl()
 
 
 class RateLimit:
