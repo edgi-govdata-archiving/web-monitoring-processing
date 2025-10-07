@@ -498,11 +498,11 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        page_object : dict
         """
         url = f'/pages/{page_id}'
         result = self.request_json(GET, url)
-        return result
+        return result['data']
 
 
     ### VERSIONS ###
@@ -685,13 +685,13 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        version_object : dict
         """
         url = f'/versions/{version_id}'
         params = {'include_change_from_previous': include_change_from_previous,
                   'include_change_from_earliest': include_change_from_earliest}
         result = self.request_json(GET, url, params=params)
-        return result
+        return result['data']
 
     def add_version(self, *, page_id, capture_time, body_url, body_hash,
                     source_type, title, uuid=None, source_metadata=None):
@@ -826,11 +826,10 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
                     # expect HTTPErrors, so we'll just warn and hope that
                     # everything works in the second pass.
                     try:
-                        result = self.get_import_status(import_id)
+                        data = self.get_import_status(import_id)
                     except requests.exceptions.HTTPError as exc:
                         warnings.warn("Ignoring Exception: {}".format(exc))
                         continue
-                    data = result['data']
                     if data['status'] == 'complete':
                         import_ids.remove(import_id)
                         job_errors = data['processing_errors']
@@ -853,10 +852,10 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        import_object : dict
         """
         url = f'/imports/{import_id}'
-        return self.request_json(GET, url)
+        return self.request_json(GET, url)['data']
 
     ### CHANGES AND ANNOTATIONS ###
 
@@ -921,12 +920,12 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        change_object : dict
         """
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
         result = self.request_json(GET, url)
-        return result
+        return result['data']
 
     def list_annotations(self, *, page_id, to_version_id, from_version_id='',
                          include_total=False):
@@ -1003,11 +1002,12 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        annotation_object : dict
         """
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations')
-        return self.request_json(POST, url, data=annotation)
+        result = self.request_json(POST, url, data=annotation)
+        return {**result['data'], '_links': result['links']}
 
     def get_annotation(self, *, annotation_id, page_id, to_version_id,
                        from_version_id=''):
@@ -1025,13 +1025,13 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        annotation_object : dict
         """
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}/annotations/'
                f'{annotation_id}')
         result = self.request_json(GET, url)
-        return result
+        return {**result['data'], '_links': result['links']}
 
     ### USERS ###
 
@@ -1060,10 +1060,8 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         -------
         content : bytes
         """
-        db_result = self.get_version(version_id)
-        # TODO: remove fallback once API migration is done:
-        # https://github.com/edgi-govdata-archiving/web-monitoring-db/issues/776
-        content_url = db_result['data'].get('body_url', db_result['data'].get('uri'))
+        info = self.get_version(version_id)
+        content_url = info.get('body_url')
         # override the session-level "accept: json" header
         response = self.request(GET, content_url, headers={'accept': None})
         if response.headers.get('Content-Type', '').startswith('text/'):
@@ -1084,7 +1082,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Returns
         -------
-        response : dict
+        version_object : dict
         """
         versions = list(self.get_versions(
             source_type='versionista',
@@ -1095,9 +1093,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
             matches = [v["uuid"] for v in versions]
             raise Exception(f'Multiple Versions match the versionista_id {versionista_id}. '
                             f'Their web-monitoring-db IDs are: {matches}')
-        # Make result look like the result of `get_version` rather than the
-        # result of `get_versions`.
-        return {'data': versions[0]}
+        return versions[0]
 
     def validate_credentials(self):
         """

@@ -79,7 +79,7 @@ class TestFromEnv:
 
     def test_no_env_vars(self):
         client = Client.from_env()
-        assert client.get_page('x') == {'data': {'uuid': 'x'}}
+        assert client.get_page('x') == {'uuid': 'x'}
 
     def test_all_env_vars(self, monkeypatch, requests_mock):
         monkeypatch.setenv('WEB_MONITORING_DB_URL', AUTH['url'])
@@ -93,7 +93,7 @@ class TestFromEnv:
         )
 
         client = Client.from_env()
-        assert client.get_page('x') == {'data': {'uuid': 'x'}}
+        assert client.get_page('x') == {'uuid': 'x'}
 
     def test_errors_with_partial_credentials(self, monkeypatch):
         monkeypatch.setenv('WEB_MONITORING_DB_EMAIL', AUTH['email'])
@@ -105,7 +105,7 @@ class TestFromEnv:
         monkeypatch.setenv('WEB_MONITORING_DB_URL', '')
 
         client = Client.from_env()
-        assert client.get_page('x') == {'data': {'uuid': 'x'}}
+        assert client.get_page('x') == {'uuid': 'x'}
 
 
 # DEPRECATED
@@ -216,8 +216,8 @@ def test_get_pages_includes_relations():
 @db_vcr.use_cassette()
 def test_get_page():
     cli = Client(**AUTH)
-    res = cli.get_page(PAGE_ID)
-    assert res['data']['uuid'] == PAGE_ID
+    data = cli.get_page(PAGE_ID)
+    assert data['uuid'] == PAGE_ID
 
 
 # DEPRECATED
@@ -273,23 +273,23 @@ def test_get_versions_includes_changes():
 @db_vcr.use_cassette()
 def test_get_version():
     cli = Client(**AUTH)
-    res = cli.get_version(TO_VERSION_ID)
-    assert res['data']['uuid'] == TO_VERSION_ID
-    assert res['data']['page_uuid'] == PAGE_ID
+    data = cli.get_version(TO_VERSION_ID)
+    assert data['uuid'] == TO_VERSION_ID
+    assert data['page_uuid'] == PAGE_ID
 
     # Test relations
-    res = cli.get_version(TO_VERSION_ID, include_change_from_previous=True,
-                          include_change_from_earliest=True)
-    assert 'change_from_previous' in res['data']
-    assert 'change_from_earliest' in res['data']
+    data = cli.get_version(TO_VERSION_ID, include_change_from_previous=True,
+                           include_change_from_earliest=True)
+    assert 'change_from_previous' in data
+    assert 'change_from_earliest' in data
 
 
 @db_vcr.use_cassette()
 def test_get_version_by_versionista_id():
     cli = Client(**AUTH)
-    res = cli.get_version_by_versionista_id(VERSIONISTA_ID)
-    assert res['data']['uuid'] == TO_VERSION_ID
-    assert res['data']['page_uuid'] == PAGE_ID
+    data = cli.get_version_by_versionista_id(VERSIONISTA_ID)
+    assert data['uuid'] == TO_VERSION_ID
+    assert data['page_uuid'] == PAGE_ID
 
 
 @db_vcr.use_cassette()
@@ -313,7 +313,7 @@ def test_add_version():
 @db_vcr.use_cassette()
 def test_get_new_version():
     cli = Client(**AUTH)
-    data = cli.get_version(NEW_VERSION_ID)['data']
+    data = cli.get_version(NEW_VERSION_ID)
     assert data['uuid'] == NEW_VERSION_ID
     assert data['page_uuid'] == PAGE_ID
     # Some floating-point error occurs in round-trip.
@@ -400,8 +400,8 @@ def test_add_versions_missing_required_fields(requests_mock):
 def test_get_import_status():
     cli = Client(**AUTH)
     import_id, *_ = global_stash['import_ids']
-    result = cli.get_import_status(import_id)
-    assert not result['data']['processing_errors']
+    data = cli.get_import_status(import_id)
+    assert not data['processing_errors']
 
 
 @db_vcr.use_cassette()
@@ -473,10 +473,10 @@ def test_add_annotation():
     cli = Client(**AUTH)
     # smoke test
     annotation = {'foo': 'bar'}
-    result = cli.add_annotation(annotation=annotation,
-                                page_id=PAGE_ID,
-                                to_version_id=TO_VERSION_ID)
-    annotation_id = result['data']['uuid']
+    data = cli.add_annotation(annotation=annotation,
+                              page_id=PAGE_ID,
+                              to_version_id=TO_VERSION_ID)
+    annotation_id = data['uuid']
     global_stash['annotation_id'] = annotation_id
 
 
@@ -484,10 +484,10 @@ def test_add_annotation():
 def test_get_annotation():
     cli = Client(**AUTH)
     annotation_id = global_stash['annotation_id']
-    result = cli.get_annotation(annotation_id=annotation_id,
-                                page_id=PAGE_ID,
-                                to_version_id=TO_VERSION_ID)
-    fetched_annotation = result['data']['annotation']
+    data = cli.get_annotation(annotation_id=annotation_id,
+                              page_id=PAGE_ID,
+                              to_version_id=TO_VERSION_ID)
+    fetched_annotation = data['annotation']
     annotation = {'foo': 'bar'}
     assert fetched_annotation == annotation
 
