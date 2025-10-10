@@ -17,7 +17,7 @@ import sys
 import threading
 import time
 from typing import Generator, Iterable, TypeVar
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import SplitResult, urlsplit
 
 try:
     from cchardet import detect as detect_charset
@@ -164,7 +164,7 @@ def hash_content(content_bytes):
     return hashlib.sha256(content_bytes).hexdigest()
 
 
-def normalize_netloc(url: ParseResult) -> str:
+def normalize_netloc(url: SplitResult) -> str:
     """
     Get a parsed URL's netloc in a normalized form.
     """
@@ -193,7 +193,7 @@ def normalize_url(url: str) -> str:
     should always be handled by a server or HTTP library exactly the same as
     the input would have been.
     """
-    parsed = urlparse(url)
+    parsed = urlsplit(url)
     return parsed._replace(
         netloc=normalize_netloc(parsed),
         path=(parsed.path or '/'),

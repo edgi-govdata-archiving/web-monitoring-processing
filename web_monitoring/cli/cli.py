@@ -59,7 +59,7 @@ import sentry_sdk
 import threading
 import time
 from tqdm import tqdm
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 from web_monitoring import db
 import wayback
 from wayback.exceptions import (WaybackException, WaybackRetryError,
@@ -931,14 +931,14 @@ def _is_page(version):
     aren't filtering down to a explicit list of URLs.
     """
     return (version.mime_type not in SUBRESOURCE_MIME_TYPES and
-            splitext(urlparse(version.url).path)[1] not in SUBRESOURCE_EXTENSIONS)
+            splitext(urlsplit(version.url).path)[1] not in SUBRESOURCE_EXTENSIONS)
 
 
 def _parse_path(path_string):
     if path_string is None:
         return None
 
-    parsed = urlparse(path_string)
+    parsed = urlsplit(path_string)
     if parsed.scheme == '':
         return Path(path_string)
     elif parsed.scheme == 'file':
@@ -955,9 +955,9 @@ def _is_valid(url):
     a URL is valid if it has a valid addressing scheme and network location.
     """
     try:
-        result = urlparse(url)
+        result = urlsplit(url)
         return all([result.scheme, result.netloc])
-    except:
+    except Exception:
         return False
 
 
