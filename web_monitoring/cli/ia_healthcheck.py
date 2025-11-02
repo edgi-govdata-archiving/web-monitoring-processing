@@ -24,14 +24,14 @@ def sample_monitored_urls(sample_size):
     list of string
     """
     client = db.Client.from_env()
-    page = client.list_pages(chunk=1, chunk_size=1, active=True, include_total=True)
-    url_count = page['meta']['total_results']
+    page = next(client.get_pages(chunk=1, chunk_size=1, active=True, include_total=True))
+    url_count = page['_list_meta']['total_results']
     return (get_page_url(client, index)
             for index in random.sample(range(url_count), sample_size))
 
 
 def get_page_url(client, index):
-    return client.list_pages(chunk=index, chunk_size=1, active=True)['data'][0]['url']
+    return next(client.get_pages(chunk=index, chunk_size=1, active=True))['url']
 
 
 def wayback_has_captures(url, from_date=None):

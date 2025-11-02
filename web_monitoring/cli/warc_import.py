@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 import sys
 from typing import Any, Generator
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 import sentry_sdk
 from tqdm.contrib.logging import tqdm_logging_redirect
 from warcio import ArchiveIterator
@@ -19,19 +19,10 @@ import yaml
 from .. import db
 from .. import utils
 from ..media import HTML_MEDIA_TYPES, PDF_MEDIA_TYPES, find_media_type
-from ..utils import S3HashStore, detect_encoding
+from ..utils import S3HashStore, detect_encoding, normalize_url
 
 
 logger = logging.getLogger(__name__)
-
-
-def normalize_seed_url(url: str) -> str:
-    """
-    Ensure a URL is an actual, valid URL that could have been sent to a server
-    in an HTTP request and therefore recorded in a WARC record.
-    """
-    parsed = urlparse(url)
-    return parsed._replace(path=(parsed.path or '/'), fragment='').geturl()
 
 
 def read_browsertrix_pages_seeds(seeds_path: str) -> list[str]:
@@ -44,7 +35,7 @@ def read_browsertrix_pages_seeds(seeds_path: str) -> list[str]:
             raise ValueError('Seeds file is not a Browsertrix "json-pages-1.0" file.')
 
         pages = (json.loads(line) for line in file if line != '')
-        return [normalize_seed_url(page['url'])
+        return [normalize_url(page['url'])
                 for page in pages
                 if page['seed']]
 
@@ -54,7 +45,7 @@ def read_browsertrix_config_seeds(seeds_path: str) -> list[str]:
         data = yaml.safe_load(file)
         seeds = data.get('seeds')
         if isinstance(seeds, list):
-            return [normalize_seed_url(seed if isinstance(seed, str) else seed['url'])
+            return [normalize_url(seed if isinstance(seed, str) else seed['url'])
                     for seed in seeds]
         else:
             raise ValueError(f'Seeds file is missing `seeds` key that is an array of URL strings: "{seeds_path}"')
@@ -86,7 +77,7 @@ class RequestRecords:
             status = self.response.http_headers.get_statuscode()
             location = self.response.http_headers.get_header('location')
             if status.startswith('3') and location:
-                return urljoin(self.url, location)
+                return normalize_url(urljoin(self.url, location))
             # Amazon WAF browser challenge works reloading the same URL with a
             # cookie. Treat this like a redirect; we should have captured the
             # second request to the same URL.
@@ -225,7 +216,7 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                     entry = RecordIndexEntry(
                         id=record.rec_headers.get('WARC-Record-ID'),
                         timestamp=dateutil.parser.parse(record.rec_headers.get('WARC-Date')).astimezone(timezone.utc),
-                        uri=record.rec_headers.get('WARC-Target-URI'),
+                        uri=normalize_url(record.rec_headers.get('WARC-Target-URI')),
                         type=record.rec_type,
                         file=warc,
                         offset=reader.get_record_offset(),

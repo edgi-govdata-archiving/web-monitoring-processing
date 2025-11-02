@@ -4,7 +4,7 @@ import queue
 from support import get_fixture_bytes
 import threading
 from web_monitoring.utils import (extract_html_title, extract_pdf_title,
-                                  RateLimit, FiniteQueue)
+                                  normalize_url, RateLimit, FiniteQueue)
 
 
 def test_extract_html_title():
@@ -92,6 +92,36 @@ def test_extract_pdf_title_no_metadata():
     pdf_bytes = get_fixture_bytes('no_metadata.pdf')
     title = extract_pdf_title(pdf_bytes)
     assert title is None
+
+
+class TestNormalizeUrl:
+    def test_normalizes_scheme(self):
+        assert normalize_url('hTTps://whatever.com/') == 'https://whatever.com/'
+
+    def test_normalizes_domain(self):
+        assert normalize_url('https://whatEVER.com/') == 'https://whatever.com/'
+
+    def test_removes_redundant_https_port(self):
+        assert normalize_url('https://whatever.com:443/') == 'https://whatever.com/'
+
+    def test_removes_redundant_http_port(self):
+        assert normalize_url('http://whatever.com:80/') == 'http://whatever.com/'
+
+    def test_leaves_credentials_along(self):
+        assert normalize_url('https://aBc:DeF@whatEVER.com/') == 'https://aBc:DeF@whatever.com/'
+
+    def test_ensures_a_path(self):
+        assert normalize_url('https://whatever.com') == 'https://whatever.com/'
+
+    def test_removes_fragment(self):
+        assert normalize_url('https://whatever.com/x#y') == 'https://whatever.com/x'
+
+    def test_keeps_existing_path(self):
+        assert normalize_url('https://whatever.com/X/y') == 'https://whatever.com/X/y'
+
+    def test_keeps_www(self):
+        assert normalize_url('https://www.whatever.com/') == 'https://www.whatever.com/'
+        assert normalize_url('https://www3.whatever.com/') == 'https://www3.whatever.com/'
 
 
 class TestRateLimit:

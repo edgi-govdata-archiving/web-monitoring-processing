@@ -264,9 +264,9 @@ class Client:
         https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry
         Default: ``(2, 2)``
     """
-    def __init__(self, email=None, password=None, url=DEFAULT_URL, timeout=None,
+    def __init__(self, email=None, password=None, url=None, timeout=None,
                  retries=None):
-        clean_url = url.rstrip('/')
+        clean_url = (url or DEFAULT_URL).rstrip('/')
         self._api_url = f'{clean_url}/api/v0'
         self._base_url = clean_url
         self._session = DbSession(retries=retries, timeout=timeout)
@@ -351,70 +351,6 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
                 yield item
 
     ### PAGES ###
-
-    def list_pages(self, *, chunk=None, chunk_size=None, sort=None,
-                   tags=None, maintainers=None, url=None, title=None,
-                   include_versions=None, include_earliest=None,
-                   include_latest=None, source_type=None, hash=None,
-                   start_date=None, end_date=None, active=None,
-                   include_total=False):
-        """
-        List all Pages, optionally filtered by search criteria.
-
-        Parameters
-        ----------
-        chunk : integer, optional
-            pagination parameter
-        chunk_size : integer, optional
-            number of items per chunk
-        sort : list of string, optional
-            fields to sort by in `{field}:{order}` format, e.g. `title:asc`
-        tags : list of string, optional
-        maintainers : list of string, optional
-        url : string, optional
-        title : string, optional
-        include_versions : boolean, optional
-        include_earliest : boolean, optional
-        include_latest : boolean, optional
-        source_type : string, optional
-            such as 'versionista' or 'internet_archive'
-        hash : string, optional
-            SHA256 hash of Version content
-        start_date : datetime, optional
-        end_date : datetime, optional
-        active : boolean, optional
-        include_total : boolean, optional
-            Whether to include a `meta.total_results` field in the response.
-            If not set, `links.last` will usually be empty unless you are on
-            the last chunk. Setting this option runs a pretty expensive query,
-            so use it sparingly. (Default: False)
-
-        Returns
-        -------
-        response : dict
-        """
-        warnings.warn('db.client.list_pages() has been deprecated. Please use '
-                      'db.client.get_pages().',
-                      DeprecationWarning)
-
-        params = {'chunk': chunk,
-                  'chunk_size': chunk_size,
-                  'sort': sort and ','.join(sort) or None,
-                  'tags[]': tags,
-                  'maintainers[]': maintainers,
-                  'url': url,
-                  'title': title,
-                  'include_versions': include_versions,
-                  'include_earliest': include_earliest,
-                  'include_latest': include_latest,
-                  'source_type': source_type,
-                  'hash': hash,
-                  'capture_time': _time_range_string(start_date, end_date),
-                  'active': active,
-                  'include_total': include_total or None}
-        url = '/pages'
-        result = self.request_json(GET, url, params=params)
-        return result
 
     def get_pages(self, *, chunk=None, chunk_size=None, sort=None,
                   tags=None, maintainers=None, url=None, title=None,
@@ -506,82 +442,6 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
 
     ### VERSIONS ###
-
-    def list_versions(self, *, page_id=None, chunk=None, chunk_size=None,
-                      sort=None, start_date=None, end_date=None,
-                      source_type=None, hash=None,
-                      source_metadata=None, different=None,
-                      include_change_from_previous=None,
-                      include_change_from_earliest=None, include_total=False):
-        """
-        List Versions, optionally filtered by serach criteria, including Page.
-
-        Parameters
-        ----------
-        page_id : string, optional
-            restricts serach to Versions of a specific Page
-        chunk : integer, optional
-            pagination parameter
-        chunk_size : integer, optional
-            number of items per chunk
-        sort : list of string, optional
-            fields to sort by in `{field}:{order}` format,
-            e.g. `capture_time:asc`
-        start_date : datetime, optional
-        end_date : datetime, optional
-        source_type : string, optional
-            such as 'versionista' or 'internetarchive'
-        hash : string, optional
-            SHA256 hash of Version content
-        source_metadata : dict, optional
-            Examples:
-
-            * ``{'version_id': 12345678}``
-            * ``{'account': 'versionista1', 'has_content': True}``
-        different : boolean, optional
-            If False, include versions that aren't actually different from the
-            previous version of the same page in the response.
-        include_change_from_previous : boolean, optional
-            If True, include a `change_from_previous` field in each version
-            that represents a change object between it and the previous version
-            of the same page.
-        include_change_from_earliest : boolean, optional
-            If True, include a `change_from_earliest` field in each version
-            that represents a change object between it and the earliest version
-            of the same page.
-        include_total : boolean, optional
-            Whether to include a `meta.total_results` field in the response.
-            If not set, `links.last` will usually be empty unless you are on
-            the last chunk. Setting this option runs a pretty expensive query,
-            so use it sparingly. (Default: False)
-
-        Returns
-        -------
-        response : dict
-        """
-        warnings.warn('db.client.list_versions() has been deprecated. Please '
-                      'use db.client.get_versions().',
-                      DeprecationWarning)
-
-        params = {'chunk': chunk,
-                  'chunk_size': chunk_size,
-                  'sort': sort and ','.join(sort) or None,
-                  'capture_time': _time_range_string(start_date, end_date),
-                  'source_type': source_type,
-                  'hash': hash,
-                  'different': different,
-                  'include_change_from_previous': include_change_from_previous,
-                  'include_change_from_earliest': include_change_from_earliest,
-                  'include_total': include_total or None}
-        if source_metadata is not None:
-            for k, v in source_metadata.items():
-                params[f'source_metadata[{k}]'] = v
-        if page_id is None:
-            url = '/versions'
-        else:
-            url = f'/pages/{page_id}/versions'
-        result = self.request_json(GET, url, params=params)
-        return result
 
     def get_versions(self, *, page_id=None, chunk=None, chunk_size=None,
                      sort=None, start_date=None, end_date=None,
@@ -860,32 +720,6 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
     ### CHANGES AND ANNOTATIONS ###
 
-    def list_changes(self, page_id, include_total=False):
-        """
-        List Changes between two Versions on a Page.
-
-        Parameters
-        ----------
-        page_id : string
-        include_total : bool, optional
-            Whether to include a `meta.total_results` field in the response.
-            If not set, `links.last` will usually be empty unless you are on
-            the last chunk. Setting this option runs a pretty expensive query,
-            so use it sparingly. (Default: False)
-
-        Returns
-        -------
-        response : dict
-        """
-        warnings.warn('db.client.list_changes() has been deprecated. Please '
-                      'use db.client.get_changes().',
-                      DeprecationWarning)
-
-        url = f'/pages/{page_id}/changes/'
-        result = self.request_json(
-            GET, url, params={'include_total': include_total or None})
-        return result
-
     def get_changes(self, page_id, include_total=False):
         """
         Iterate through a set of changes between any two versions of a page.
@@ -926,38 +760,6 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         url = (f'/pages/{page_id}/changes/'
                f'{from_version_id}..{to_version_id}')
         result = self.request_json(GET, url)
-        return result
-
-    def list_annotations(self, *, page_id, to_version_id, from_version_id='',
-                         include_total=False):
-        """
-        List Annotations for a Change between two Versions.
-
-        Parameters
-        ----------
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
-            If from_version_id is not given, it will be treated as version
-            immediately prior to ``to_version``.
-        include_total : boolean, optional
-            Whether to include a `meta.total_results` field in the response.
-            If not set, `links.last` will usually be empty unless you are on
-            the last chunk. Setting this option runs a pretty expensive query,
-            so use it sparingly. (Default: False)
-
-        Returns
-        -------
-        response : dict
-        """
-        warnings.warn('db.client.list_annotations() has been deprecated. '
-                      'Please use db.client.get_annotations().',
-                      DeprecationWarning)
-
-        url = (f'/pages/{page_id}/changes/'
-               f'{from_version_id}..{to_version_id}/annotations')
-        result = self.request_json(
-            GET, url, params={'include_total': include_total or None})
         return result
 
     def get_annotations(self, *, page_id, to_version_id, from_version_id='',
