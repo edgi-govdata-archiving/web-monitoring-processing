@@ -58,7 +58,7 @@ test = [
     "coverage ~=7.13.1",
     "pyflakes ~=3.4.0",
     "pytest ~=9.0.1",
-    "vcrpy ~=7.0.0",
+    "vcrpy ~=8.1.0",
     "requests-mock ~=1.12.1",
 ]
 
