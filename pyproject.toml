@@ -22,11 +22,11 @@ dependencies = [
     "cloudpathlib[s3] ~=0.23.0",
     "python-dateutil ~=2.9.0",
     "lxml >=5.0.0,<7",
-    "pypdf[crypto] ~=6.4.0",
+    "pypdf[crypto] ~=6.5.0",
     "PyYAML ~=6.0.2",
-    "sentry-sdk ~=2.46.0",
+    "sentry-sdk ~=2.48.0",
     "requests ~=2.32.3",
-    "urllib3 ~=2.5.0",
+    "urllib3 ~=2.6.2",
     "toolz ~=1.1.0",
     "tqdm ~=4.67.1",
     "warcio[all] ~=1.7.5",
@@ -55,10 +55,10 @@ docs = [
 ]
 # For running tests.
 test = [
-    "coverage ~=7.12.0",
+    "coverage ~=7.13.1",
     "pyflakes ~=3.4.0",
     "pytest ~=9.0.1",
-    "vcrpy ~=7.0.0",
+    "vcrpy ~=8.1.0",
     "requests-mock ~=1.12.1",
 ]
 
