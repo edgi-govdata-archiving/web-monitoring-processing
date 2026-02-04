@@ -7,6 +7,7 @@ import hashlib
 import io
 import logging
 import lxml.html
+import multiprocessing
 import os
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
@@ -409,9 +410,9 @@ class QuitSignal(Signal):
             self.event.set()
         else:
             print(self.final_message, file=sys.stderr, flush=True)
-            # Clean up any child processes, otherwise they might be left alive.
             for child in multiprocessing.active_children():
                 child.terminate()
+
             os._exit(128 + signal_type)
 
     def stop_iteration(self, iterable: Iterable[T]) -> Generator[T, None, None]:
