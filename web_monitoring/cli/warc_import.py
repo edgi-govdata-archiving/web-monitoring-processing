@@ -19,7 +19,7 @@ import yaml
 from .. import db
 from .. import utils
 from ..media import HTML_MEDIA_TYPES, PDF_MEDIA_TYPES, find_media_type
-from ..utils import S3HashStore, detect_encoding, normalize_url
+from ..utils import S3HashStore, detect_encoding, matchable_url, normalize_url
 
 
 logger = logging.getLogger(__name__)
@@ -233,7 +233,7 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                     # TODO: handle looking up related entries in record_index via
                     # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
                     # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
-                    exchanges = exchanges_by_url[entry.uri]
+                    exchanges = exchanges_by_url[matchable_url(entry.uri)]
                     for existing in exchanges:
                         if existing.timestamp == entry.timestamp:
                             existing.add(entry)
@@ -260,9 +260,10 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
         next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
         seen_entries = []
         while next_url:
-            warc_exchanges = exchanges_by_url[next_url]
-            if not warc_exchanges and next_url.startswith('http://'):
-                warc_exchanges = exchanges_by_url['https' + next_url[4:]]
+            match_url = matchable_url(next_url)
+            warc_exchanges = exchanges_by_url[match_url]
+            if not warc_exchanges and match_url.startswith('http://'):
+                warc_exchanges = exchanges_by_url['https' + match_url[4:]]
 
             if not warc_exchanges:
                 if next_url == seed:
