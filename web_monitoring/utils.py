@@ -212,7 +212,7 @@ def normalize_url(url: str) -> str:
     parsed = urlsplit(url)
     return parsed._replace(
         netloc=normalize_netloc(parsed),
-        path=(parsed.path or '/'),
+        path=(parsed.path or '/').rstrip('/'),
         fragment=''
     ).geturl()
 
