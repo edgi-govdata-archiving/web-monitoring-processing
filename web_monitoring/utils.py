@@ -18,7 +18,7 @@ import sys
 import threading
 import time
 from typing import Generator, Iterable, TypeVar
-from urllib.parse import SplitResult, urlsplit
+from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
 try:
     from cchardet import detect as detect_charset
@@ -188,6 +188,21 @@ def normalize_netloc(url: SplitResult) -> str:
     return result
 
 
+def matchable_querystring(querystring: str) -> str:
+    """
+    Produce a generally matchable version of a URL's querystring. This may make
+    alterations that are not strictly equivalent.
+
+    These are mainly meant to make sure changes that Browsertrix makes to seed
+    URLs are still matchable, even though they are not strictly correct.
+    """
+    parsed = parse_qsl(querystring, keep_blank_values=True)
+    result = urlencode(sorted(parsed))
+    if '=' not in querystring:
+        result = re.sub(r'=', '', result)
+    return result
+
+
 def normalize_url(url: str) -> str:
     """
     Normalize a URL into an unambiguous, standardized form. The output of this
@@ -198,6 +213,26 @@ def normalize_url(url: str) -> str:
     return parsed._replace(
         netloc=normalize_netloc(parsed),
         path=(parsed.path or '/'),
+        fragment=''
+    ).geturl()
+
+
+def matchable_url(url: str) -> str:
+    """
+    Normalize a URL into a generally matchable format that will equate similar
+    URLs even after non-standard normalization (e.g. sorting query params).
+    This is mainly meant to help with matching Browsertrix outputs, which do
+    not necessarily record seed URLs as originally input.
+    """
+    # TODO: Consider whether any of these should do looser normalizations. We
+    # already got caught out by Browsertrix sorting the querystring, and may
+    # want to make sure we stay more aggressive than they are (or even go
+    # full-bore and use SURT here).
+    parsed = urlsplit(url)
+    return parsed._replace(
+        netloc=normalize_netloc(parsed),
+        path=(parsed.path or '/'),
+        query=matchable_querystring(parsed.query),
         fragment=''
     ).geturl()
 
