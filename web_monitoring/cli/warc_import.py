@@ -61,7 +61,7 @@ def read_seeds_file(seeds_path: str) -> list[str]:
 
 
 @dataclass
-class RequestRecords:
+class HttpExchange:
     url: str
     records: list[ArcWarcRecord] = field(default_factory=list)
     metadata: list[dict] = field(default_factory=list)
@@ -119,9 +119,9 @@ class RequestRecords:
 
 @dataclass
 class RedirectChain:
-    requests: list[RequestRecords] = field(default_factory=list)
+    requests: list[HttpExchange] = field(default_factory=list)
 
-    def add(self, request: RequestRecords) -> None:
+    def add(self, request: HttpExchange) -> None:
         if request not in self.requests:
             self.requests.append(request)
 
@@ -159,7 +159,7 @@ class RecordIndexEntry:
     length: int
 
 
-class RequestIndexEntry:
+class HttpExchangeIndexEntry:
     request: RecordIndexEntry | None = None
     response: RecordIndexEntry | None = None
     records: list[RecordIndexEntry]
@@ -187,7 +187,7 @@ class RequestIndexEntry:
 
 def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[RedirectChain, None, None]:
     record_index: dict[str, RecordIndexEntry] = {}
-    request_index: dict[str, list[RequestIndexEntry]] = defaultdict(list)
+    exchanges_by_url: dict[str, list[HttpExchangeIndexEntry]] = defaultdict(list)
     indexable = set(['request', 'response'])  # TODO: support metadata, revisit
     # This only supports one warcinfo record per WARC; not technically correct.
     warc_infos: dict[str, dict[str, Any]] = {}
@@ -224,16 +224,22 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                     )
                     record_index[entry.id] = entry
 
+                    # This is a bit special to Browsertrix in that it gives the
+                    # same timestamp to all records associated with the same
+                    # HTTP exchange. Make it easy to join them together. This
+                    # is almost certainly not a safe, generic assumption about
+                    # WARCs from other crawlers!
+                    #
                     # TODO: handle looking up related entries in record_index via
                     # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
                     # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
-                    requests = request_index[entry.uri]
-                    for existing in requests:
+                    exchanges = exchanges_by_url[entry.uri]
+                    for existing in exchanges:
                         if existing.timestamp == entry.timestamp:
                             existing.add(entry)
                             break
                     else:
-                        requests.append(RequestIndexEntry([entry]))
+                        exchanges.append(HttpExchangeIndexEntry([entry]))
 
                 # TODO: optimize by tracking the last few records and yielding
                 # immediately for any request/response pairs that do not redirect.
@@ -254,11 +260,11 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
         next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
         seen_entries = []
         while next_url:
-            requests = request_index[next_url]
-            if not requests and next_url.startswith('http://'):
-                requests = request_index['https' + next_url[4:]]
+            warc_exchanges = exchanges_by_url[next_url]
+            if not warc_exchanges and next_url.startswith('http://'):
+                warc_exchanges = exchanges_by_url['https' + next_url[4:]]
 
-            if not requests:
+            if not warc_exchanges:
                 if next_url == seed:
                     logger.warning(f'No WARC records for seed: "{seed}"')
                 else:
@@ -267,41 +273,41 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                 next_url = None
                 break
 
-            request = next(
+            warc_exchange = next(
                 (
-                    r for r in requests
-                    if r.timestamp > next_timestamp and r not in seen_entries
+                    e for e in warc_exchanges
+                    if e.timestamp > next_timestamp and e not in seen_entries
                 ),
-                requests[-1]
+                warc_exchanges[-1]
             )
-            if request in seen_entries:
-                raise RuntimeError(f'Circular redirect detected for "{request.uri}" at {request.timestamp}')
-            elif not request.response:
-                raise RuntimeError(f'Request index entry missing response record for "{request.uri}" at {request.timestamp}')
-            seen_entries.append(request)
+            if warc_exchange in seen_entries:
+                raise RuntimeError(f'Circular redirect detected for "{warc_exchange.uri}" at {warc_exchange.timestamp}')
+            elif not warc_exchange.response:
+                raise RuntimeError(f'Request index entry missing response record for "{warc_exchange.uri}" at {warc_exchange.timestamp}')
+            seen_entries.append(warc_exchange)
 
-            warc_info = warc_infos[request.response.file]
-            request_set = RequestRecords(request.uri, warc_info=warc_info)
-            response_record, body = extract_record(request.response.file, request.response.offset)
-            request_set.add(
+            warc_info = warc_infos[warc_exchange.response.file]
+            exchange = HttpExchange(warc_exchange.uri, warc_info=warc_info)
+            response_record, body = extract_record(warc_exchange.response.file, warc_exchange.response.offset)
+            exchange.add(
                 response_record,
                 index=0,
-                offset=request.response.offset,
-                length=request.response.length,
+                offset=warc_exchange.response.offset,
+                length=warc_exchange.response.length,
                 body=body
             )
-            if request.request:
-                request_record, _ = extract_record(request.request.file, request.request.offset)
-                request_set.add(
+            if warc_exchange.request:
+                request_record, _ = extract_record(warc_exchange.request.file, warc_exchange.request.offset)
+                exchange.add(
                     request_record,
                     index=0,
-                    offset=request.request.offset,
-                    length=request.request.length,
+                    offset=warc_exchange.request.offset,
+                    length=warc_exchange.request.length,
                     body=None
                 )
-            chain.add(request_set)
-            next_url = request_set.redirect_target
-            next_timestamp = request.timestamp
+            chain.add(exchange)
+            next_url = exchange.redirect_target
+            next_timestamp = warc_exchange.timestamp
 
         if chain:
             yield chain
