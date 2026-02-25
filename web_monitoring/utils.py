@@ -197,6 +197,9 @@ def matchable_querystring(querystring: str) -> str:
     URLs are still matchable, even though they are not strictly correct.
     """
     parsed = parse_qsl(querystring, keep_blank_values=True)
+    # TODO: consider bringing in some more ignorable params from our custom
+    # SURT implementation in web-monitoring-db.
+    parsed = [(k, v) for k, v in parsed if not k.lower().startswith('utm_')]
     result = urlencode(sorted(parsed))
     if '=' not in querystring:
         result = re.sub(r'=', '', result)
