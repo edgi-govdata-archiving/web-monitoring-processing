@@ -331,6 +331,7 @@ class WaybackRecordsWorker(threading.Thread):
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
         except Exception as error:
+            sentry_sdk.capture_exception(error)
             self.results_queue.put([record, None, error])
         finally:
             MEMENTO_STATISTICS.record_time(record.raw_url, time.time() - start_time)
@@ -489,9 +490,12 @@ def _filter_and_summarize_mementos(memento_info, summary):
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
             logger.exception(f'  {error!r}; URL: {cdx.raw_url}')
+            sentry_sdk.capture_exception(error)
             summary['unknown'] += 1
         else:
             logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
+            if isinstance(error, Exception):
+                sentry_sdk.capture_exception(error)
             summary['unknown'] += 1
 
     # Add percentage calculations to summary
@@ -794,6 +798,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                 logger.warn(f'CDX search error: {error!r}')
             except WaybackException as error:
                 logger.error(f'Error getting CDX data for {url}: {error!r}')
+                sentry_sdk.capture_exception(error)
             except Exception as error:
                 # On connection failures, reset the session and try again. If
                 # we don't do this, the connection pool for this thread is
@@ -813,6 +818,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     # continue and allow other threads that might be running to
                     # be joined.
                     logger.exception(f'Error processing versions of {url}')
+                    sentry_sdk.capture_exception(error)
 
     logger.info('Found %s matching CDX records', total)
     logger.info('Skipped %s CDX records that did not match filters', skipped)
@@ -988,7 +994,18 @@ def validate_db_credentials():
 def main():
     from argparse import ArgumentParser
 
-    sentry_sdk.init()
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_logging = LoggingIntegration(
+        level=logging.INFO,        # Capture info and above as breadcrumbs
+        event_level=logging.ERROR  # Send errors as events
+    )
+    sentry_sdk.init(
+        integrations=[sentry_logging]
+    )
+    # Ignore the main logger so we can manually send exceptions with URLs grouped
+    from sentry_sdk.integrations.logging import ignore_logger
+    ignore_logger(__name__)
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
     subparsers = parser.add_subparsers()
