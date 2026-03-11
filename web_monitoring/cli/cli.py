@@ -995,7 +995,6 @@ def main():
 
     
     sentry_sdk.init()
-    from sentry_sdk.integrations.logging import LoggingIntegration
 
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
