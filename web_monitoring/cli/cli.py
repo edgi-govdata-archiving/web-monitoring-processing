@@ -331,7 +331,6 @@ class WaybackRecordsWorker(threading.Thread):
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
         except Exception as error:
-            sentry_sdk.capture_exception(error)
             self.results_queue.put([record, None, error])
         finally:
             MEMENTO_STATISTICS.record_time(record.raw_url, time.time() - start_time)
@@ -493,10 +492,10 @@ def _filter_and_summarize_mementos(memento_info, summary):
             sentry_sdk.capture_exception(error)
             summary['unknown'] += 1
         else:
-            logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
-            if isinstance(error, Exception):
-                sentry_sdk.capture_exception(error)
-            summary['unknown'] += 1
+            sentry_sdk.capture_message(
+                f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}',
+                level='error'
+            )
 
     # Add percentage calculations to summary
     if summary['total']:
@@ -994,18 +993,10 @@ def validate_db_credentials():
 def main():
     from argparse import ArgumentParser
 
+    
+    sentry_sdk.init()
     from sentry_sdk.integrations.logging import LoggingIntegration
 
-    sentry_logging = LoggingIntegration(
-        level=logging.INFO,        # Capture info and above as breadcrumbs
-        event_level=logging.ERROR  # Send errors as events
-    )
-    sentry_sdk.init(
-        integrations=[sentry_logging]
-    )
-    # Ignore the main logger so we can manually send exceptions with URLs grouped
-    from sentry_sdk.integrations.logging import ignore_logger
-    ignore_logger(__name__)
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
     subparsers = parser.add_subparsers()
