@@ -56,6 +56,7 @@ from pathlib import Path
 import re
 import requests
 import sentry_sdk
+from sentry_sdk.integrations.logging import ignore_logger as sentry_ignore_logger
 import threading
 import time
 from tqdm import tqdm
@@ -482,6 +483,7 @@ def _filter_and_summarize_mementos(memento_info, summary):
             logger.debug(f'  {error}')
         elif isinstance(error, WaybackRetryError):
             logger.info(f'  {error}; URL: {cdx.raw_url}')
+            sentry_sdk.capture_exception(error, level='info')
             summary['unknown'] += 1
         elif isinstance(error, Exception):
             # FIXME: getting read timed out connection errors here...
@@ -493,11 +495,11 @@ def _filter_and_summarize_mementos(memento_info, summary):
             summary['unknown'] += 1
         else:
             logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
-            summary['unknown'] += 1
             sentry_sdk.capture_message(
                 f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}',
                 level='error'
             )
+            summary['unknown'] += 1
 
     # Add percentage calculations to summary
     if summary['total']:
@@ -995,11 +997,12 @@ def validate_db_credentials():
 def main():
     from argparse import ArgumentParser
 
-    
     sentry_sdk.init()
-    from sentry_sdk.integrations.logging import ignore_logger
-    ignore_logger(__name__)
-
+    # This script does a lot of iterative, async processing across threads,
+    # which means the logs aren't ordered or typically very traceable to the
+    # processing that caused a specific error. They don't serve as good
+    # breadcrumbs in Sentry (sometimes they add confusion).
+    sentry_ignore_logger(__name__)
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
     subparsers = parser.add_subparsers()
