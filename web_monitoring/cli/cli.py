@@ -56,6 +56,7 @@ from pathlib import Path
 import re
 import requests
 import sentry_sdk
+from sentry_sdk.integrations.logging import ignore_logger as sentry_ignore_logger
 import threading
 import time
 from tqdm import tqdm
@@ -482,6 +483,7 @@ def _filter_and_summarize_mementos(memento_info, summary):
             logger.debug(f'  {error}')
         elif isinstance(error, WaybackRetryError):
             logger.info(f'  {error}; URL: {cdx.raw_url}')
+            sentry_sdk.capture_exception(error, level='info')
             summary['unknown'] += 1
         elif isinstance(error, Exception):
             # FIXME: getting read timed out connection errors here...
@@ -489,9 +491,14 @@ def _filter_and_summarize_mementos(memento_info, summary):
             # TODO: don't count or log (well, maybe DEBUG log) if failure_queue
             # is present and we are ultimately going to retry.
             logger.exception(f'  {error!r}; URL: {cdx.raw_url}')
+            sentry_sdk.capture_exception(error)
             summary['unknown'] += 1
         else:
             logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
+            sentry_sdk.capture_message(
+                f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}',
+                level='error'
+            )
             summary['unknown'] += 1
 
     # Add percentage calculations to summary
@@ -794,6 +801,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                 logger.warn(f'CDX search error: {error!r}')
             except WaybackException as error:
                 logger.error(f'Error getting CDX data for {url}: {error!r}')
+                sentry_sdk.capture_exception(error)
             except Exception as error:
                 # On connection failures, reset the session and try again. If
                 # we don't do this, the connection pool for this thread is
@@ -813,6 +821,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                     # continue and allow other threads that might be running to
                     # be joined.
                     logger.exception(f'Error processing versions of {url}')
+                    sentry_sdk.capture_exception(error)
 
     logger.info('Found %s matching CDX records', total)
     logger.info('Skipped %s CDX records that did not match filters', skipped)
@@ -989,6 +998,11 @@ def main():
     from argparse import ArgumentParser
 
     sentry_sdk.init()
+    # This script does a lot of iterative, async processing across threads,
+    # which means the logs aren't ordered or typically very traceable to the
+    # processing that caused a specific error. They don't serve as good
+    # breadcrumbs in Sentry (sometimes they add confusion).
+    sentry_ignore_logger(__name__)
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
     subparsers = parser.add_subparsers()
