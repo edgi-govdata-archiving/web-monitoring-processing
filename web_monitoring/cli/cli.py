@@ -492,6 +492,8 @@ def _filter_and_summarize_mementos(memento_info, summary):
             sentry_sdk.capture_exception(error)
             summary['unknown'] += 1
         else:
+            logger.error(f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}')
+            summary['unknown'] += 1
             sentry_sdk.capture_message(
                 f'Expected mementos and errors, but got {type(error)} for {cdx.raw_url}: {error}',
                 level='error'
@@ -995,7 +997,8 @@ def main():
 
     
     sentry_sdk.init()
-    from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.logging import ignore_logger
+    ignore_logger(__name__)
 
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
