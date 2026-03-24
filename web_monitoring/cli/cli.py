@@ -376,6 +376,10 @@ class WaybackRecordsWorker(threading.Thread):
                 *map(lambda item: item.url, memento.history),
                 memento.url
             ]
+            metadata['statuses'] = [
+                *map(lambda item: item.status_code, memento.history),
+                memento.status_code
+            ]
 
         media_type, _ = find_media_type(memento.headers, memento.content,
                                         url=cdx_record.url)
