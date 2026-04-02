@@ -22,14 +22,14 @@ dependencies = [
     "cloudpathlib[s3] ~=0.23.0",
     "python-dateutil ~=2.9.0",
     "lxml >=5.0.0,<7",
-    "pypdf[crypto] ~=6.7.4",
+    "pypdf[crypto] ~=6.9.2",
     "PyYAML ~=6.0.2",
     "sentry-sdk ~=2.53.0",
-    "requests ~=2.32.3",
+    "requests ~=2.33.1",
     "urllib3 ~=2.6.2",
     "toolz ~=1.1.0",
     "tqdm ~=4.67.1",
-    "warcio[all] ~=1.7.5",
+    "warcio[all] ~=1.8.1",
     "wayback ~=0.4.5",
 ]
 
