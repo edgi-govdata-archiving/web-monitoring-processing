@@ -121,6 +121,7 @@ This project wouldn’t exist without a lot of amazing people’s help. Thanks t
 <!-- ALL-CONTRIBUTORS-LIST:START -->
 | Contributions | Name |
 | ----: | :---- |
+| [💻](# "Code") [⚠️](# "Tests") | [Ramy Abdelmalak](https://github.com/Ramyprojs) |
 | [💻](# "Code") [⚠️](# "Tests") [🚇](# "Infrastructure") [📖](# "Documentation") [💬](# "Answering Questions") [👀](# "Reviewer") | [Dan Allan](https://github.com/danielballan) |
 | [💻](# "Code") | [Vangelis Banos](https://github.com/vbanos) |
 | [💻](# "Code") [📖](# "Documentation") | [Chaitanya Prakash Bapat](https://github.com/ChaiBapchya) |
