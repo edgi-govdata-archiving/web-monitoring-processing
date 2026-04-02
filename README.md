@@ -121,6 +121,7 @@ This project wouldn’t exist without a lot of amazing people’s help. Thanks t
 <!-- ALL-CONTRIBUTORS-LIST:START -->
 | Contributions | Name |
 | ----: | :---- |
+| [💻](# "Code") [⚠️](# "Tests") | [Ramy Abdelmalak](https://github.com/Ramyprojs) |
 | [💻](# "Code") [⚠️](# "Tests") [🚇](# "Infrastructure") [📖](# "Documentation") [💬](# "Answering Questions") [👀](# "Reviewer") | [Dan Allan](https://github.com/danielballan) |
 | [💻](# "Code") | [Vangelis Banos](https://github.com/vbanos) |
 | [💻](# "Code") [📖](# "Documentation") | [Chaitanya Prakash Bapat](https://github.com/ChaiBapchya) |
@@ -147,10 +148,10 @@ This project wouldn’t exist without a lot of amazing people’s help. Thanks t
 
 ## License & Copyright
 
-Copyright (C) 2017-2021 Environmental Data and Governance Initiative (EDGI)
+Copyright (C) 2017-2026 Environmental Data and Governance Initiative (EDGI)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.0.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-See the [`LICENSE`](https://github.com/edgi-govdata-archiving/webpage-versions-processing/blob/main/LICENSE) file for details.
+See the [`LICENSE`](https://github.com/edgi-govdata-archiving/web-monitoring-processing/blob/main/LICENSE) file for details.

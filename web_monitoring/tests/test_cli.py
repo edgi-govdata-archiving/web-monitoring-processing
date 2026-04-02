@@ -115,6 +115,9 @@ def test_format_memento_handles_redirects():
         assert len(version['source_metadata']['redirects']) == 2
         assert version['source_metadata']['redirects'][0] == url
         assert version['source_metadata']['redirects'][1] == final_url
+        assert len(version['source_metadata']['statuses']) == 2
+        assert version['source_metadata']['statuses'][0] == 301
+        assert version['source_metadata']['statuses'][1] == 200
 
 
 @ia_vcr.use_cassette()
