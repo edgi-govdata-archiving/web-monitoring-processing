@@ -502,10 +502,13 @@ class S3HashStore:
         if not content_type:
             content_type = 'application/octet-stream'
 
-        archive = S3Path(f's3://{self.bucket}', client=S3Client(extra_args={
-            **self.extra_args,
-            'ContentType': content_type
-        }))
+        archive = S3Path(f's3://{self.bucket}', client=S3Client(
+            file_cache_mode='close_file',
+            extra_args={
+                **self.extra_args,
+                'ContentType': content_type
+            },
+        ))
         path = archive / hash
 
         upload = False
@@ -519,7 +522,17 @@ class S3HashStore:
             if self.gzip:
                 data = gzip.compress(data)
             if not self.dry_run:
-                path.write_bytes(data)
+                written = path.write_bytes(data)
+                # Double-check that we wrote everything we tried to. This might
+                # be an unnecessary check, but it's possible it might save us
+                # from some weird edge-cases related to how cloudpathlib uses
+                # the local disk as an intermediary cache:
+                # https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/929
+                if written != len(data):
+                    raise RuntimeError(
+                        f'S3 write failure: only wrote {written} of '
+                        f'{len(data)} bytes to S3'
+                    )
 
         return path.as_url()
 
