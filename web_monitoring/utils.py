@@ -502,10 +502,13 @@ class S3HashStore:
         if not content_type:
             content_type = 'application/octet-stream'
 
-        archive = S3Path(f's3://{self.bucket}', client=S3Client(extra_args={
-            **self.extra_args,
-            'ContentType': content_type
-        }))
+        archive = S3Path(f's3://{self.bucket}', client=S3Client(
+            file_cache_mode='close_file',
+            extra_args={
+                **self.extra_args,
+                'ContentType': content_type
+            },
+        ))
         path = archive / hash
 
         upload = False
