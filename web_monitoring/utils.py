@@ -519,7 +519,12 @@ class S3HashStore:
             if self.gzip:
                 data = gzip.compress(data)
             if not self.dry_run:
-                path.write_bytes(data)
+                written = path.write_bytes(data)
+                if written != len(data):
+                    raise RuntimeError(
+                        f'S3 write failure: only wrote {written} of '
+                        f'{len(data)} bytes to S3'
+                    )
 
         return path.as_url()
 
