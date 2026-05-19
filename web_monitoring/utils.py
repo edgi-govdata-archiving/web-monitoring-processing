@@ -520,6 +520,11 @@ class S3HashStore:
                 data = gzip.compress(data)
             if not self.dry_run:
                 written = path.write_bytes(data)
+                # Double-check that we wrote everything we tried to. This might
+                # be an unnecessary check, but it's possible it might save us
+                # from some weird edge-cases related to how cloudpathlib uses
+                # the local disk as an intermediary cache:
+                # https://github.com/edgi-govdata-archiving/web-monitoring-processing/issues/929
                 if written != len(data):
                     raise RuntimeError(
                         f'S3 write failure: only wrote {written} of '
