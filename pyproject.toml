@@ -16,6 +16,11 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
 dependencies = [
+    # HACK: Warcio depends on aiohttp (any version), but VCR is not yet
+    # compatible with v3.14.x. This is just a hack to make sure we have a
+    # working setup for tests.
+    # https://github.com/kevin1024/vcrpy/pull/996
+    "aiohttp ~=3.13.0",
     "brotli ~=1.2.0",
     "charset_normalizer ~=3.4.1",
     "cloudpathlib[s3] >=0.23,<0.25",
