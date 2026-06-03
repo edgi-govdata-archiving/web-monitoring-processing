@@ -99,7 +99,7 @@ class HttpExchange:
             self.request = record
             self.records.insert(0, record)
             self.metadata.insert(0, meta)
-        elif record.rec_type == 'response':
+        elif record.rec_type == 'response' or record.rec_type == 'revisit':
             assert body is not None, f'Response record had no body ({meta["id"]})'
             self.response = record
             self.response_body = body
@@ -148,6 +148,21 @@ def extract_record(warc: str, offset: int) -> tuple[ArcWarcRecord, bytes]:
         return record, record.content_stream().read()
 
 
+def extract_record_for(entry: 'RecordIndexEntry', responses_by_digest: dict[str, 'RecordIndexEntry']) -> tuple[ArcWarcRecord, bytes]:
+    record, body = extract_record(entry.file, entry.offset)
+    if entry.type == 'revisit':
+        assert entry.payload_digest
+        payload_entry = responses_by_digest.get(entry.payload_digest)
+        if not payload_entry:
+            raise RuntimeError(
+                'Revisit record referred to unknown payload digest '
+                f'(digest={entry.payload_digest}, uri={entry.uri})'
+            )
+        _, body = extract_record(payload_entry.file, payload_entry.offset)
+
+    return record, body
+
+
 @dataclass
 class RecordIndexEntry:
     id: str
@@ -157,6 +172,7 @@ class RecordIndexEntry:
     file: str
     offset: int
     length: int
+    payload_digest: str | None = None
 
 
 class HttpExchangeIndexEntry:
@@ -181,14 +197,15 @@ class HttpExchangeIndexEntry:
         self.records.append(record)
         if record.type == 'request':
             self.request = record
-        elif record.type == 'response':
+        elif record.type == 'response' or record.type == 'revisit':
             self.response = record
 
 
 def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[RedirectChain, None, None]:
     record_index: dict[str, RecordIndexEntry] = {}
+    responses_by_digest: dict[str, RecordIndexEntry] = {}
     exchanges_by_url: dict[str, list[HttpExchangeIndexEntry]] = defaultdict(list)
-    indexable = set(['request', 'response'])  # TODO: support metadata, revisit
+    indexable = set(['request', 'response', 'revisit'])  # TODO: support metadata?
     # This only supports one warcinfo record per WARC; not technically correct.
     warc_infos: dict[str, dict[str, Any]] = {}
 
@@ -213,16 +230,43 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                         warc_info['crawler'] = info['software']
 
                 elif record.rec_type in indexable:
+                    entry_digest = record.rec_headers.get('WARC-Payload-Digest')
+                    entry_uri = record.rec_headers.get('WARC-Target-URI')
+
+                    if record.rec_type == 'revisit':
+                        content_type = record.rec_headers.get('Content-Type')
+                        content_type = content_type and content_type.strip().lower()
+                        if content_type != 'application/http; msgtype=response':
+                            logger.warning(
+                                'Can only handle revisit records for '
+                                f'responses, but got one for "{content_type}" '
+                                f'on URL "{entry_uri}"'
+                            )
+                            continue
+                        if not entry_digest:
+                            # TODO: handle revisits with only
+                            # WARC-Refers-To-Target-URI and WARC-Refers-To-Date
+                            # and no digest for lookups.
+                            logger.warning(
+                                'Can only handle revisit records with payload '
+                                'digests, but got one without on URL '
+                                f'"{entry_uri}"'
+                            )
+                            continue
+
                     entry = RecordIndexEntry(
                         id=record.rec_headers.get('WARC-Record-ID'),
                         timestamp=dateutil.parser.parse(record.rec_headers.get('WARC-Date')).astimezone(timezone.utc),
-                        uri=normalize_url(record.rec_headers.get('WARC-Target-URI')),
+                        uri=normalize_url(entry_uri),
                         type=record.rec_type,
                         file=warc,
                         offset=reader.get_record_offset(),
-                        length=reader.get_record_length()
+                        length=reader.get_record_length(),
+                        payload_digest=entry_digest,
                     )
                     record_index[entry.id] = entry
+                    if entry.type == 'response' and entry.payload_digest:
+                        responses_by_digest[entry.payload_digest] = entry
 
                     # This is a bit special to Browsertrix in that it gives the
                     # same timestamp to all records associated with the same
@@ -289,7 +333,7 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
 
             warc_info = warc_infos[warc_exchange.response.file]
             exchange = HttpExchange(warc_exchange.uri, warc_info=warc_info)
-            response_record, body = extract_record(warc_exchange.response.file, warc_exchange.response.offset)
+            response_record, body = extract_record_for(warc_exchange.response, responses_by_digest)
             exchange.add(
                 response_record,
                 index=0,
