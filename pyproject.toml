@@ -34,7 +34,7 @@ dependencies = [
     "toolz ~=1.1.0",
     "tqdm ~=4.67.1",
     "warcio[all] ~=1.8.1",
-    "wayback ~=0.4.5",
+    "wayback >=0.4.5,<0.6.0",
 ]
 
 [project.optional-dependencies]
