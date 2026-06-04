@@ -16,20 +16,25 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
 dependencies = [
+    # HACK: Warcio depends on aiohttp (any version), but VCR is not yet
+    # compatible with v3.14.x. This is just a hack to make sure we have a
+    # working setup for tests.
+    # https://github.com/kevin1024/vcrpy/pull/996
+    "aiohttp ~=3.13.0",
     "brotli ~=1.2.0",
     "charset_normalizer ~=3.4.1",
     "cloudpathlib[s3] >=0.23,<0.25",
     "python-dateutil ~=2.9.0",
     "lxml >=5.0.0,<7",
-    "pypdf[crypto] >=6.9.2,<6.11.0",
+    "pypdf[crypto] >=6.9.2,<6.13.0",
     "PyYAML ~=6.0.2",
-    "sentry-sdk >=2.53,<2.59",
+    "sentry-sdk >=2.53,<2.62",
     "requests >=2.33.1,<2.35.0",
     "urllib3 >=2.6.2,<2.8.0",
     "toolz ~=1.1.0",
     "tqdm ~=4.67.1",
     "warcio[all] ~=1.8.1",
-    "wayback ~=0.4.5",
+    "wayback ~=0.5.0",
 ]
 
 [project.optional-dependencies]
@@ -54,7 +59,7 @@ docs = [
 ]
 # For running tests.
 test = [
-    "coverage ~=7.13.1",
+    "coverage >=7.13.1,<7.15.0",
     "pyflakes ~=3.4.0",
     "pytest ~=9.0.1",
     "vcrpy ~=8.1.0",
