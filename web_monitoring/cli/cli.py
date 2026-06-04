@@ -58,6 +58,7 @@ import requests
 import sentry_sdk
 from sentry_sdk.integrations.logging import ignore_logger as sentry_ignore_logger
 import threading
+from typing import Generator, Iterable
 import time
 from tqdm import tqdm
 from urllib.parse import urlsplit
@@ -310,12 +311,12 @@ class WaybackRecordsWorker(threading.Thread):
         if not self.adapter:
             self.wayback.close()
 
-    def handle_record(self, record):
+    def handle_record(self, record: wayback.CdxRecord):
         """
         Handle a single CDX record.
         """
         # Check whether we already have this memento and bail out.
-        if _version_cache_key(record.timestamp, record.url) in self.version_cache:
+        if _version_cache_key(record.timestamp, record.original) in self.version_cache:
             self.results_queue.put([record, None, ExistingVersionError(f'Skipped {record.raw_url}')])
             return
         # Check for whether we already know this can't be played and bail out.
@@ -355,7 +356,7 @@ class WaybackRecordsWorker(threading.Thread):
 
             return version
 
-    def format_memento(self, memento, cdx_record, maintainers, tags):
+    def format_memento(self, memento: wayback.Memento, cdx_record: wayback.CdxRecord, maintainers, tags):
         """
         Format a Wayback Memento response as a dict with import-ready info.
         """
@@ -370,7 +371,7 @@ class WaybackRecordsWorker(threading.Thread):
         }
 
         # If there were redirects, list every URL in the chain of requests.
-        if memento.url != cdx_record.url:
+        if memento.url != cdx_record.original:
             metadata['redirected_url'] = memento.url
             metadata['redirects'] = [
                 *map(lambda item: item.url, memento.history),
@@ -382,7 +383,7 @@ class WaybackRecordsWorker(threading.Thread):
             ]
 
         media_type, _ = find_media_type(memento.headers, memento.content,
-                                        url=cdx_record.url)
+                                        url=cdx_record.original)
 
         title = ''
         if media_type in HTML_MEDIA_TYPES:
@@ -395,7 +396,7 @@ class WaybackRecordsWorker(threading.Thread):
 
         return dict(
             # Page-level info
-            url=cdx_record.url,
+            url=cdx_record.original,
             page_maintainers=maintainers,
             page_tags=tags,
             title=title,
@@ -734,7 +735,7 @@ def _filter_daily_versions(versions):
             yield version
 
 
-def _filter_daily_cdx(records):
+def _filter_daily_cdx(records: Iterable[wayback.CdxRecord]) -> Generator[wayback.CdxRecord, None, None]:
     """
     Filter CDX records to one per day per URL when possible. If all CDX
     records for a given day have missing or 3xx status codes, we can't
@@ -744,25 +745,25 @@ def _filter_daily_cdx(records):
     """
     url = ''
     day = None
-    day_records = []
+    day_records: list[wayback.CdxRecord] = []
 
-    def best_of_batch(batch):
+    def best_of_batch(batch: list[wayback.CdxRecord]):
         # We want to prefer OK over error responses, but we can't know which
         # they are for records with missing or 3xx status codes.
         viable = [r for r in batch
-                  if (r.status_code
-                      and (r.status_code < 300 or r.status_code >= 400))]
-        best = min(viable, key=lambda r: r.status_code) if viable else None
+                  if (r.statuscode
+                      and (r.statuscode < 300 or r.statuscode >= 400))]
+        best = min(viable, key=lambda r: r.statuscode) if viable else None
         if best:
             yield best
         else:
             yield from viable or batch
 
     for record in records:
-        if url != record.key or day != record.timestamp.date():
+        if url != record.urlkey or day != record.timestamp.date():
             yield from best_of_batch(day_records)
 
-            url = record.key
+            url = record.urlkey
             day = record.timestamp.date()
             day_records.clear()
             day_records.append(record)
@@ -906,12 +907,12 @@ def _get_db_page_url_info(client, url_pattern=None):
             logger.warn('Found DB page with no url_key; *all* pages in '
                         f'"{domain}" will be imported')
 
-    def filterer(version, domain=None):
-        domain = domain or HOST_EXPRESSION.match(version.url).group(1)
+    def filterer(version: wayback.CdxRecord, domain=None):
+        domain = domain or HOST_EXPRESSION.match(version.original).group(1)
         if domain in domains_without_url_keys:
             return _is_page(version)
         else:
-            return _rough_url_key(version.key) in url_keys
+            return _rough_url_key(version.urlkey) in url_keys
 
     url_list = []
     for domain, data in domains.items():
@@ -937,14 +938,14 @@ def _rough_url_key(url_key):
     return rough_key
 
 
-def _is_page(version):
+def _is_page(version: wayback.CdxRecord):
     """
     Determine if a version might be a page we want to track. This is used to do
     some really simplistic filtering on noisy Internet Archive results if we
     aren't filtering down to a explicit list of URLs.
     """
-    return (version.mime_type not in SUBRESOURCE_MIME_TYPES and
-            splitext(urlsplit(version.url).path)[1] not in SUBRESOURCE_EXTENSIONS)
+    return (version.mimetype not in SUBRESOURCE_MIME_TYPES and
+            splitext(urlsplit(version.original).path)[1] not in SUBRESOURCE_EXTENSIONS)
 
 
 def _parse_path(path_string):
