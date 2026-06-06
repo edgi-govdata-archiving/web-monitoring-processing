@@ -791,7 +791,8 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                 break
 
             ia_versions = client.search(url, from_date=from_date,
-                                        to_date=to_date, limit=1000)
+                                        to_date=to_date, limit=1000,
+                                        resolve_revisits=False)
             try:
                 for version in ia_versions:
                     if stop and stop.is_set():
