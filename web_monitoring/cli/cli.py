@@ -1050,6 +1050,13 @@ def main():
     ))
     args = parser.parse_args()
 
+    # HACK: Allow testing out performance/stability of old CDX vs. "new"
+    # timemap CDX APIs. They *should* got to the same service, but anecdotally
+    # appear to perform differently.
+    if os.getenv('WAYBACK_USE_TIMEMAP_CDX', '').lower() in ('true', 't', '1'):
+        wayback._client.CDX_SEARCH_URL = 'https://web.archive.org/web/timemap/cdx'
+        logger.warning('Using /web/timemap/cdx API for Wayback searches')
+
     if args.command == 'import-ia':
         unplaybackable_path = _parse_path(args.unplaybackable)
         if not args.dry_run:
