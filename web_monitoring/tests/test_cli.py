@@ -5,7 +5,6 @@ from unittest.mock import patch
 from vcr import VCR
 from vcr.record_mode import RecordMode
 from wayback import WaybackClient
-import web_monitoring.cli.cli
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
                                     WaybackRecordsWorker, import_ia_urls,
                                     import_ia_db_urls,
