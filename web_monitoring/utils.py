@@ -742,7 +742,7 @@ def estimate_version_quality(version: dict[str, Any]) -> float:
     return estimate_snapshot_quality(
         url=version['url'],
         timestamp=timestamp,
-        status=version['status'] or (600 if version['network_error'] else 200),
+        status=version['status'] or (600 if version.get('network_error') else 200),
         headers=version['headers'] or {},
         content_length=version['content_length'],
         media_type=version['media_type'],
