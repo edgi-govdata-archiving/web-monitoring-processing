@@ -80,6 +80,11 @@ USER_AGENT = f'edgi.web_monitoring.WaybackClient/{__version__}'
 # Number of memento requests to make at once. Can be overridden via CLI args.
 PARALLEL_REQUESTS = 10
 
+# Mementos must be of this quality or greater to be imported. Quality is a 0-1
+# number indicating how likely the Memento was to be a good snapshot of the URL
+# and not the crawler getting blocked or some other transient problem.
+MINIMUM_QUALITY = 0.11
+
 # Matches the host segment of a URL.
 HOST_EXPRESSION = re.compile(r'^[^:]+://([^/]+)')
 # Matches URLs for "index" pages that are likely to be the same as a URL ending
@@ -170,6 +175,14 @@ class ExistingVersionError(Exception):
     """
     Indicates that a CDX record represented a version that's already been
     imported and so the memento was skipped.
+    """
+    ...
+
+
+class BadMementoError(Exception):
+    """
+    Indicates that a Memento was not actually a good snapshot of the URL,
+    generally because the crawler appears to have been blocked.
     """
     ...
 
@@ -328,7 +341,10 @@ class WaybackRecordsWorker(threading.Thread):
         try:
             version = self.process_record(record)
             self.results_queue.put([record, version, None])
-        except MementoPlaybackError as error:
+        except (BadMementoError, MementoPlaybackError) as error:
+            # TODO: the unplaybackable cache should ideally to be expanded to
+            # cover bad mementos as a separate concept. But for now we get the
+            # job done by mixing them together.
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
@@ -346,6 +362,15 @@ class WaybackRecordsWorker(threading.Thread):
         with memento:
             version = self.format_memento(memento, record, self.maintainers,
                                           self.tags)
+
+            quality = utils.estimate_version_quality(version)
+            if quality < MINIMUM_QUALITY:
+                # This isn't really a playback error, but classifying it as
+                # one is convenient for now.
+                raise BadMementoError(f'Crawler was blocked for {memento.memento_url}')
+            else:
+                version['source_metadata']['quality'] = quality
+
             if self.archive_storage and version['body_hash']:
                 url = self.archive_storage.store(
                     memento.content,
@@ -465,7 +490,7 @@ class WaybackRecordsWorker(threading.Thread):
 
 
 def _filter_and_summarize_mementos(memento_info, summary):
-    summary.update({'total': 0, 'success': 0, 'already_known': 0,
+    summary.update({'total': 0, 'success': 0, 'already_known': 0, 'quality': 0,
                     'playback': 0, 'missing': 0, 'unknown': 0})
     for cdx, memento, error in memento_info:
         summary['total'] += 1
@@ -477,6 +502,8 @@ def _filter_and_summarize_mementos(memento_info, summary):
         elif isinstance(error, NoMementoError):
             logger.info(f'  Missing memento: {cdx.raw_url}')
             summary['missing'] += 1
+        elif isinstance(error, BadMementoError):
+            summary['quality'] += 1
         elif isinstance(error, MementoPlaybackError):
             summary['playback'] += 1
             # Playback errors are not unusual or exceptional for us, so log
@@ -666,6 +693,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         print('\nLoaded {total} CDX records:\n'
               '  {success:6} successes ({success_pct:.2f}%)\n'
               '  {already_known:6} skipped - already in DB ({already_known_pct:.2f}%)\n'
+              '  {quality:6} skipped - low quality ({quality_pct:.2f}%)\n'
               '  {playback:6} could not be played back ({playback_pct:.2f}%)\n'
               '  {missing:6} had no actual memento ({missing_pct:.2f}%)\n'
               '  {unknown:6} unknown errors ({unknown_pct:.2f}%)'.format(
