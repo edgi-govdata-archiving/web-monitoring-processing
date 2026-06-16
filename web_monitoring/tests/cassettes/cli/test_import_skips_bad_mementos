@@ -1,0 +1,1638 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fhighways.dot.gov%2Fsafety%2Fdata-analysis-tools%2Frsdp%2Frsdp-tools%2Fhighway-performance-monitoring-system-hpms&limit=1000&from=20260416000000&to=20260416040000&showResumeKey=true&resolveRevisits=false
+  response:
+    body:
+      string: 'gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416004407 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 DLVUILOLP3CPXM25FPGZVYDVZJ73E3WO 873
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416010708 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 DDB6GACIIO7GNEHELKCXA2UMU6B77B37 865
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416012735 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 200 7MPK56S3Q6YHKGJGSNTU3MYJ2VGUTHDZ 14413
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416013305 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 ACQ3OOGD7LAOZHGN4KAMUUROAT76GGSN 874
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416015729 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 HOBD4IRIRXW36SXSFBI5Z6VTLI4DRHX6 876
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416022223 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 OTZAY3JA7CPMOIRYM2VN4TUYO3MKSGNU 874
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416025754 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 CR5FGT35SLWCLVLXNGETCRFLGI5R3SPI 870
+
+        gov,dot,highways)/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        20260416033741 https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+        text/html 403 NKSXVTN4OSOQ7YJG2C7S7VW6VCKJEZRW 874
+
+        '
+    headers:
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - text/plain
+      Date:
+      - Tue, 16 Jun 2026 04:59:25 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - BYPASS
+      X-RL:
+      - '1'
+      X-be:
+      - wb_cdx_pygwb_nomatch
+      X-location:
+      - cdx
+      server-timing:
+      - exclusion.robots;dur=0.077192, exclusion.robots.policy;dur=0.070742, esindex;dur=0.006713
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      - BYPASS
+      set-cookie:
+      - wb-cdx-nomatch-SERVER=wwwb-app217; path=/
+      x-app-server:
+      - wwwb-app217-dc8
+      x-tr:
+      - '721'
+      x-ts:
+      - '200'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416015729id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;52c90b17&#46;1776304649&#46;37a30af1\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;52c90b17&#46;1776304649&#46;37a30af1</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:25 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416013305/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 01:33:05 GMT", <https://web.archive.org/web/20260416015729/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 01:57:29 GMT", <https://web.archive.org/web/20260416022223/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 02:22:23 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 01:57:29 GMT
+      server-timing:
+      - captures_list;dur=5.006490, exclusion.robots;dur=0.552304, exclusion.robots.policy;dur=0.479657,
+        esindex;dur=0.060011, cdx.remote;dur=252.505289, LoadShardBlock;dur=1100.748166,
+        PetaboxLoader3.datanode;dur=547.242356, PetaboxLoader3.resolve;dur=130.786430,
+        load_resource;dur=85.124753
+      - TR;dur=0,Tw;dur=0,Tc;dur=9
+      set-cookie:
+      - wb-p-SERVER=wwwb-app249; path=/
+      x-app-server:
+      - wwwb-app249-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 01:57:30 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 01:57:30 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416015642-00001.warc.gz
+      x-tr:
+      - '1567'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416004407id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;52c90b17&#46;1776300247&#46;3766005f\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;52c90b17&#46;1776300247&#46;3766005f</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:25 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260415234556/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Wed, 15 Apr 2026 23:45:56 GMT", <https://web.archive.org/web/20260416004407/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 00:44:07 GMT", <https://web.archive.org/web/20260416010708/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 01:07:08 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 00:44:07 GMT
+      server-timing:
+      - captures_list;dur=3.300639, exclusion.robots;dur=0.364250, exclusion.robots.policy;dur=0.307881,
+        esindex;dur=0.049494, cdx.remote;dur=54.229006, LoadShardBlock;dur=694.376208,
+        PetaboxLoader3.datanode;dur=604.784253, PetaboxLoader3.resolve;dur=169.185162,
+        load_resource;dur=299.915821
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      set-cookie:
+      - wb-p-SERVER=wwwb-app256; path=/
+      x-app-server:
+      - wwwb-app256-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 00:44:08 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 00:44:08 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416004321-00001.warc.gz
+      x-tr:
+      - '1207'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416022223id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;4fc90b17&#46;1776306142&#46;529fb831\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;4fc90b17&#46;1776306142&#46;529fb831</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:25 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416015729/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 01:57:29 GMT", <https://web.archive.org/web/20260416022223/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 02:22:23 GMT", <https://web.archive.org/web/20260416025754/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 02:57:54 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 02:22:23 GMT
+      server-timing:
+      - captures_list;dur=3.540054, exclusion.robots;dur=0.439512, exclusion.robots.policy;dur=0.364801,
+        esindex;dur=0.045288, cdx.remote;dur=2227.926814, LoadShardBlock;dur=1280.475281,
+        PetaboxLoader3.datanode;dur=1079.899776, PetaboxLoader3.resolve;dur=262.418896,
+        load_resource;dur=107.573165
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      set-cookie:
+      - wb-p-SERVER=wwwb-app245; path=/
+      x-app-server:
+      - wwwb-app245-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 02:22:23 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 02:22:23 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416022137-00001.warc.gz
+      x-tr:
+      - '3729'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416010708id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;52c90b17&#46;1776301627&#46;377a8eeb\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;52c90b17&#46;1776301627&#46;377a8eeb</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:25 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416004407/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 00:44:07 GMT", <https://web.archive.org/web/20260416010708/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 01:07:08 GMT", <https://web.archive.org/web/20260416012735/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 01:27:35 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 01:07:08 GMT
+      server-timing:
+      - captures_list;dur=2.489158, exclusion.robots;dur=0.322315, exclusion.robots.policy;dur=0.278393,
+        esindex;dur=0.035327, cdx.remote;dur=88.453584, LoadShardBlock;dur=584.386331,
+        PetaboxLoader3.datanode;dur=408.489403, PetaboxLoader3.resolve;dur=224.466750,
+        load_resource;dur=239.993894
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      set-cookie:
+      - wb-p-SERVER=wwwb-app219; path=/
+      x-app-server:
+      - wwwb-app219-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 01:07:08 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 01:07:08 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416010624-00001.warc.gz
+      x-tr:
+      - '998'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416025754id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;4fc90b17&#46;1776308274&#46;52c070ba\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;4fc90b17&#46;1776308274&#46;52c070ba</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:25 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416022223/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 02:22:23 GMT", <https://web.archive.org/web/20260416025754/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 02:57:54 GMT", <https://web.archive.org/web/20260416033741/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 03:37:41 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 02:57:54 GMT
+      server-timing:
+      - captures_list;dur=3.423611, exclusion.robots;dur=0.378819, exclusion.robots.policy;dur=0.312592,
+        esindex;dur=0.056035, cdx.remote;dur=94.903701, LoadShardBlock;dur=607.475255,
+        PetaboxLoader3.datanode;dur=361.880495, PetaboxLoader3.resolve;dur=141.959458,
+        load_resource;dur=98.291743
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      set-cookie:
+      - wb-p-SERVER=wwwb-app255; path=/
+      x-app-server:
+      - wwwb-app255-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 02:57:54 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 02:57:54 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416025709-00001.warc.gz
+      x-tr:
+      - '958'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416013305id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;4fc90b17&#46;1776303185&#46;52418f0a\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;4fc90b17&#46;1776303185&#46;52418f0a</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:26 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416012735/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 01:27:35 GMT", <https://web.archive.org/web/20260416013305/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 01:33:05 GMT", <https://web.archive.org/web/20260416015729/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 01:57:29 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 01:33:05 GMT
+      server-timing:
+      - captures_list;dur=3.319213, exclusion.robots;dur=0.382875, exclusion.robots.policy;dur=0.300435,
+        esindex;dur=0.053219, cdx.remote;dur=108.111720, LoadShardBlock;dur=755.961156,
+        PetaboxLoader3.datanode;dur=418.606277, PetaboxLoader3.resolve;dur=329.026450,
+        load_resource;dur=377.998873
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      set-cookie:
+      - wb-p-SERVER=wwwb-app255; path=/
+      x-app-server:
+      - wwwb-app255-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 01:33:06 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 01:33:06 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416013220-00001.warc.gz
+      x-tr:
+      - '1390'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416033741id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access
+        Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;highways&#46;dot&#46;gov&#47;safety&#47;data&#45;analysis&#45;tools&#47;rsdp&#47;rsdp&#45;tools&#47;highway&#45;performance&#45;monitoring&#45;system&#45;hpms\"
+        on this server.<P>\nReference&#32;&#35;18&#46;4fc90b17&#46;1776310660&#46;52e1aceb\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;4fc90b17&#46;1776310660&#46;52e1aceb</P>\n</BODY>\n</HTML>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '499'
+      Content-Type:
+      - text/html
+      Date:
+      - Tue, 16 Jun 2026 04:59:26 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - HIT
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416025754/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 02:57:54 GMT", <https://web.archive.org/web/20260416033741/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 03:37:41 GMT", <https://web.archive.org/web/20260416040529/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 04:05:29 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 03:37:41 GMT
+      server-timing:
+      - captures_list;dur=3.484377, exclusion.robots;dur=0.358522, exclusion.robots.policy;dur=0.299049,
+        esindex;dur=0.050214, cdx.remote;dur=99.971457, LoadShardBlock;dur=542.994163,
+        PetaboxLoader3.datanode;dur=402.780446, PetaboxLoader3.resolve;dur=201.273856,
+        load_resource;dur=165.666307
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      set-cookie:
+      - wb-p-SERVER=wwwb-app256; path=/
+      x-app-server:
+      - wwwb-app256-dc8
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - max-age=0
+      x-archive-orig-connection:
+      - close
+      x-archive-orig-content-length:
+      - '499'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 03:37:41 GMT
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 03:37:41 GMT
+      x-archive-orig-mime-version:
+      - '1.0'
+      x-archive-orig-server:
+      - AkamaiGHost
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-src:
+      - EDGI-20260415214631-crawl926/EDGI-20260416033654-00001.warc.gz
+      x-tr:
+      - '952'
+      x-ts:
+      - '403'
+    status:
+      code: 403
+      message: Forbidden
+- request:
+    body: null
+    headers:
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - edgi.web_monitoring.WaybackClient/0.1.dev1196+gfd85927db.d20260604
+    method: GET
+    uri: https://web.archive.org/web/20260416012735id_/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms
+  response:
+    body:
+      string: "<!DOCTYPE html>\n<html lang=\"en\" dir=\"ltr\" prefix=\"og: https://ogp.me/ns#\"
+        class=\"is-ultimenu is-ultimobile\">\n  <head>\n    <meta charset=\"utf-8\"
+        />\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=UA-18660041-1\"></script>\n<script>window.dataLayer
+        = window.dataLayer || [];function gtag(){dataLayer.push(arguments)};gtag(\"js\",
+        new Date());gtag(\"set\", \"developer_id.dMDhkMT\", true);gtag(\"config\",
+        \"UA-18660041-1\", {\"groups\":\"default\",\"anonymize_ip\":true,\"page_placeholder\":\"PLACEHOLDER_page_path\"});gtag(\"config\",
+        \"G-VW1SFWJKBB\", {\"groups\":\"default\",\"page_placeholder\":\"PLACEHOLDER_page_location\"});gtag(\"config\",
+        \"UA-33523145-1\", {\"groups\":\"default\",\"anonymize_ip\":true,\"page_placeholder\":\"PLACEHOLDER_page_path\"});gtag(\"config\",
+        \"G-0623JYSC1Q\", {\"groups\":\"default\",\"page_placeholder\":\"PLACEHOLDER_page_location\"});//gtag('config',
+        'UA-33523145-1');</script>\n<meta name=\"description\" content=\"The Highway
+        Performance Monitoring System (HPMS) is a national level highway information
+        system used to support a data-driven decision process within the Federal Highway
+        Administration (FHWA), the Department of Transportation (DOT), and the United
+        States Congress. It includes information on the extent, condition, performance,
+        use, and operating characteristics of the nation\u2019s highways. Limited
+        information on travel and paved miles is summarized for the lowest functional
+        class roadway systems.\" />\n<link rel=\"canonical\" href=\"https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms\"
+        />\n<meta name=\"twitter:card\" content=\"summary_large_image\" />\n<meta
+        name=\"twitter:title\" content=\"Highway Performance Monitoring System (HPMS)\"
+        />\n<meta name=\"twitter:description\" content=\"The Highway Performance Monitoring
+        System (HPMS) is a national level highway information system used to support
+        a data-driven decision process within the Federal Highway Administration (FHWA),
+        the Department of Transportation (DOT), and the United States Congress. It
+        includes information on the extent, condition, performance, use, and operating
+        characteristics of the nation\u2019s highways. Limited information on travel
+        and paved miles is summarized for the lowest functional class roadway systems.\"
+        />\n<meta name=\"twitter:site\" content=\"@USDOT\" />\n<meta name=\"twitter:creator\"
+        content=\"@USDOT\" />\n<meta name=\"twitter:image\" content=\"https://highways.dot.gov/themes/custom/dot_cms/images/seal_dot.png\"
+        />\n<meta name=\"Generator\" content=\"Drupal 10 (https://www.drupal.org)\"
+        />\n<meta name=\"MobileOptimized\" content=\"width\" />\n<meta name=\"HandheldFriendly\"
+        content=\"true\" />\n<meta name=\"viewport\" content=\"width=device-width,
+        initial-scale=1, shrink-to-fit=no\" />\n<meta http-equiv=\"x-ua-compatible\"
+        content=\"ie=edge\" />\n<link rel=\"icon\" href=\"/themes/custom/dot_cms/favicon_dot.png\"
+        type=\"image/png\" />\n\n    <title>Highway Performance Monitoring System
+        (HPMS) | FHWA</title>\n    <link rel=\"stylesheet\" media=\"all\" href=\"/sites/fhwa.dot.gov/files/css/css_TKaJEtDwRP5H7GZsuZckSBYvIx7O8c9U6M9whKiVnsQ.css?delta=0&amp;language=en&amp;theme=fhwa&amp;include=eJx1kFFuw0AIRC-09f5Uvc6K3cUOMgYLcNLcvo5TtZHV_iDmMRoBVTU8DNZSwYw0V0PozbalpnqeiXZMbcZOoVZIOkpU1jbnlz41ZYbV6Tlpapi6RmmL51El4IauC5aPhJ_BJHPutq3Aw7d8YIMyEnIvHb0ZrUEq-R9emnsaLzc4pR9oYq3Abx73PXpKi3bgk-_J_jTqilIcxEvrklYwmPZvXLxMRj2f9PDzrvfkdw9ccgXHtHHQgrLlBoYxhBHIxC_8uMt_tY5jA7mCD96AkSRdCW-ejzrsm22MX_WsrKk\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"/sites/fhwa.dot.gov/files/css/css_t3Kls_LieXD5sPVVIUYVQXKq6R2__1cD3uhR-g4HK8g.css?delta=1&amp;language=en&amp;theme=fhwa&amp;include=eJx1kFFuw0AIRC-09f5Uvc6K3cUOMgYLcNLcvo5TtZHV_iDmMRoBVTU8DNZSwYw0V0PozbalpnqeiXZMbcZOoVZIOkpU1jbnlz41ZYbV6Tlpapi6RmmL51El4IauC5aPhJ_BJHPutq3Aw7d8YIMyEnIvHb0ZrUEq-R9emnsaLzc4pR9oYq3Abx73PXpKi3bgk-_J_jTqilIcxEvrklYwmPZvXLxMRj2f9PDzrvfkdw9ccgXHtHHQgrLlBoYxhBHIxC_8uMt_tY5jA7mCD96AkSRdCW-ejzrsm22MX_WsrKk\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"https://use.fontawesome.com/releases/v6.5.1/css/all.css\"
+        crossorigin=\"anonymous\" integrity=\"sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"/sites/fhwa.dot.gov/files/css/css_ih8gkDvFWJSjCBUqecVa3HzHieq_Ohz6Wg7JIfg-Z0s.css?delta=3&amp;language=en&amp;theme=fhwa&amp;include=eJx1kFFuw0AIRC-09f5Uvc6K3cUOMgYLcNLcvo5TtZHV_iDmMRoBVTU8DNZSwYw0V0PozbalpnqeiXZMbcZOoVZIOkpU1jbnlz41ZYbV6Tlpapi6RmmL51El4IauC5aPhJ_BJHPutq3Aw7d8YIMyEnIvHb0ZrUEq-R9emnsaLzc4pR9oYq3Abx73PXpKi3bgk-_J_jTqilIcxEvrklYwmPZvXLxMRj2f9PDzrvfkdw9ccgXHtHHQgrLlBoYxhBHIxC_8uMt_tY5jA7mCD96AkSRdCW-ejzrsm22MX_WsrKk\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"//fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&amp;display=swap\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"//fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&amp;display=swap\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"//fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap\"
+        />\n<link rel=\"stylesheet\" media=\"all\" href=\"//fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&amp;display=swap\"
+        />\n\n    <script type=\"application/json\" data-drupal-selector=\"drupal-settings-json\">{\"path\":{\"baseUrl\":\"\\/\",\"pathPrefix\":\"\",\"currentPath\":\"node\\/69336\",\"currentPathIsAdmin\":false,\"isFront\":false,\"currentLanguage\":\"en\"},\"pluralDelimiter\":\"\\u0003\",\"suppressDeprecationErrors\":true,\"google_analytics\":{\"account\":\"UA-18660041-1\",\"trackOutbound\":true,\"trackMailto\":true,\"trackDownload\":true,\"trackDownloadExtensions\":\"7z|aac|arc|arj|asf|asx|avi|bin|csv|doc(x|m)?|dot(x|m)?|exe|flv|gif|gz|gzip|hqx|jar|jpe?g|js|mp(2|3|4|e?g)|mov(ie)?|msi|msp|pdf|phps|png|ppt(x|m)?|pot(x|m)?|pps(x|m)?|ppam|sld(x|m)?|thmx|qtm?|ra(m|r)?|sea|sit|tar|tgz|torrent|txt|wav|wma|wmv|wpd|xls(x|m|b)?|xlt(x|m)|xlam|xml|z|zip\"},\"data\":{\"extlink\":{\"extTarget\":true,\"extTargetAppendNewWindowDisplay\":true,\"extTargetAppendNewWindowLabel\":\"(opens
+        in a new window)\",\"extTargetNoOverride\":false,\"extNofollow\":false,\"extTitleNoOverride\":false,\"extNoreferrer\":false,\"extFollowNoOverride\":false,\"extClass\":\"ext\",\"extLabel\":\"(link
+        is external)\",\"extImgClass\":false,\"extSubdomains\":true,\"extExclude\":\"(.\\\\gov)|(.\\\\mil)|(addthis.com)|(usmma.edu)|(medium.com)|(facebook.com)|(twitter.com)|(flickr.com)|(linkedin.com)|(youtube.com)|(instagram.com)|(medium.com)|(greatlakes-seaway.com)|(afloatjobs.vet)\",\"extInclude\":\"\",\"extCssExclude\":\"\",\"extCssInclude\":\"\",\"extCssExplicit\":\"\",\"extAlert\":false,\"extAlertText\":\"This
+        link will take you to an external web site. We are not responsible for their
+        content.\",\"extHideIcons\":false,\"mailtoClass\":\"mailto\",\"telClass\":\"\",\"mailtoLabel\":\"(link
+        sends email)\",\"telLabel\":\"(link is a phone number)\",\"extUseFontAwesome\":false,\"extIconPlacement\":\"append\",\"extPreventOrphan\":false,\"extFaLinkClasses\":\"fa
+        fa-external-link\",\"extFaMailtoClasses\":\"fa fa-envelope-o\",\"extAdditionalLinkClasses\":\"\",\"extAdditionalMailtoClasses\":\"\",\"extAdditionalTelClasses\":\"\",\"extFaTelClasses\":\"fa
+        fa-phone\",\"allowedDomains\":[],\"extExcludeNoreferrer\":\"\"}},\"collapsiblock\":{\"active_pages\":false,\"slide_speed\":200,\"cookie_lifetime\":null,\"switcher_enabled\":null,\"switcher_class\":null},\"user\":{\"uid\":0,\"permissionsHash\":\"0a5f01ef17f341859f1608018b0d6965f21cc67bd80727ca76f3744e401a5073\"}}</script>\n<script
+        src=\"/sites/fhwa.dot.gov/files/js/js_t93kQP2c6wtHK4Vh5Hlrk6OAbWYyig8Ee6K-rf2AMys.js?scope=header&amp;delta=0&amp;language=en&amp;theme=fhwa&amp;include=eJxdjlEOwyAMQy9Ex5FQChljdQkiqdbefmhdf_oXP9uRowDUtMyQuPgonR3vjWoK8XQ4EOBPNl1sZAylLj71rREef-merw_5DJkJk9oxWHZZJGN8qYTDSlR_B26VRLjX2tbzCL1pD61LZFXp3nrJmXv4mU5tbCJI5WC8NpCx-lnSMUWQqttgZeW6-ev4AnQhXeU\"></script>\n\n
+        \   <!-- DAP Implementation -->\n    <script async type=\"text/javascript\"
+        id=\"_fed_an_ua_tag\" src=\"https://dap.digitalgov.gov/Universal-Federated-Analytics-Min.js?agency=DOT\"></script>\n
+        \ <script >bazadebezolkohpepadr=\"601615616\"</script><script type=\"text/javascript\"
+        src=\"https://highways.dot.gov/akam/13/23dbec6c\"  defer></script></head>\n
+        \ <body class=\"layout-no-sidebars page-node-69336 path-safety-data-analysis-tools-rsdp-rsdp-tools-highway-performance-monitoring-system-hpms
+        path-node node--type-rsdp-tool\">\n  <noscript>Please enable JavaScript to
+        use this site.</noscript>\n    <a href=\"#main\" class=\"visually-hidden focusable
+        skip-link\">\n      Skip to main content\n    </a>\n    \n      <div class=\"dialog-off-canvas-main-canvas\"
+        data-off-canvas-main-canvas>\n    <div id=\"page-wrapper\" class=\"page-wrapper\">\n
+        \ <div id=\"page\" class=\"page\">\n\n    \n<section class=\"usa-banner\">\n
+        \ <h1 class=\"sr-only\">USA Banner</h1>\n  <div class=\"usa-banner-inner container\">\n
+        \   <div class=\"row\">\n      <div class=\"usa-accordion col\" id=\"accordion\">\n
+        \       <header class=\"usa-banner-header\" id=\"headingOne\">\n          <div
+        aria-controls=\"collapseOne\" aria-expanded=\"false\" class=\"collapsed small
+        row\" data-target=\"#collapseOne\" data-toggle=\"collapse\" role=\"complementary\">\n
+        \           <div class=\"usa-banner-guidance-gov usa-width-one-full col-sm
+        d-flex\">\n              <div class=\"usa-media_block-icon\">\n                <img
+        class=\"usa-banner-flag\" src=\"/themes/custom/dot_cms/images/assets/us_flag_small.svg\"
+        alt=\"U.S. flag\">\n              </div>\n              <div class=\"usa-media_block-body\">\n
+        \               <p>An official website of the United States government <button
+        class=\"usa-accordion-button usa-banner-button\"><span class=\"usa-banner-button-text\">Here's
+        how you know</span></button></p>\n              </div>\n            </div>\n
+        \         </div>\n        </header>\n        <div class=\"usa-banner-content
+        container\">\n          <div aria-labelledby=\"headingOne\" class=\"collapse
+        row\" data-parent=\"#accordion\" id=\"collapseOne\">\n            <div class=\"usa-banner-guidance-gov
+        usa-width-one-half col-sm d-flex\">\n              <div class=\"usa-media_block-icon\">\n
+        \               <img class=\"usa-banner-icon\" src=\"/themes/custom/dot_cms/images/assets/icon-dot-gov.svg\"
+        alt=\"Official US Government Icon\">\n              </div>\n              <div
+        class=\"usa-media_block-body\">\n                <p><small><strong>Official
+        websites use .gov</strong><br>A <strong>.gov</strong> website belongs to an
+        official government organization in the United States.</small></p>\n              </div>\n
+        \           </div>\n            <div class=\"usa-banner-guidance-ssl usa-width-one-half
+        col-sm d-flex\">\n              <div class=\"usa-media_block-icon\">\n                <img
+        class=\"usa-banner-icon\" src=\"/themes/custom/dot_cms/images/assets/icon-https.svg\"
+        alt=\"Secure Site Icon\">\n              </div>\n              <div class=\"usa-media_block-body\">\n
+        \               <p><small><strong>Secure .gov websites use HTTPS</strong><br>\n
+        \                 A <strong>lock</strong> ( <span class=\"icon-lock\"><svg
+        xmlns=\"http://www.w3.org/2000/svg\" width=\"52\" height=\"64\" viewBox=\"0
+        0 52 64\" class=\"usa-banner__lock-image\" role=\"img\" aria-labelledby=\"banner-lock-title
+        banner-lock-description\"><title id=\"banner-lock-title\">Lock</title><desc
+        id=\"banner-lock-description\">A locked padlock</desc><path fill=\"#000000\"
+        fill-rule=\"evenodd\" d=\"M26 0c10.493 0 19 8.507 19 19v9h3a4 4 0 0 1 4 4v28a4
+        4 0 0 1-4 4H4a4 4 0 0 1-4-4V32a4 4 0 0 1 4-4h3v-9C7 8.507 15.507 0 26 0zm0
+        8c-5.979 0-10.843 4.77-10.996 10.712L15 19v9h22v-9c0-6.075-4.925-11-11-11z\"></path></svg></span>
+        ) or <strong>https://</strong> means you\u2019ve safely connected to the .gov
+        website. Share sensitive information only on official, secure websites.\n
+        \               </small></p>\n              </div>\n            </div>\n          </div>\n
+        \       </div>\n      </div>\n    </div>\n  </div>\n</section>\n\n    <div
+        class=\"row region region-site-notification\">\n    \n    <div class=\"block
+        block--site-notification block--emergency block-views block-views-blocksite-notification-block-notification-emergency
+        w-100 clearfix\">\n    <div block=\"block-fhwa-views-block-site-notification-block-notification-emergency\"
+        class=\"w-100\">\n</div>\n\n  </div>\n  \n          <div class=\"block block--site-notification
+        block--warning block-views block-views-blocksite-notification-block-notification-warning
+        w-100 clearfix\">\n      <div block=\"block-fhwa-views-block-site-notification-block-notification-warning\"
+        class=\"w-100\">\n</div>\n\n    </div>\n  \n  </div>\n\n<style>\n.dot-ribbon
+        {\n\tbackground: #15396c;\n\tcolor: white;\n\theight: 1.75rem;\n\tdisplay:
+        flex;\n\talign-items: center;\n\tfont-size: .8rem;\n\tposition: relative;\n\tz-index:
+        100;\n}\n.dot-ribbon svg {\n\twidth: 17px;\n\topacity: .5;\n\tmargin-right:
+        6px;\n}\n.dot-ribbon a:link,\n.dot-ribbon a:hover,\n.dot-ribbon a:visited,\n.dot-ribbon
+        a:active {\n\tcolor: white;\n}\n</style>\n<div class=\"dot-ribbon\">\n\t<div
+        class=\"container\">\n\t\t<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0
+        0 35.82 37.1\" role=\"img\" >\n\t\t\t<title>U.S. Department of Transportation</title>\n\t\t\t<desc>U.S.
+        Department of Transportation Icon</desc>\n\t\t\t<defs><style>.cls-1{fill:#FFFFFF
+        !important;}</style></defs><title>United States Department of Transportation</title><g
+        id=\"Layer_2\" data-name=\"Layer 2\"><g id=\"Layer_1-2\" data-name=\"Layer
+        1\"><path class=\"cls-1\" d=\"M4.46,6.35a8.38,8.38,0,0,1,8.15-2.94c2.71.55,4.26,2.77,4.78,5.43a6.31,6.31,0,0,1-2.75,6.79c-3.68,2.1-8,3.74-8.86,8.5A13.42,13.42,0,0,0,8.47,34.4C3.81,31.8,1.13,26.6.25,21.23A18,18,0,0,1,4.46,6.35\"/><path
+        class=\"cls-1\" d=\"M14.41,36.71A8.65,8.65,0,0,1,7.85,30.9a6.51,6.51,0,0,1,2.13-7,5.85,5.85,0,0,1,7.05-1c3.61,2.23,7.17,5.31,11.56,3.64A12.82,12.82,0,0,0,35.81,19C36,24.49,33,29.5,29,33a16.57,16.57,0,0,1-14.55,3.72\"/><path
+        class=\"cls-1\" d=\"M34.73,12.39a9.12,9.12,0,0,1-1.53,8.8c-1.79,2.17-4.42,2.47-6.91,1.63A6.18,6.18,0,0,1,21.92,17c0-4.35.81-9.1-2.8-12.17A12.51,12.51,0,0,0,9.05,2.33c4.47-2.92,10.27-2.89,15.22-1A17.36,17.36,0,0,1,34.73,12.39\"/></g></g>\n\t\t</svg>\n\t\t<a
+        href=\"https://www.transportation.gov\">United States Department of Transportation</a>\n</div>\n</div>\n\n
+        <header id=\"header\" class=\"header site-header site-masthead bg-primary\"
+        role=\"banner\" aria-label=\"Site header\">\n  <div class=\"container\">\n
+        \   <div class=\"row\">\n              <nav class=\"navbar navbar-dark navbar-expand-lg\"
+        id=\"navbar-main\">\n                <a href=\"/\" title=\"Home\" rel=\"home\"
+        class=\"navbar-brand\">\n              <img src=\"/themes/custom/fhwa/FHWA_logo%402x.svg\"
+        alt=\"Home\" class=\"img-fluid d-inline-block align-top\" />\n            \n
+        \   </a>\n    \n\n                  <button class=\"navbar-toggler navbar-toggler-right\"
+        type=\"button\" data-toggle=\"collapse\" data-target=\"#CollapsingNavbar\"
+        aria-controls=\"CollapsingNavbar\" aria-expanded=\"false\" aria-label=\"Toggle
+        navigation\"><span class=\"navbar-toggler-icon\"></span></button>\n                      <div
+        class=\"form-inline navbar-form\">\n                <section class=\"region
+        region-header-form\">\n    <div id=\"block-customfhwaheadersearch\" class=\"block
+        block-fixed-block-content block-fixed-block-contentcustom-fhwa-header-search\">\n
+        \ \n    \n      <div class=\"content\">\n      \n            <div class=\"clearfix
+        text-formatted field field--name-body field--type-text-with-summary field--label-hidden
+        field__item\"><div class=\"usasearch-search-block-form block block-usasearch
+        block-usasearch-search-form-block\" data-drupal-selector=\"usasearch-search-block-form\"
+        id=\"block-fhwa-usasearchform\">\n   <div class=\"search__wrapper\">\n      <form
+        block=\"block-fhwa-usasearchform\" action=\"https://search.usa.gov/search\"
+        method=\"GET\" id=\"usasearch-search-block-form\" accept-charset=\"UTF-8\">\n
+        \        <fieldset class=\"js-form-item js-form-type-search form-type-search
+        js-form-item-query form-item-query form-no-label form-group\" aria-labelledby=\"headerquery\">\n
+        \           <legend class=\"d-none\">Search DOT</legend>\n            <label
+        for=\"query\" class=\"sr-only\">Search</label>\n            <input id=\"query\"
+        title=\"Enter the terms you wish to search for.\" placeholder=\"Search\" class=\"usagov-search-autocomplete
+        form-search form-control ui-autocomplete-input\" autocomplete=\"off\" aria-autocomplete=\"list\"
+        aria-haspopup data-drupal-selector=\"edit-query\" type=\"search\" name=\"query\"
+        value size=\"60\" maxlength=\"128\">\n         </fieldset>\n         <input
+        data-drupal-selector=\"edit-affiliate\" type=\"hidden\" name=\"affiliate\"
+        value=\"dot-fhwa\" class=\"form-control\">\n         <div data-drupal-selector=\"edit-actions\"
+        class=\"form-actions js-form-wrapper form-group w-100\" id=\"edit-actions\"><input
+        data-drupal-selector=\"edit-submit\" type=\"submit\" id=\"edit-submit\" value=\"Search\"
+        class=\"button js-form-submit form-submit btn btn-primary form-control\"></div>\n
+        \     </form>\n   </div>\n</div></div>\n      \n    </div>\n  </div>\n\n  </section>\n\n
+        \           </div>\n                    <div class=\"collapse navbar-collapse\"
+        id=\"CollapsingNavbar\">\n              <section class=\"region region-primary-menu\">\n
+        \   <div id=\"block-ultimenu-main-navigation\" class=\"block block-ultimenu
+        block-ultimenu-blockultimenu-main\">\n  \n    \n      <div class=\"content\">\n
+        \     <ul id=\"ultimenu-main\" data-ultimenu=\"main\" class=\"ultimenu ultimenu--offcanvas
+        is-ultihover is-ulticaret--triangle ultimenu--main ultimenu--htb ultimenu--horizontal\"><li
+        class=\"ultimenu__item uitem has-ultimenu\"><a href=\"/about/about-fhwa\"
+        data-drupal-link-system-path=\"node/90061\" class=\"ultimenu__link\">About
+        FHWA<span class=\"ultimenu__caret caret\" aria-hidden=\"true\"><i></i></span></a><section
+        class=\"ultimenu__flyout is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region
+        row region region-ultimenu-main-about-fhwa\">\n    <div class=\"ultimenusub
+        ultimenusub--main-about-fhwa w-100\">\n              <ul class=\"clearfix
+        nav navbar-nav\">\n                    <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/about/fhwa-organization\" class=\"ultimenu__link
+        nav-link nav-link--about-fhwa-organization\">FHWA Organization</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/about/key-personnel\" class=\"ultimenu__link nav-link nav-link--about-key-personnel\">Key
+        Personnel</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/about/headquarters-offices\"
+        class=\"ultimenu__link nav-link nav-link--about-headquarters-offices\">Headquarters
+        Offices</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/about/field-offices\" class=\"ultimenu__link
+        nav-link nav-link--about-field-offices\">Field Offices</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/about/business-opportunities\" class=\"ultimenu__link nav-link nav-link--about-business-opportunities\">Business
+        Opportunities</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/about/staff-directories\"
+        class=\"ultimenu__link nav-link nav-link--about-staff-directories\">Staff
+        Directories</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/careers\" class=\"ultimenu__link
+        nav-link nav-link--careers\">Careers</a>\n              </li>\n                <li
+        class=\"ultimenu__item nav-item\">\n                          <a href=\"/highway-history\"
+        class=\"ultimenu__link nav-link nav-link--highway-history\">Highway History</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/about/contact-us\" class=\"ultimenu__link
+        nav-link nav-link--about-contact-us\">Contact Us</a>\n              </li>\n
+        \       </ul>\n  \n\n</div>\n\n  </section>\n\n          </section></li><li
+        class=\"ultimenu__item uitem has-ultimenu\"><a href=\"https://www.fhwa.dot.gov/programs\"
+        class=\"ultimenu__link is-external\">Programs<span class=\"ultimenu__caret
+        caret\" aria-hidden=\"true\"><i></i></span></a><section class=\"ultimenu__flyout
+        is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region row
+        region region-ultimenu-main-programs\">\n    <div class=\"ultimenusub ultimenusub--main-programs
+        w-100\">\n              <ul class=\"clearfix nav navbar-nav\">\n                    <li
+        class=\"ultimenu__item nav-item\">\n                          <a href=\"/cfo/doing-business-fhwa\"
+        class=\"ultimenu__link nav-link nav-link--cfo-doing-business-fhwa\">Acquisition
+        Management</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/federal-lands\" class=\"ultimenu__link
+        nav-link nav-link--federal-lands\">Federal Lands Highway</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/infrastructure/\" class=\"ultimenu__link nav-link
+        nav-link-https--wwwfhwadotgov-infrastructure-\">Infrastructure</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/innovativeprograms/\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwfhwadotgov-innovativeprograms-\">Innovative Program
+        Delivery</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://ops.fhwa.dot.gov/\"
+        class=\"ultimenu__link nav-link nav-link-https--opsfhwadotgov-\">Operations</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/hep/\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwfhwadotgov-hep-\">Planning, Environment, and Realty</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/policy/\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwfhwadotgov-policy-\">Policy</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://highways.dot.gov/research\" class=\"ultimenu__link nav-link
+        nav-link-https--highwaysdotgov-research\">Research, Development, and Technology</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/safety\" class=\"ultimenu__link nav-link
+        nav-link--safety\">Safety</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://www.fhwa.dot.gov/resources/topics/\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-resources-topics-\">Browse
+        by Topics</a>\n              </li>\n        </ul>\n  \n\n</div>\n\n  </section>\n\n
+        \         </section></li><li class=\"ultimenu__item uitem has-ultimenu\"><a
+        href=\"https://www.fhwa.dot.gov/resources/\" class=\"ultimenu__link is-external\">Resources<span
+        class=\"ultimenu__caret caret\" aria-hidden=\"true\"><i></i></span></a><section
+        class=\"ultimenu__flyout is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region
+        row region region-ultimenu-main-resources\">\n    <div class=\"ultimenusub
+        ultimenusub--main-resources w-100\">\n              <ul class=\"clearfix nav
+        navbar-nav\">\n                    <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/resources/topics/\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-resources-topics-\">Core
+        Highway Topics</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/fed-aid-essentials\" class=\"ultimenu__link
+        nav-link nav-link--fed-aid-essentials\">Federal Aid Essentials</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/automation\" class=\"ultimenu__link nav-link nav-link--automation\">Automation</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/laws-regulations\" class=\"ultimenu__link
+        nav-link nav-link--laws-regulations\">Laws and Regulations</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/pgc/\" class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-pgc-\">Policy
+        &amp; Guidance Center</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://www.fhwa.dot.gov/508/\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-508-\">Section
+        508</a>\n              </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/resources/publications-statistics\" class=\"ultimenu__link
+        nav-link nav-link--resources-publications-statistics\">Publications and Statistics</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/resources/training.cfm\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-resources-trainingcfm\">Professional
+        Development</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/nhi/home\" class=\"ultimenu__link
+        nav-link nav-link--nhi-home\">National Highway Institute</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/resourcecenter/\" class=\"ultimenu__link nav-link
+        nav-link-https--wwwfhwadotgov-resourcecenter-\">Resource Center</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/resources/accessibility-resource-library\" class=\"ultimenu__link
+        nav-link nav-link--resources-accessibility-resource-library\">Accessibility
+        Resource Library</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://highways.dot.gov/research/resources/research-library/federal-highway-administration-research-library\"
+        class=\"ultimenu__link nav-link nav-link-https--highwaysdotgov-research-resources-research-library-federal-highway-administration-research-library\">FHWA
+        Research Library</a>\n              </li>\n        </ul>\n  \n\n</div>\n\n
+        \ </section>\n\n          </section></li><li class=\"ultimenu__item uitem
+        has-ultimenu\"><a href=\"/newsroom\" data-drupal-link-system-path=\"node/5216\"
+        class=\"ultimenu__link\">Newsroom<span class=\"ultimenu__caret caret\" aria-hidden=\"true\"><i></i></span></a><section
+        class=\"ultimenu__flyout is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region
+        row region region-ultimenu-main-newsroom\">\n    <div class=\"ultimenusub
+        ultimenusub--main-newsroom w-100\">\n              <ul class=\"clearfix nav
+        navbar-nav\">\n                    <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/newsroom/press-releases\" class=\"ultimenu__link
+        nav-link nav-link--newsroom-press-releases\">Press Releases</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/newsroom/speeches-and-testimony\" class=\"ultimenu__link nav-link
+        nav-link--newsroom-speeches-and-testimony\">Speeches &amp; Testimony</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"http://www.flickr.com/photos/fhwa/\" class=\"ultimenu__link
+        nav-link nav-link-http--wwwflickrcom-photos-fhwa-\">Photos</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.youtube.com/user/USDOTFHWA/featured\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwyoutubecom-user-usdotfhwa-featured\">Videos</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/newsroom/media-contacts\" class=\"ultimenu__link
+        nav-link nav-link--newsroom-media-contacts\">Media Contacts</a>\n              </li>\n
+        \       </ul>\n  \n\n</div>\n\n  </section>\n\n          </section></li></ul><button
+        data-ultimenu-button=\"#ultimenu-main\" class=\"button button--ultimenu button--ultiburger\"
+        aria-label=\"Menu Main navigation (Desktop)\"><span class=\"bars\">Menu Main
+        navigation (Desktop)</span></button>\n    </div>\n  </div>\n<div id=\"block-ultimenu-mobile-navigation\"
+        class=\"block block-ultimenu block-ultimenu-blockultimenu-main\">\n  \n    \n
+        \     <div class=\"content\">\n      <ul id=\"ultimenu-main\" data-ultimenu=\"main\"
+        class=\"ultimenu ultimenu--offcanvas is-ulticaret--triangle ultimenu--main
+        ultimenu--htb ultimenu--horizontal\"><li class=\"ultimenu__item uitem has-ultimenu\"><a
+        href=\"/about/about-fhwa\" data-drupal-link-system-path=\"node/90061\" class=\"ultimenu__link\">About
+        FHWA<span class=\"ultimenu__caret caret\" aria-hidden=\"true\"><i></i></span></a><section
+        class=\"ultimenu__flyout is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region
+        row region region-ultimenu-main-about-fhwa\">\n    <div class=\"ultimenusub
+        ultimenusub--main-about-fhwa w-100\">\n              <ul class=\"clearfix
+        nav navbar-nav\">\n                    <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/about/fhwa-organization\" class=\"ultimenu__link
+        nav-link nav-link--about-fhwa-organization\">FHWA Organization</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/about/key-personnel\" class=\"ultimenu__link nav-link nav-link--about-key-personnel\">Key
+        Personnel</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/about/headquarters-offices\"
+        class=\"ultimenu__link nav-link nav-link--about-headquarters-offices\">Headquarters
+        Offices</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/about/field-offices\" class=\"ultimenu__link
+        nav-link nav-link--about-field-offices\">Field Offices</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/about/business-opportunities\" class=\"ultimenu__link nav-link nav-link--about-business-opportunities\">Business
+        Opportunities</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/about/staff-directories\"
+        class=\"ultimenu__link nav-link nav-link--about-staff-directories\">Staff
+        Directories</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/careers\" class=\"ultimenu__link
+        nav-link nav-link--careers\">Careers</a>\n              </li>\n                <li
+        class=\"ultimenu__item nav-item\">\n                          <a href=\"/highway-history\"
+        class=\"ultimenu__link nav-link nav-link--highway-history\">Highway History</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/about/contact-us\" class=\"ultimenu__link
+        nav-link nav-link--about-contact-us\">Contact Us</a>\n              </li>\n
+        \       </ul>\n  \n\n</div>\n\n  </section>\n\n          </section></li><li
+        class=\"ultimenu__item uitem has-ultimenu\"><a href=\"https://www.fhwa.dot.gov/programs\"
+        class=\"ultimenu__link is-external\">Programs<span class=\"ultimenu__caret
+        caret\" aria-hidden=\"true\"><i></i></span></a><section class=\"ultimenu__flyout
+        is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region row
+        region region-ultimenu-main-programs\">\n    <div class=\"ultimenusub ultimenusub--main-programs
+        w-100\">\n              <ul class=\"clearfix nav navbar-nav\">\n                    <li
+        class=\"ultimenu__item nav-item\">\n                          <a href=\"/cfo/doing-business-fhwa\"
+        class=\"ultimenu__link nav-link nav-link--cfo-doing-business-fhwa\">Acquisition
+        Management</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/federal-lands\" class=\"ultimenu__link
+        nav-link nav-link--federal-lands\">Federal Lands Highway</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/infrastructure/\" class=\"ultimenu__link nav-link
+        nav-link-https--wwwfhwadotgov-infrastructure-\">Infrastructure</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/innovativeprograms/\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwfhwadotgov-innovativeprograms-\">Innovative Program
+        Delivery</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://ops.fhwa.dot.gov/\"
+        class=\"ultimenu__link nav-link nav-link-https--opsfhwadotgov-\">Operations</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/hep/\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwfhwadotgov-hep-\">Planning, Environment, and Realty</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/policy/\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwfhwadotgov-policy-\">Policy</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://highways.dot.gov/research\" class=\"ultimenu__link nav-link
+        nav-link-https--highwaysdotgov-research\">Research, Development, and Technology</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/safety\" class=\"ultimenu__link nav-link
+        nav-link--safety\">Safety</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://www.fhwa.dot.gov/resources/topics/\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-resources-topics-\">Browse
+        by Topics</a>\n              </li>\n        </ul>\n  \n\n</div>\n\n  </section>\n\n
+        \         </section></li><li class=\"ultimenu__item uitem has-ultimenu\"><a
+        href=\"https://www.fhwa.dot.gov/resources/\" class=\"ultimenu__link is-external\">Resources<span
+        class=\"ultimenu__caret caret\" aria-hidden=\"true\"><i></i></span></a><section
+        class=\"ultimenu__flyout is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region
+        row region region-ultimenu-main-resources\">\n    <div class=\"ultimenusub
+        ultimenusub--main-resources w-100\">\n              <ul class=\"clearfix nav
+        navbar-nav\">\n                    <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/resources/topics/\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-resources-topics-\">Core
+        Highway Topics</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/fed-aid-essentials\" class=\"ultimenu__link
+        nav-link nav-link--fed-aid-essentials\">Federal Aid Essentials</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/automation\" class=\"ultimenu__link nav-link nav-link--automation\">Automation</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/laws-regulations\" class=\"ultimenu__link
+        nav-link nav-link--laws-regulations\">Laws and Regulations</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/pgc/\" class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-pgc-\">Policy
+        &amp; Guidance Center</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://www.fhwa.dot.gov/508/\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-508-\">Section
+        508</a>\n              </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/resources/publications-statistics\" class=\"ultimenu__link
+        nav-link nav-link--resources-publications-statistics\">Publications and Statistics</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"https://www.fhwa.dot.gov/resources/training.cfm\"
+        class=\"ultimenu__link nav-link nav-link-https--wwwfhwadotgov-resources-trainingcfm\">Professional
+        Development</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"/nhi/home\" class=\"ultimenu__link
+        nav-link nav-link--nhi-home\">National Highway Institute</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.fhwa.dot.gov/resourcecenter/\" class=\"ultimenu__link nav-link
+        nav-link-https--wwwfhwadotgov-resourcecenter-\">Resource Center</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/resources/accessibility-resource-library\" class=\"ultimenu__link
+        nav-link nav-link--resources-accessibility-resource-library\">Accessibility
+        Resource Library</a>\n              </li>\n                <li class=\"ultimenu__item
+        nav-item\">\n                          <a href=\"https://highways.dot.gov/research/resources/research-library/federal-highway-administration-research-library\"
+        class=\"ultimenu__link nav-link nav-link-https--highwaysdotgov-research-resources-research-library-federal-highway-administration-research-library\">FHWA
+        Research Library</a>\n              </li>\n        </ul>\n  \n\n</div>\n\n
+        \ </section>\n\n          </section></li><li class=\"ultimenu__item uitem
+        has-ultimenu\"><a href=\"/newsroom\" data-drupal-link-system-path=\"node/5216\"
+        class=\"ultimenu__link\">Newsroom<span class=\"ultimenu__caret caret\" aria-hidden=\"true\"><i></i></span></a><section
+        class=\"ultimenu__flyout is-htb d-lg-flex p-0\">\n              <section class=\"ultimenu__region
+        row region region-ultimenu-main-newsroom\">\n    <div class=\"ultimenusub
+        ultimenusub--main-newsroom w-100\">\n              <ul class=\"clearfix nav
+        navbar-nav\">\n                    <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/newsroom/press-releases\" class=\"ultimenu__link
+        nav-link nav-link--newsroom-press-releases\">Press Releases</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"/newsroom/speeches-and-testimony\" class=\"ultimenu__link nav-link
+        nav-link--newsroom-speeches-and-testimony\">Speeches &amp; Testimony</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"http://www.flickr.com/photos/fhwa/\" class=\"ultimenu__link
+        nav-link nav-link-http--wwwflickrcom-photos-fhwa-\">Photos</a>\n              </li>\n
+        \               <li class=\"ultimenu__item nav-item\">\n                          <a
+        href=\"https://www.youtube.com/user/USDOTFHWA/featured\" class=\"ultimenu__link
+        nav-link nav-link-https--wwwyoutubecom-user-usdotfhwa-featured\">Videos</a>\n
+        \             </li>\n                <li class=\"ultimenu__item nav-item\">\n
+        \                         <a href=\"/newsroom/media-contacts\" class=\"ultimenu__link
+        nav-link nav-link--newsroom-media-contacts\">Media Contacts</a>\n              </li>\n
+        \       </ul>\n  \n\n</div>\n\n  </section>\n\n          </section></li></ul><button
+        data-ultimenu-button=\"#ultimenu-main\" class=\"button button--ultimenu button--ultiburger\"
+        aria-label=\"Menu Main navigation (Mobile)\"><span class=\"bars\">Menu Main
+        navigation (Mobile)</span></button>\n    </div>\n  </div>\n\n  </section>\n\n
+        \         </div>\n                      </nav>\n      </div><!-- row -->\n</div><!--
+        container -->\n\n<!--BEGIN QUALTRICS WEBSITE FEEDBACK SNIPPET-->\n  <script
+        type='text/javascript'>\n    (function(){var g=function(e,h,f,g){\n      this.get=function(a){for(var
+        a=a+\"=\",c=document.cookie.split(\";\"),b=0,e=c.length;b<e;b++){for(var d=c[b];\"
+        \"==d.charAt(0);)d=d.substring(1,d.length);if(0==d.indexOf(a))return d.substring(a.length,d.length)}return
+        null};\n      this.set=function(a,c){var b=\"\",b=new Date;b.setTime(b.getTime()+6048E5);b=\";
+        expires=\"+b.toGMTString();document.cookie=a+\"=\"+c+b+\"; path=/; \"};\n
+        \     this.check=function(){var a=this.get(f);if(a)a=a.split(\":\");else if(100!=e)\"v\"==h&&(e=Math.random()>=e/100?0:100),a=[h,e,0],this.set(f,a.join(\":\"));else
+        return!0;var c=a[1];if(100==c)return!0;switch(a[0]){case \"v\":return!1;case
+        \"r\":return c=a[2]%Math.floor(100/c),a[2]++,this.set(f,a.join(\":\")),!c}return!0};\n
+        \     this.go=function(){if(this.check()){var a=document.createElement(\"script\");a.type=\"text/javascript\";a.src=g;document.body&&document.body.appendChild(a)}};\n
+        \     this.start=function(){var t=this;\"complete\"!==document.readyState?window.addEventListener?window.addEventListener(\"load\",function(){t.go()},!1):window.attachEvent&&window.attachEvent(\"onload\",function(){t.go()}):t.go()};};\n
+        \   try{(new g(100,\"r\",\"QSI_S_ZN_8oVpF6JHd62rZrL\",\"https://zn8ovpf6jhd62rzrl-dotocio.gov1.siteintercept.qualtrics.com/SIE/?Q_ZID=ZN_8oVpF6JHd62rZrL\")).start()}catch(i){}})();\n
+        \ </script><div id='ZN_8oVpF6JHd62rZrL'><!--DO NOT REMOVE-CONTENTS PLACED
+        HERE--></div>\n  <!--END WEBSITE FEEDBACK SNIPPET-->\n</header>\n                                                      <section>\n
+        \     <div class=\"microsite-label-header dark_blue_scheme\">\n    <div class=\"container\">\n
+        \     <center class=\"m-auto\">\n                   FHWA Highway Safety Programs\n
+        \             </center>\n    </div>\n  </div>\n\n  </section>\n\n              \n
+        \               \n    \n    <main id=\"main\" class=\"main\" role=\"main\"
+        aria-label=\"Site main\">\n\n      \n              <div class=\"highlighted\">\n
+        \         <aside class=\"container section clearfix\" role=\"complementary\">\n
+        \             <div data-drupal-messages-fallback class=\"hidden\"></div>\n\n\n
+        \         </aside>\n        </div>\n      \n      \n      \n      <div id=\"main-wrapper\"
+        class=\"layout-main-wrapper clearfix\">\n                  <div id=\"main-content\"
+        class=\"container\">\n\n                            <div id=\"block-fhwa-breadcrumbs\"
+        class=\"block block-system block-system-breadcrumb-block\">\n  \n    \n      <div
+        class=\"content\">\n      \n\n  <nav role=\"navigation\" aria-label=\"breadcrumb\">\n
+        \   <ol class=\"breadcrumb\">\n                  <li class=\"breadcrumb-item\">\n
+        \         <a href=\"/\">Home</a>\n        </li>\n                        <li
+        class=\"breadcrumb-item\">\n          <a href=\"/safety\">Safety</a>\n        </li>\n
+        \                       <li class=\"breadcrumb-item\">\n          <a href=\"/safety/data-analysis-tools/rsdp\">Safety
+        Data Analysis &amp; Tools</a>\n        </li>\n                        <li
+        class=\"breadcrumb-item\">\n          <a href=\"/safety/data-analysis-tools/rsdp\">RSDP</a>\n
+        \       </li>\n                        <li class=\"breadcrumb-item\">\n          <a
+        href=\"/safety/data-analysis-tools/rsdp/rsdp-tools\">RSDP Tools</a>\n        </li>\n
+        \             </ol>\n  </nav>\n\n    </div>\n  </div>\n\n\n            \n
+        \           <div class=\"row row-offcanvas row-offcanvas-left clearfix\">\n\n
+        \                             <!-- Sidebar First Region -->\n                <div
+        class=\"sidebar col-xs-12 col-sm-12 col-md-3 col-lg-3 col-xl-3 order-first\">\n
+        \                 <aside class=\"sidebar_first section\" role=\"complementary\">\n
+        \                   \n  <aside id=\"dot-region-view-mode--rsdp_tool\" class=\"dot-region-view-mode
+        dot-region-view-mode--rsdp_tool sidebar_first section\" role=\"complementary\">\n
+        \   <!-- Editorial Category Menu Starts -->\n          <div id=\"sidenav\"
+        class=\"sidenav\">\n        <h1 class=\"sidenav-header text-white\" id=\"nav-header\">In
+        This Section</h1>\n        <nav class=\"wrapper__sidenav dot_left_nav\" role=\"navigation\"
+        aria-labelledby=\"nav-header\">\n          \n            <div class=\"field
+        field--name-field-editorial-category field--type-entity-reference field--label-hidden
+        field__item\">\n\n            <div class=\"field field--name-field-left-nav-menu
+        field--type-entity-reference field--label-hidden field__item\">\n              <ul
+        class=\"clearfix nav\">\n                    <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools\" class=\"nav-link\" data-drupal-link-system-path=\"node/58376\">Safety
+        Data Analysis &amp; Tools</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"http://www.cmfclearinghouse.org/\" class=\"nav-link\">Crash
+        Modification Factor Clearinghouse</a>\n              </li>\n                <li
+        class=\"nav-item menu-item--expanded\">\n                <a href=\"/safety/data-analysis-tools/rsdp\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/67356\">Roadway Safety
+        Data Program (RSDP)</a>\n                                <ul class=\"menu\">\n
+        \                   <li class=\"nav-item\">\n                <a href=\"/safety/data-analysis-tools/rsdp\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/67356\">Overview</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/rsdp/data-driven-safety-analysis-ddsa\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/60881\">Data Driven
+        Safety Analysis</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/safety/data-analysis-tools/safety-data-management-and-governance\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/59201\">Data Management</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/rsdp/rsdp-tools\" class=\"nav-link\" data-drupal-link-system-path=\"safety/data-analysis-tools/rsdp/rsdp-tools\">Safety
+        Data Analysis Tools</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/safety/data-analysis-tools/state-tribal-and-local-agency-safety-data-integration\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/57796\">Local Data
+        Integration</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/safety/safety-data-analysis-tools/technical-assistance-available\"
+        class=\"nav-link\">Technical Assistance</a>\n              </li>\n                <li
+        class=\"nav-item\">\n                <a href=\"/data-analysis-tools/rsdp/safety-data-case-studies\"
+        class=\"nav-link\">Case Studies</a>\n              </li>\n                <li
+        class=\"nav-item\">\n                <a href=\"/data-analysis-tools/rsdp/rsdp-training\"
+        class=\"nav-link\">Training</a>\n              </li>\n                <li
+        class=\"nav-item\">\n                <a href=\"/safety/data-analysis-tools/rsdp/data-driven-safety-analysis-resources\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/60886\">Resources</a>\n
+        \             </li>\n        </ul>\n  \n              </li>\n                <li
+        class=\"nav-item\">\n                <a href=\"/safety/safety-data-analysis-tools/highway-safety-manual\"
+        class=\"nav-link\">Highway Safety Manual (HSM)</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"/safety/data-analysis-tools/mire-fde/mire\"
+        class=\"nav-link\">Model Inventory of Roadway Elements (MIRE) and FDEs</a>\n
+        \             </li>\n                <li class=\"nav-item menu-item--expanded\">\n
+        \               <a href=\"/safety-data-analysis-tools/systemic\" class=\"nav-link\">Systemic</a>\n
+        \                               <ul class=\"menu\">\n                    <li
+        class=\"nav-item\">\n                <a href=\"/safety/data-analysis-tools/systemic\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/57261\">Overview</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/systemic/why-systemic-approach\" class=\"nav-link\"
+        data-drupal-link-system-path=\"node/60901\">Why Systemic </a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"/safety/data-analysis-tools/systemic/training-and-technical-assistance\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/60906\">Training</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/systemic/resources\" class=\"nav-link\"
+        data-drupal-link-system-path=\"node/60001\">Resources</a>\n              </li>\n
+        \       </ul>\n  \n              </li>\n                <li class=\"nav-item
+        menu-item--expanded\">\n                <a href=\"/safety-data-analysis-tools/rsa\"
+        class=\"nav-link\">Road Safety Audits</a>\n                                <ul
+        class=\"menu\">\n                    <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/systemic/road-safety-audits-rsa\" class=\"nav-link\">Overview</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/rsa/rsa-benefits\" class=\"nav-link\" data-drupal-link-system-path=\"node/60926\">Benefits</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/rsa/rsa-legal-issues\" class=\"nav-link\"
+        data-drupal-link-system-path=\"node/60931\">Legal Issues</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"/safety/data-analysis-tools/rsa/rsa-steps-conduct\"
+        class=\"nav-link\" data-drupal-link-system-path=\"node/60936\">Steps of Conduct</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/rsa/rsa-training\" class=\"nav-link\" data-drupal-link-system-path=\"node/60946\">Training</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/safety/data-analysis-tools/rsa/rsa-resources\" class=\"nav-link\"
+        data-drupal-link-system-path=\"node/60976\">Resources</a>\n              </li>\n
+        \       </ul>\n  \n              </li>\n        </ul>\n  \n\n</div>\n      \n</div>\n
+        \     \n        </nav>\n      </div>\n      <!-- Editorial Category Menu Ends
+        -->\n   <div id=\"sidecontent\" class=\"sidecontent\">\n     <!-- Related
+        Content Starts -->\n     <div class=\"wrapper__related_links\">\n     \n        \n
+        \       \n        \n        \n        \n              </div>\n      <!-- Related
+        Content Ends -->\n      <!-- Contact Info Block Starts -->\n            <!--
+        Contact Info Block Ends -->\n    </div>\n  </aside>\n\n\n                  </aside>\n
+        \               </div>\n                <!-- Main Content Region -->\n                <div
+        class=\"col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-9\"  class=\"main-content
+        col order-last\" id=\"content\" role=\"main\">\n                  <section
+        class=\"section\">\n                    <a id=\"main-content\" tabindex=\"-1\"></a>\n
+        \                     <div id=\"block-fhwa-page-title\" class=\"block block-core
+        block-page-title-block\">\n  \n    \n      <div class=\"content\">\n      \n
+        \ <h1 class=\"title\"><span class=\"field field--name-title field--type-string
+        field--label-hidden\">Highway Performance Monitoring System (HPMS)</span>\n</h1>\n\n\n
+        \   </div>\n  </div>\n<div id=\"block-fhwa-content\" class=\"block block-system
+        block-system-main-block\">\n  \n    \n      <div class=\"content\">\n      \n<article
+        data-history-node-id=\"69336\" class=\"node node--type-rsdp-tool node--promoted
+        node--view-mode-full content__core basic-article pb-5\">\n  <div class=\"node__content
+        clearfix\">\n\n    \n    \n    \n          <div class=\"row my-3\">\n        <div
+        class=\"col-12 col-sm-3\">\n          <strong>Description:</strong>\n        </div>\n
+        \       <div class=\"col-12 col-sm-9\">\n          \n            <div class=\"clearfix
+        text-formatted field field--name-body field--type-text-with-summary field--label-hidden
+        field__item\"><p class=\"MsoNormal\">The Highway Performance Monitoring System
+        (HPMS) is a national level highway information system used to support a data-driven
+        decision process within the Federal Highway Administration (FHWA), the Department
+        of Transportation (DOT), and the United States Congress. It includes information
+        on the extent, condition, performance, use, and operating characteristics
+        of the nation\u2019s highways. Limited information on travel and paved miles
+        is summarized for the lowest functional class roadway systems. The HPMS is
+        a source of highway information made available to transportation professionals
+        for highway and transportation planning through the annual Highway Statistics
+        and other dissemination media.</p>\n\n<p class=\"MsoNormal\"><o:p>State DOTs
+        are responsible for collecting and reporting data to the FHWA headquarters
+        through FHWA developed and maintained PC-based submittal software. The FHWA
+        receives, screens, organizes, and uses the data; however, individual States
+        are responsible for the quality of data. </o:p></p>\n\n<p class=\"MsoNormal\"><o:p>High
+        risk subject areas (data items that have a potential to significantly impact
+        Federal-aid funding) are regularly collected and include (but are not limited
+        to): </o:p></p>\n\n<ul>\n\t<li class=\"MsoNormal\"><o:p>Traffic data reporting.</o:p></li>\n\t<li
+        class=\"MsoNormal\">Future AADT estimates.</li>\n\t<li class=\"MsoNormal\">Public
+        road mileage reporting.</li>\n\t<li class=\"MsoNormal\">HPMS sample adequacy
+        and sample bias.</li>\n\t<li class=\"MsoNormal\">Travel data (vehicle miles
+        traveled).</li>\n\t<li class=\"MsoNormal\">Highway capacity related data.</li>\n\t<li
+        class=\"MsoNormal\">Off-State system HPMS data.</li>\n\t<li class=\"MsoNormal\">Pavement
+        data.</li>\n</ul>\n\n<p class=\"MsoNormal\">Other reported data include:</p>\n\n<ul>\n\t<li
+        class=\"MsoNormal\">Type of facility.</li>\n\t<li class=\"MsoNormal\">Number
+        of through lanes.</li>\n\t<li class=\"MsoNormal\">Number of peak lanes.</li>\n\t<li
+        class=\"MsoNormal\">Type of signalization and percent green time.</li>\n\t<li
+        class=\"MsoNormal\">Type and number of at-grade intersections.</li>\n\t<li
+        class=\"MsoNormal\">Median type.</li>\n\t<li class=\"MsoNormal\">Shoulder
+        type.</li>\n\t<li class=\"MsoNormal\">Access control.</li>\n\t<li class=\"MsoNormal\">Surface
+        and pavement type.</li>\n\t<li class=\"MsoNormal\">Speed limit.</li>\n\t<li
+        class=\"MsoNormal\">Turning lanes (urban only).</li>\n\t<li class=\"MsoNormal\">Peak
+        parking (urban only).</li>\n\t<li class=\"MsoNormal\">High occupancy vehicle
+        operations and surveillance data.</li>\n\t<li class=\"MsoNormal\">Median width.</li>\n\t<li
+        class=\"MsoNormal\">Shoulder width.</li>\n\t<li class=\"MsoNormal\">Lane width.</li>\n\t<li
+        class=\"MsoNormal\">Curve and grade data.</li>\n</ul>\n\n<p class=\"MsoNormal\">Note
+        that some element modification takes place through reassessments in response
+        to current and future business needs. Some elements are added, deleted, or
+        changed.</p>\n</div>\n      \n        </div>\n      </div>\n    \n    \n    \n
+        \   \n          <div class=\"row my-3\">\n        <div class=\"col-12 col-sm-3\">\n
+        \         <strong>Owner Source:</strong>\n        </div>\n        <div class=\"col-12
+        col-sm-9\">\n          federal\n        </div>\n      </div>\n    \n          <div
+        class=\"row my-3\">\n        <div class=\"col-12 col-sm-3\">\n          <strong>Sponsor/Owner:</strong>\n
+        \       </div>\n        <div class=\"col-12 col-sm-9\">\n          <ul class=\"list-unstyled\">\n
+        \                                                                                                                                                                                                                                                                                                                                                                                                                                               <li>Federal
+        Highway Administration (FHWA)</li>\n                                                                                        </ul>\n
+        \       </div>\n      </div>\n    \n        <div class=\"row my-3\">\n      <div
+        class=\"col-12 col-sm-3\">\n        <strong>Published:</strong>\n      </div>\n
+        \     <div class=\"col-12 col-sm-9\">\n        <time datetime=\"2015-10-07T12:00:00Z\"
+        class=\"datetime\">2015</time>\n\n      </div>\n    </div>\n    \n        <div
+        class=\"row my-3\">\n      <div class=\"col-12 col-sm-3\">\n        <strong>Availability:</strong>\n
+        \     </div>\n      <div class=\"col-12 col-sm-9\">\n        <p>The summary
+        data are available free of charge at the following link: <a href=\"https://www.fhwa.dot.gov/policyinformation/hpms.cfm\">https://www.fhwa.dot.gov/policyinformation/hpms.cfm</a>&nbsp;</p>\n\n
+        \     </div>\n    </div>\n    \n    \n  </div>\n</article>\n\n    </div>\n
+        \ </div>\n\n\n                  </section>\n                  <section class=\"post-content
+        container\">\n                    <div class=\"row\">\n                      <div
+        class=\"col-lg-12\">\n                        \n                      </div>\n
+        \                   </div>\n                  </section>\n                </div>\n
+        \             \n              <!-- Sub Content Region -->\n                          </div>\n
+        \         </div>\n              </div>\n\n      \n          </main>\n\n     <footer
+        class=\"site-footer\">\n      <div class=\"container\">\n              <div
+        class=\"site-footer__top\">\n            <section class=\"region region-footer-left\">\n
+        \   <div id=\"block-footercontactinfo\" class=\"block block-fixed-block-content
+        block-fixed-block-contentfooter-contact-info\">\n  \n    \n      <div class=\"content\">\n
+        \     \n            <div class=\"clearfix text-formatted field field--name-body
+        field--type-text-with-summary field--label-hidden field__item\"><p>U.S. DEPARTMENT
+        OF TRANSPORTATION</p>\n\n<p><strong>Federal Highway&nbsp;Administration</strong></p>\n\n<p>1200
+        NEW JERSEY AVENUE, SE</p>\n\n<p>WASHINGTON, DC 20590</p>\n\n<p>202-366-4000</p>\n</div>\n
+        \     \n    </div>\n  </div>\n\n  </section>\n\n            <section class=\"region
+        region-footer-right\">\n    <div id=\"block-fhwa-footer-social\" class=\"block
+        block-fixed-block-content block-fixed-block-contentfhwa-footer-social\">\n
+        \ \n    \n      <div class=\"content\">\n      \n            <div class=\"clearfix
+        text-formatted field field--name-body field--type-text-with-summary field--label-hidden
+        field__item\"><p><a class=\"subscribe-button\" href=\"https://public.govdelivery.com/accounts/usdotfhwa/subscribers/new\">Subscribe
+        to email updates</a></p>\n\n<ul class=\"footer-social\">\n\t<li><a href=\"https://www.facebook.com/FederalHighwayAdmin\"><span
+        class=\"fontawesome-icon-inline\"><i class=\"fa-brands fa-facebook-f\"></i></span></a></li>\n\t<li><a
+        href=\"https://twitter.com/USDOTFHWA\"><span class=\"fontawesome-icon-inline\"><i
+        class=\"fa-brands fa-x-twitter\"></i></span></a></li>\n\t<li><a href=\"https://www.flickr.com/photos/fhwa/\"><span
+        class=\"fontawesome-icon-inline\"><i class=\"fa-brands fa-flickr\"></i></span></a></li>\n\t<li><a
+        href=\"https://www.instagram.com/federalhighwayadmin/\"><span class=\"fontawesome-icon-inline\"><i
+        class=\"fa-brands fa-instagram\"></i></span></a></li>\n\t<li><a href=\"https://www.youtube.com/user/USDOTFHWA\"><span
+        class=\"fontawesome-icon-inline\"><i class=\"fa-brands fa-youtube\"></i></span></a></li>\n\t<li><a
+        href=\"https://www.linkedin.com/company/federal-highway-administration\"><span
+        class=\"fontawesome-icon-inline\"><i class=\"fa-brands fa-linkedin-in\"></i></span></a></li>\n</ul>\n</div>\n
+        \     \n    </div>\n  </div>\n\n  </section>\n\n        </div>\n                    <div
+        class=\"site-footer__bottom\">\n            <section class=\"region region-footer-first\">\n
+        \     <nav aria-labelledby=\"block-footeraboutus-menu\" id=\"block-footeraboutus\"
+        class=\"block block-menu navigation menu--footer---about-us\">\n      \n  <h2
+        \ id=\"block-footeraboutus-menu\">About</h2>\n  \n\n        \n              <ul
+        block=\"block-footeraboutus\" class=\"clearfix nav\">\n                    <li
+        class=\"nav-item\">\n                <a href=\"/about/about-fhwa\" class=\"nav-link
+        nav-link--about-about-fhwa\" data-drupal-link-system-path=\"node/90061\">About
+        FHWA</a>\n              </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/careers\" class=\"nav-link nav-link--careers\" data-drupal-link-system-path=\"node/90901\">Careers</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/about/fhwa-organization\" class=\"nav-link nav-link--about-fhwa-organization\"
+        data-drupal-link-system-path=\"node/90081\">Org Chart</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"/about/staff-directories\"
+        class=\"nav-link nav-link--about-staff-directories\" data-drupal-link-system-path=\"node/90111\">Staff
+        Directories</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/about/business-opportunities\" class=\"nav-link
+        nav-link--about-business-opportunities\" data-drupal-link-system-path=\"node/90106\">Work
+        with Us</a>\n              </li>\n        </ul>\n  \n\n\n  </nav>\n\n  </section>\n\n
+        \           <section class=\"region region-footer-second\">\n      <nav aria-labelledby=\"block-footerprogramareas-menu\"
+        id=\"block-footerprogramareas\" class=\"block block-menu navigation menu--footer---program-areas\">\n
+        \     \n  <h2  id=\"block-footerprogramareas-menu\">Programs</h2>\n  \n\n
+        \       \n              <ul block=\"block-footerprogramareas\" class=\"clearfix
+        nav\">\n                    <li class=\"nav-item\">\n                <a href=\"/cfo/doing-business-fhwa\"
+        class=\"nav-link nav-link--cfo-doing-business-fhwa\" data-drupal-link-system-path=\"node/90346\">Acquisition
+        Management</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/federal-lands\" class=\"nav-link nav-link--federal-lands\"
+        data-drupal-link-system-path=\"node/34676\">Federal Lands Highway</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"https://www.fhwa.dot.gov/infrastructure/\"
+        class=\"nav-link nav-link-https--wwwfhwadotgov-infrastructure-\">Infrastructure</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"https://www.fhwa.dot.gov/innovativeprograms/\" class=\"nav-link nav-link-https--wwwfhwadotgov-innovativeprograms-\">Innovative
+        Program Delivery</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"https://ops.fhwa.dot.gov/\" class=\"nav-link nav-link-https--opsfhwadotgov-\">Operations</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"https://www.fhwa.dot.gov/hep/\" class=\"nav-link nav-link-https--wwwfhwadotgov-hep-\">Planning,
+        Environment, and Realty</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"https://www.fhwa.dot.gov/policy/\" class=\"nav-link
+        nav-link-https--wwwfhwadotgov-policy-\">Policy</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"https://highways.dot.gov/research\"
+        class=\"nav-link nav-link-https--highwaysdotgov-research\">Research, Development,
+        and Technology</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/safety\" class=\"nav-link nav-link--safety\" data-drupal-link-system-path=\"node/59621\">Safety</a>\n
+        \             </li>\n        </ul>\n  \n\n\n  </nav>\n\n  </section>\n\n            <section
+        class=\"region region-footer-third\">\n      <nav aria-labelledby=\"block-footerpoliciesrightslegal-menu\"
+        id=\"block-footerpoliciesrightslegal\" class=\"block block-menu navigation
+        menu--footer---policies-rights-le\">\n      \n  <h2  id=\"block-footerpoliciesrightslegal-menu\">Policies,
+        Rights, Legal</h2>\n  \n\n        \n              <ul block=\"block-footerpoliciesrightslegal\"
+        class=\"clearfix nav\">\n                    <li class=\"nav-item\">\n                <a
+        href=\"https://www.transportation.gov/about\" class=\"nav-link nav-link-https--wwwtransportationgov-about\">About
+        DOT</a>\n              </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/section-508/our-commitment\" class=\"nav-link nav-link--section-508-our-commitment\"
+        data-drupal-link-system-path=\"node/90466\">Accessibility</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"https://www.transportation.gov/budget/dot-budget-and-performance\"
+        class=\"nav-link nav-link-https--wwwtransportationgov-budget-dot-budget-and-performance\">Budget
+        and Performance</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/about/fhwa-mobile-applications-privacy-policy\"
+        class=\"nav-link nav-link--about-fhwa-mobile-applications-privacy-policy\"
+        data-drupal-link-system-path=\"node/182806\">FHWA Mobile Apps Privacy Policy</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"https://highways.dot.gov/foia\" class=\"nav-link nav-link-https--highwaysdotgov-foia\">FOIA</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"https://www.transportation.gov/dot-information-dissemination-quality-guidelines\"
+        class=\"nav-link nav-link-https--wwwtransportationgov-dot-information-dissemination-quality-guidelines\">Information
+        Quality</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"https://www.civilrights.dot.gov/civil-rights-awareness-enforcement/employment-related/affirmative-employment/no-fear-act\"
+        class=\"nav-link nav-link-https--wwwcivilrightsdotgov-civil-rights-awareness-enforcement-employment-related-affirmative-employment-no-fear-act\">No
+        FEAR Act</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"https://www.oig.dot.gov/\" class=\"nav-link nav-link-https--wwwoigdotgov-\">Office
+        of Inspector General</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"https://www.fhwa.dot.gov/privacy.cfm\" class=\"nav-link
+        nav-link-https--wwwfhwadotgov-privacycfm\">Privacy Policy</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"https://www.usa.gov/\"
+        class=\"nav-link nav-link-https--wwwusagov-\">USA.gov</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"https://www.transportation.gov/web-policies\"
+        class=\"nav-link nav-link-https--wwwtransportationgov-web-policies\">Web Policies
+        and Notices</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"https://www.transportation.gov/web-standards\" class=\"nav-link
+        nav-link-https--wwwtransportationgov-web-standards\">Web Standards</a>\n              </li>\n
+        \       </ul>\n  \n\n\n  </nav>\n\n  </section>\n\n            <section class=\"region
+        region-footer-fourth\">\n      <nav aria-labelledby=\"block-footernewsevents-menu\"
+        id=\"block-footernewsevents\" class=\"block block-menu navigation menu--footer---news-events\">\n
+        \     \n  <h2  id=\"block-footernewsevents-menu\">News &amp; Events</h2>\n
+        \ \n\n        \n              <ul block=\"block-footernewsevents\" class=\"clearfix
+        nav\">\n                    <li class=\"nav-item\">\n                <a href=\"/newsroom\"
+        class=\"nav-link nav-link--newsroom\" data-drupal-link-system-path=\"node/5216\">Newsroom</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/newsroom/press-releases\" class=\"nav-link nav-link--newsroom-press-releases\"
+        data-drupal-link-system-path=\"newsroom/press-releases\">Press Releases</a>\n
+        \             </li>\n                <li class=\"nav-item\">\n                <a
+        href=\"/newsroom/speeches-and-testimony\" class=\"nav-link nav-link--newsroom-speeches-and-testimony\"
+        data-drupal-link-system-path=\"newsroom/speeches-and-testimony\">Speeches
+        &amp; Testimony</a>\n              </li>\n                <li class=\"nav-item\">\n
+        \               <a href=\"/newsroom/media-contacts\" class=\"nav-link nav-link--newsroom-media-contacts\"
+        data-drupal-link-system-path=\"node/1151\">Media Contacts</a>\n              </li>\n
+        \               <li class=\"nav-item\">\n                <a href=\"https://www.fhwa.dot.gov/contact/\"
+        class=\"nav-link nav-link-https--wwwfhwadotgov-contact-\">Connect with Us</a>\n
+        \             </li>\n        </ul>\n  \n\n\n  </nav>\n\n  </section>\n\n          \n
+        \       </div>\n          </div>\n  </footer>\n\n  </div>\n</div>\n\n  </div>\n\n
+        \   \n    <script src=\"/sites/fhwa.dot.gov/files/js/js_6dBvw8RsBX2GF4KT5zBi0pwPOBTQnrdV5X-xqMAtb5Y.js?scope=footer&amp;delta=0&amp;language=en&amp;theme=fhwa&amp;include=eJxdjlEOwyAMQy9Ex5FQChljdQkiqdbefmhdf_oXP9uRowDUtMyQuPgonR3vjWoK8XQ4EOBPNl1sZAylLj71rREef-merw_5DJkJk9oxWHZZJGN8qYTDSlR_B26VRLjX2tbzCL1pD61LZFXp3nrJmXv4mU5tbCJI5WC8NpCx-lnSMUWQqttgZeW6-ev4AnQhXeU\"></script>\n<script
+        src=\"/modules/contrib/collapsiblock/theme/dist/collapsiblock.js?tdk04c\"
+        type=\"module\"></script>\n<script src=\"/sites/fhwa.dot.gov/files/js/js_Y7lPCUdTTvaSIEj4jxbD9obo-XE8mMpLXlB8DQ2EY5Y.js?scope=footer&amp;delta=2&amp;language=en&amp;theme=fhwa&amp;include=eJxdjlEOwyAMQy9Ex5FQChljdQkiqdbefmhdf_oXP9uRowDUtMyQuPgonR3vjWoK8XQ4EOBPNl1sZAylLj71rREef-merw_5DJkJk9oxWHZZJGN8qYTDSlR_B26VRLjX2tbzCL1pD61LZFXp3nrJmXv4mU5tbCJI5WC8NpCx-lnSMUWQqttgZeW6-ev4AnQhXeU\"></script>\n<script
+        src=\"/modules/contrib/purge_ajax_processor/js/trigger_purge.js?tdk04c\" defer
+        async></script>\n<script src=\"/sites/fhwa.dot.gov/files/js/js_hApV7douVzMQ-1gpxBNyIR_SQYvukkCqJRQwAqv89AE.js?scope=footer&amp;delta=4&amp;language=en&amp;theme=fhwa&amp;include=eJxdjlEOwyAMQy9Ex5FQChljdQkiqdbefmhdf_oXP9uRowDUtMyQuPgonR3vjWoK8XQ4EOBPNl1sZAylLj71rREef-merw_5DJkJk9oxWHZZJGN8qYTDSlR_B26VRLjX2tbzCL1pD61LZFXp3nrJmXv4mU5tbCJI5WC8NpCx-lnSMUWQqttgZeW6-ev4AnQhXeU\"></script>\n\n
+        \ <noscript><img src=\"https://highways.dot.gov/akam/13/pixel_23dbec6c?a=dD1iMmM4ODA2NjA1ZDM4NmQ5ZTZjYzE2NDQ2OThhNmE5MjEwMzMzNmUwJmpzPW9mZg==\"
+        style=\"visibility: hidden; position: absolute; left: -999px; top: -999px;\"
+        /></noscript></body>\n</html>\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - text/html; charset=UTF-8
+      Date:
+      - Tue, 16 Jun 2026 04:59:28 GMT
+      Permissions-Policy:
+      - interest-cohort=()
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      X-AS:
+      - '21928'
+      X-NA:
+      - '0'
+      X-NID:
+      - T-MOBILE-AS21928
+      X-Page-Cache:
+      - MISS
+      X-RL:
+      - '1'
+      X-location:
+      - All
+      cache-control:
+      - max-age=1800
+      - private
+      content-security-policy:
+      - 'default-src ''self'' ''unsafe-eval'' ''unsafe-inline'' data: blob: archive.org
+        web.archive.org web-static.archive.org wayback-api.archive.org athena.archive.org
+        analytics.archive.org pragma.archivelab.org wwwb-events.archive.org'
+      link:
+      - <https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="original", <https://web.archive.org/web/timemap/link/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timemap"; type="application/link-format", <https://web.archive.org/web/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="timegate", <https://web.archive.org/web/20240502102321/http://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="first memento"; datetime="Thu, 02 May 2024 10:23:21 GMT", <https://web.archive.org/web/20260416010708/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="prev memento"; datetime="Thu, 16 Apr 2026 01:07:08 GMT", <https://web.archive.org/web/20260416012735/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="memento"; datetime="Thu, 16 Apr 2026 01:27:35 GMT", <https://web.archive.org/web/20260416013305/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="next memento"; datetime="Thu, 16 Apr 2026 01:33:05 GMT", <https://web.archive.org/web/20260609020557/https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms>;
+        rel="last memento"; datetime="Tue, 09 Jun 2026 02:05:57 GMT"
+      memento-datetime:
+      - Thu, 16 Apr 2026 01:27:35 GMT
+      server-timing:
+      - captures_list;dur=3.676862, exclusion.robots;dur=0.448596, exclusion.robots.policy;dur=0.387829,
+        esindex;dur=0.057413, cdx.remote;dur=85.393912, LoadShardBlock;dur=1906.836975,
+        PetaboxLoader3.datanode;dur=668.645733, PetaboxLoader3.resolve;dur=91.628362,
+        load_resource;dur=74.237686
+      - TR;dur=0,Tw;dur=0,Tc;dur=0
+      - MISS
+      set-cookie:
+      - wb-p-SERVER=wwwb-app233; path=/
+      x-app-server:
+      - wwwb-app233-dc8
+      x-archive-orig-accept-ranges:
+      - bytes
+      x-archive-orig-alt-svc:
+      - h3=":443"; ma=93600
+      x-archive-orig-cache-control:
+      - public, max-age=3600
+      x-archive-orig-content-language:
+      - en
+      x-archive-orig-content-length:
+      - '67912'
+      x-archive-orig-date:
+      - Thu, 16 Apr 2026 01:27:37 GMT
+      x-archive-orig-etag:
+      - '"1776302856-gzip"'
+      x-archive-orig-expires:
+      - Thu, 16 Apr 2026 02:27:37 GMT
+      x-archive-orig-last-modified:
+      - Thu, 16 Apr 2026 01:27:36 GMT
+      x-archive-orig-server:
+      - nginx
+      x-archive-orig-strict-transport-security:
+      - max-age=31536000 ; includeSubDomains ; preload
+      x-archive-orig-vary:
+      - Accept-Encoding
+      x-archive-orig-x-age:
+      - '0'
+      x-archive-orig-x-ah-environment:
+      - prod
+      x-archive-orig-x-akamai-transformed:
+      - 0 - 0 -
+      x-archive-orig-x-content-type-options:
+      - nosniff
+      x-archive-orig-x-drupal-dynamic-cache:
+      - MISS
+      x-archive-orig-x-frame-options:
+      - SAMEORIGIN
+      x-archive-orig-x-generator:
+      - Drupal 10 (https://www.drupal.org)
+      x-archive-orig-x-orig-content-encoding:
+      - gzip
+      x-archive-orig-x-request-id:
+      - v-72f6f230-3933-11f1-929e-c316557e0884
+      x-archive-src:
+      - edgi-active-urls--20260416010726/rec-092abfa96d17-edgi-20260416010726-other-2-20260416011529066-0.warc.gz
+      x-tr:
+      - '2187'
+      x-ts:
+      - '200'
+    status:
+      code: 200
+      message: OK
+version: 1

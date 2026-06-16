@@ -6,7 +6,8 @@ from vcr import VCR
 from vcr.record_mode import RecordMode
 from wayback import WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
-                                    WaybackRecordsWorker, import_ia_db_urls,
+                                    WaybackRecordsWorker, import_ia_urls,
+                                    import_ia_db_urls,
                                     _is_valid, validate_db_credentials)
 
 
@@ -191,6 +192,23 @@ def test_complete_import_ia_db_urls():
                       to_date=datetime(2019, 1, 2, 3, 0, tzinfo=timezone.utc),
                       skip_unchanged='resolved-response',
                       url_pattern='*epa.gov/hfstudy/epa*')
+
+
+@ia_vcr.use_cassette()
+def test_import_skips_bad_mementos(capsys):
+    import_ia_urls(
+        urls=['https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms'],
+        from_date=datetime(2026, 4, 16, 0, tzinfo=timezone.utc),
+        to_date=datetime(2026, 4, 16, 4, tzinfo=timezone.utc),
+        skip_unchanged='none',
+        dry_run=True,
+    )
+
+    captured = capsys.readouterr()
+    assert '"capture_time": "2026-04-16T01:27:35Z"' in captured.out
+    assert '"capture_time": "2026-04-16T01:07:08Z"' not in captured.out
+    assert ' 1 success' in captured.err
+    assert ' 7 skipped - low quality' in captured.err
 
 
 @ia_vcr.use_cassette()

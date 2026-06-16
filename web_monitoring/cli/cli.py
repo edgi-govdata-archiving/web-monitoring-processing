@@ -57,6 +57,7 @@ import re
 import requests
 import sentry_sdk
 from sentry_sdk.integrations.logging import ignore_logger as sentry_ignore_logger
+import sys
 import threading
 from typing import Generator, Iterable
 import time
@@ -79,6 +80,11 @@ USER_AGENT = f'edgi.web_monitoring.WaybackClient/{__version__}'
 
 # Number of memento requests to make at once. Can be overridden via CLI args.
 PARALLEL_REQUESTS = 10
+
+# Mementos must be of this quality or greater to be imported. Quality is a 0-1
+# number indicating how likely the Memento was to be a good snapshot of the URL
+# and not the crawler getting blocked or some other transient problem.
+MINIMUM_QUALITY = 0.11
 
 # Matches the host segment of a URL.
 HOST_EXPRESSION = re.compile(r'^[^:]+://([^/]+)')
@@ -139,6 +145,13 @@ except Exception:
     WAYBACK_RATE_LIMIT = 10
 
 
+def print_info(message: str) -> None:
+    """
+    Print regular informational output not limited by log levels.
+    """
+    tqdm.write(message, file=sys.stderr)
+
+
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
 # better to use the underlying library code.
@@ -150,15 +163,15 @@ def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, 
     if len(import_ids) == 0:
         return
 
-    print('Import job IDs: {}'.format(import_ids))
-    print('Polling web-monitoring-db until import jobs are finished...')
+    print_info('Import job IDs: {}'.format(import_ids))
+    print_info('Polling web-monitoring-db until import jobs are finished...')
     errors = cli.monitor_import_statuses(import_ids, stop_event)
     total = sum(len(job_errors) for job_errors in errors.values())
     if total > 0:
-        print('Import job errors:')
+        print_info('Import job errors:')
         for job_id, job_errors in errors.items():
-            print(f'  {job_id}: {len(job_errors):>3} errors {job_errors}')
-        print(f'  Total: {total:>3} errors')
+            print_info(f'  {job_id}: {len(job_errors):>3} errors {job_errors}')
+        print_info(f'  Total: {total:>3} errors')
 
 
 def _log_adds(versions):
@@ -170,6 +183,14 @@ class ExistingVersionError(Exception):
     """
     Indicates that a CDX record represented a version that's already been
     imported and so the memento was skipped.
+    """
+    ...
+
+
+class BadMementoError(Exception):
+    """
+    Indicates that a Memento was not actually a good snapshot of the URL,
+    generally because the crawler appears to have been blocked.
     """
     ...
 
@@ -328,7 +349,10 @@ class WaybackRecordsWorker(threading.Thread):
         try:
             version = self.process_record(record)
             self.results_queue.put([record, version, None])
-        except MementoPlaybackError as error:
+        except (BadMementoError, MementoPlaybackError) as error:
+            # TODO: the unplaybackable cache should ideally to be expanded to
+            # cover bad mementos as a separate concept. But for now we get the
+            # job done by mixing them together.
             if self.unplaybackable is not None:
                 self.unplaybackable[record.raw_url] = datetime.utcnow()
             self.results_queue.put([record, None, error])
@@ -346,6 +370,15 @@ class WaybackRecordsWorker(threading.Thread):
         with memento:
             version = self.format_memento(memento, record, self.maintainers,
                                           self.tags)
+
+            quality = utils.estimate_version_quality(version)
+            if quality < MINIMUM_QUALITY:
+                # This isn't really a playback error, but classifying it as
+                # one is convenient for now.
+                raise BadMementoError(f'Crawler was blocked for {memento.memento_url}')
+            else:
+                version['source_metadata']['quality'] = quality
+
             if self.archive_storage and version['body_hash']:
                 url = self.archive_storage.store(
                     memento.content,
@@ -465,7 +498,7 @@ class WaybackRecordsWorker(threading.Thread):
 
 
 def _filter_and_summarize_mementos(memento_info, summary):
-    summary.update({'total': 0, 'success': 0, 'already_known': 0,
+    summary.update({'total': 0, 'success': 0, 'already_known': 0, 'quality': 0,
                     'playback': 0, 'missing': 0, 'unknown': 0})
     for cdx, memento, error in memento_info:
         summary['total'] += 1
@@ -477,6 +510,8 @@ def _filter_and_summarize_mementos(memento_info, summary):
         elif isinstance(error, NoMementoError):
             logger.info(f'  Missing memento: {cdx.raw_url}')
             summary['missing'] += 1
+        elif isinstance(error, BadMementoError):
+            summary['quality'] += 1
         elif isinstance(error, MementoPlaybackError):
             summary['playback'] += 1
             # Playback errors are not unusual or exceptional for us, so log
@@ -523,7 +558,7 @@ def _version_cache_key(time, url):
 
 
 def _load_known_versions(client, start_date, end_date):
-    print('Pre-checking known versions...', flush=True)
+    print_info('Pre-checking known versions...', flush=True)
 
     versions = client.get_versions(start_date=start_date,
                                    end_date=end_date,
@@ -663,28 +698,29 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         progress_thread.join()
         filter_importable_thread.join()
 
-        print('\nLoaded {total} CDX records:\n'
-              '  {success:6} successes ({success_pct:.2f}%)\n'
-              '  {already_known:6} skipped - already in DB ({already_known_pct:.2f}%)\n'
-              '  {playback:6} could not be played back ({playback_pct:.2f}%)\n'
-              '  {missing:6} had no actual memento ({missing_pct:.2f}%)\n'
-              '  {unknown:6} unknown errors ({unknown_pct:.2f}%)'.format(
-                **summary))
+        print_info('\nLoaded {total} CDX records:\n'
+                   '  {success:6} successes ({success_pct:.2f}%)\n'
+                   '  {already_known:6} skipped - already in DB ({already_known_pct:.2f}%)\n'
+                   '  {quality:6} skipped - low quality ({quality_pct:.2f}%)\n'
+                   '  {playback:6} could not be played back ({playback_pct:.2f}%)\n'
+                   '  {missing:6} had no actual memento ({missing_pct:.2f}%)\n'
+                   '  {unknown:6} unknown errors ({unknown_pct:.2f}%)'.format(
+                     **summary))
 
         # Print slow request statistics
         if len(MEMENTO_STATISTICS.histogram):
-            print('\nMemento load timings:')
+            print_info('\nMemento load timings:')
             top_bucket = max(MEMENTO_STATISTICS.histogram.keys())
             for bucket in range(top_bucket + 1):
                 value = MEMENTO_STATISTICS.histogram[bucket]
-                print(f'  {bucket * 10}-{bucket * 10 + 10} s: {value}')
-            print('Slowest mementos:')
+                print_info(f'  {bucket * 10}-{bucket * 10 + 10} s: {value}')
+            print_info('Slowest mementos:')
             if len(MEMENTO_STATISTICS.leaderboard) > 0:
                 for timing in MEMENTO_STATISTICS.leaderboard:
-                    print(f'  {timing[0]:.1f}: {timing[1]}')
+                    print_info(f'  {timing[0]:.1f}: {timing[1]}')
             else:
-                print('  ---')
-            print('')
+                print_info('  ---')
+            print_info('')
 
         uploader.join()
 
@@ -692,8 +728,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
             save_unplaybackable_mementos(unplaybackable_path, unplaybackable)
 
         if summary['success'] == 0:
-            print('------------------------------')
-            print('No new versions were imported!')
+            print_info('------------------------------')
+            print_info('No new versions were imported!')
 
 
 def _filter_unchanged_versions(versions):
@@ -848,7 +884,7 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
     if path is None:
         return
 
-    print('Saving list of non-playbackable URLs...')
+    print_info('Saving list of non-playbackable URLs...')
 
     threshold = datetime.utcnow() - timedelta(seconds=expiration)
     urls = list(mementos.keys())
@@ -1098,8 +1134,8 @@ def main():
                 archive_storage=archive_storage)
 
         end_time = datetime.now(tz=timezone.utc)
-        print(f'Completed at {end_time.isoformat()}')
-        print(f'Duration: {end_time - start_time}')
+        print_info(f'Completed at {end_time.isoformat()}')
+        print_info(f'Duration: {end_time - start_time}')
 
 
 if __name__ == '__main__':
