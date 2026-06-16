@@ -1,9 +1,13 @@
 from datetime import datetime
+import json
+from pathlib import Path
 import pytest
 import queue
-from support import get_fixture_bytes
+from support import get_fixture_bytes, get_fixture_paths
 import threading
-from web_monitoring.utils import (extract_html_title, extract_pdf_title,
+from web_monitoring.db import DbJsonDecoder
+from web_monitoring.utils import (estimate_version_quality,
+                                  extract_html_title, extract_pdf_title,
                                   normalize_url, RateLimit, FiniteQueue)
 
 
@@ -198,3 +202,27 @@ class TestFiniteQueue:
         assert results.get() == 'First'
         assert results.get() is FiniteQueue.QUEUE_END
         assert results.get() is FiniteQueue.QUEUE_END
+
+
+XFAIL_SNAPSHOT_QUALITY = [
+    # No great way to identify this without access to the body.
+    'b47ca1d6-0f4e-4015-9940-dc666f755eb1.json',
+]
+
+
+# Test files are in `snapshot_quality/<server_type>-<expected>/*.json`. They
+# are version records from web-monitoring-db, as captured from the API.
+@pytest.mark.parametrize('file,expected', [
+    pytest.param(
+        f'{file.parent.name}/{file.name}',
+        float(file.parent.name.rsplit('-', 1)[1]),
+        marks=pytest.mark.xfail if file.name in XFAIL_SNAPSHOT_QUALITY else []
+    )
+    for file in get_fixture_paths('snapshot_quality/*/*.json')
+])
+def test_estimate_version_quality(file, expected):
+    version = json.loads(
+        get_fixture_bytes(Path('snapshot_quality') / file),
+        cls=DbJsonDecoder
+    )['data']
+    assert expected == estimate_version_quality(version)
