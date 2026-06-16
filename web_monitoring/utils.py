@@ -708,6 +708,8 @@ def estimate_snapshot_quality(
         ):
             return 0.25
     # TODO: see if we have any Azure CDN examples?
+    elif status == 429 and is_short_or_unknown:
+        return 0.1
     # TODO: More general heuristics?
     # else:
     #     content_type = media_type or headers.get('content-type', '')
