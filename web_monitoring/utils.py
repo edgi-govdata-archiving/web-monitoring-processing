@@ -606,10 +606,7 @@ def estimate_snapshot_quality(
     no_cache = False
     if 'cache-control' in headers:
         cache_control = headers['cache-control'].lower()
-        if 'no-cache' in cache_control:
-            no_cache = True
-        elif 'max-age=0' in cache_control:
-            no_cache = True
+        no_cache = 'no-cache' in cache_control or 'max-age=0' in cache_control
     if no_cache is False and 'expires' in headers:
         expires = dateutil.parser.parse(headers['expires'])
         request_time = (
