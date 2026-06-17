@@ -558,7 +558,7 @@ def _version_cache_key(time, url):
 
 
 def _load_known_versions(client, start_date, end_date):
-    print_info('Pre-checking known versions...', flush=True)
+    print_info('Pre-checking known versions...')
 
     versions = client.get_versions(start_date=start_date,
                                    end_date=end_date,
