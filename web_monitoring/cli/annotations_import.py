@@ -4,7 +4,6 @@ from dataclasses import asdict, dataclass
 import json
 import logging
 import math
-import os
 import re
 from time import sleep
 from tqdm import tqdm
@@ -398,9 +397,9 @@ class AuthorNameMapper:
 
 def main():
     from argparse import ArgumentParser
+    from ..logging import configure_logging
 
-    log_level = os.getenv('LOG_LEVEL', 'INFO')
-    logging.basicConfig(level=log_level)
+    configure_logging()
 
     parser = ArgumentParser(description='Add analyst annotations from a csv file to the Web Monitoring db.')
     parser.add_argument('csv_path', help='Path to CSV to read annotations from.')

@@ -62,6 +62,7 @@ import threading
 from typing import Generator, Iterable
 import time
 from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from urllib.parse import urlsplit
 from web_monitoring import db
 import wayback
@@ -569,7 +570,7 @@ def _load_known_versions(client, start_date, end_date):
     limited_versions = islice(versions, 500_000)
     cache = set(_version_cache_key(v["capture_time"], v.get("url", v.get("capture_url")))
                 for v in limited_versions)
-    logger.debug(f'  Found {len(cache)} known versions')
+    logger.info(f'  Found {len(cache)} known versions')
     return cache
 
 
@@ -1038,6 +1039,9 @@ def validate_db_credentials():
 
 def main():
     from argparse import ArgumentParser
+    from ..logging import configure_logging
+
+    configure_logging()
 
     sentry_sdk.init()
     # This script does a lot of iterative, async processing across threads,
@@ -1108,30 +1112,31 @@ def main():
             }, dry_run=args.dry_run)
 
         start_time = datetime.now(tz=timezone.utc)
-        if args.url == 'active-pages':
-            import_ia_db_urls(
-                from_date=args._from,
-                to_date=args.to,
-                maintainers=args.maintainer,
-                tags=args.tag,
-                skip_unchanged=args.skip_unchanged,
-                url_pattern=args.pattern,
-                worker_count=args.parallel,
-                unplaybackable_path=unplaybackable_path,
-                dry_run=args.dry_run,
-                precheck_versions=args.precheck,
-                archive_storage=archive_storage)
-        else:
-            import_ia_urls(
-                urls=[args.url],
-                maintainers=args.maintainer,
-                tags=args.tag,
-                from_date=args._from,
-                to_date=args.to,
-                skip_unchanged=args.skip_unchanged,
-                unplaybackable_path=unplaybackable_path,
-                dry_run=args.dry_run,
-                archive_storage=archive_storage)
+        with logging_redirect_tqdm():
+            if args.url == 'active-pages':
+                import_ia_db_urls(
+                    from_date=args._from,
+                    to_date=args.to,
+                    maintainers=args.maintainer,
+                    tags=args.tag,
+                    skip_unchanged=args.skip_unchanged,
+                    url_pattern=args.pattern,
+                    worker_count=args.parallel,
+                    unplaybackable_path=unplaybackable_path,
+                    dry_run=args.dry_run,
+                    precheck_versions=args.precheck,
+                    archive_storage=archive_storage)
+            else:
+                import_ia_urls(
+                    urls=[args.url],
+                    maintainers=args.maintainer,
+                    tags=args.tag,
+                    from_date=args._from,
+                    to_date=args.to,
+                    skip_unchanged=args.skip_unchanged,
+                    unplaybackable_path=unplaybackable_path,
+                    dry_run=args.dry_run,
+                    archive_storage=archive_storage)
 
         end_time = datetime.now(tz=timezone.utc)
         print_info(f'Completed at {end_time.isoformat()}')
