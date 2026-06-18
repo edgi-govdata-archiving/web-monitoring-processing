@@ -11,6 +11,7 @@ import sentry_sdk
 import sys
 from wayback import WaybackClient
 from .. import db
+from ..logging import configure_logging
 from ..utils import cli_datetime
 
 
@@ -96,6 +97,7 @@ def output_results(statuses):
 
 
 def main():
+    configure_logging()
     sentry_sdk.init()
     parser = ArgumentParser()
     parser.add_argument('--from', type=cli_datetime,
