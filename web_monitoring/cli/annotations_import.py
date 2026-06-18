@@ -4,7 +4,6 @@ from dataclasses import asdict, dataclass
 import json
 import logging
 import math
-import os
 import re
 from time import sleep
 from tqdm import tqdm
