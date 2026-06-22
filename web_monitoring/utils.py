@@ -2,6 +2,7 @@ from cloudpathlib import S3Client, S3Path
 import codecs
 from datetime import datetime, timedelta, timezone
 import dateutil.parser
+import email.utils
 import gzip
 import hashlib
 import io
@@ -13,6 +14,7 @@ from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 import queue
 import re
+import sentry_sdk
 import signal
 import sys
 import threading
@@ -574,6 +576,50 @@ def cli_datetime(raw) -> datetime:
         return parsed.astimezone(timezone.utc)
 
 
+def parse_http_date(value: str | None, fallback: datetime | None) -> datetime:
+    """
+    Parse an HTTP Date string to a datetime object. If ``fallback`` is
+    provided, it will be returned instead of raising ``ValueError`` for invalid
+    date strings.
+    """
+    # This *could* be much simpler, but we want to track whether this parsing
+    # routine is too strict in cases where we have a value worth parsing.
+    # Empty strings and integers get a pass, since they are common exceptional
+    # cases that we know should fail.
+    # TODO: clean up or remove specialized logging after 2026-07-15, once we've
+    #  had a few weeks to experience any interesting results.
+    if value and not re.match(r'^\s*[+-]?[0-9]+\s*$', value):
+        try:
+            return email.utils.parsedate_to_datetime(value)
+        except ValueError as error:
+            if fallback:
+                logger.warning(f'Invalid HTTP date: "{value}"')
+                sentry_sdk.capture_exception(error, level='warning')
+
+    if fallback:
+        return fallback
+    else:
+        raise ValueError(f'Invalid HTTP date: "{value}"')
+
+
+def parse_http_server_timing(value: str | None) -> dict[str, str]:
+    """
+    Extremely simplistic HTTP Server-Timing header parsing. This could parse
+    the individual metrics into a named tuple or data class, but we don't worry
+    about that for now.
+    """
+    if not value:
+        return {}
+
+    return {
+        key.lower().strip(): content.strip()
+        for key, _, content in (
+            item.partition(';')
+            for item in value.split(',')
+        )
+    }
+
+
 def estimate_snapshot_quality(
     url: str,
     timestamp: datetime,
@@ -584,6 +630,7 @@ def estimate_snapshot_quality(
     content_length: int | None = None,
     media_type: str | None = None,
     redirects: list[str] | tuple[str] | None = None,
+    title: str = '',
 ) -> float:
     """
     Identify snapshots that are likely to have been blocked responses (e.g.
@@ -608,18 +655,14 @@ def estimate_snapshot_quality(
         cache_control = headers['cache-control'].lower()
         no_cache = 'no-cache' in cache_control or 'max-age=0' in cache_control
     if no_cache is False and 'expires' in headers:
-        expires = dateutil.parser.parse(headers['expires'])
-        request_time = (
-            dateutil.parser.parse(headers['date'])
-            if 'date' in headers
-            else timestamp
-        )
+        expires = parse_http_date(headers['expires'], fallback=timestamp)
+        request_time = parse_http_date(headers.get('date'), fallback=timestamp)
         no_cache = (expires - request_time).total_seconds() < 60
 
     x_cache = headers.get('x-cache', '').lower()
     cache_error = 'error' in x_cache or 'n/a' in x_cache
 
-    is_short_or_unknown = content_length < 1000
+    is_short_or_unknown = content_length < 1024
     content_type = media_type or headers.get('content-type', '')
     is_html = content_type.startswith('text/html')
 
@@ -670,21 +713,22 @@ def estimate_snapshot_quality(
         # Still... this is low confidence.
         if cache_error and status >= 400 and status != 404:
             return 0.0
-    # elif server == 'cloudflare':
-    #     # We don't have any special hints for Cloudlare beyond the cf-mitigated
-    #     # header, which is already handled above.
-    #     # NOTES: When Cloudflare provides `server-timing`, it will identify its
-    #     # time with `cfEdge` and origin time with `cfOrigin`. Having edge time
-    #     # but no record of origin time may also be a good hint of WAF behavior.
-    #     ...
+    elif 400 <= status < 500 and server == 'cloudflare':
+        # NOTE: Use of the cf-mitigated header (usually for challenges, not
+        # complete blockage) is already handled above. This uses fuzzier logic
+        # to cover cases where Cloudflare completely blocks a request and gives
+        # less clear information.
+        server_timing = parse_http_server_timing(headers.get('server-timing'))
+        if (
+            content_length < 8192
+            and re.search(r'(^|\s)cloudflare($|\s)', title, re.I)
+            # Expect missing or 0 origin timing (since WAF will never hit the
+            # origin), and some edge timing.
+            and re.search(r'(^|;)\s*dur=0(;|$)', server_timing.get('cforigin', 'dur=0'))
+            and 'cfedge' in server_timing
+        ):
+            return 0.1
     elif 400 <= status < 500 and not server and is_short_or_unknown:
-        # Very lazy server-timing header parsing. We could parse out the
-        # description and the duration, but those don't matter too much here.
-        server_timing = {}
-        for item in headers.get('server-timing', '').split(','):
-            key, _, value = item.partition(';')
-            server_timing[key.lower().strip()] = value.strip()
-
         # Akamai Edgesuite doesn't explicitly identify itself, but it seems to
         # always include recognizable server-timing features and a 4xx status.
         #
@@ -695,13 +739,14 @@ def estimate_snapshot_quality(
         #   server-timing: cdn-cache; desc=HIT, edge; dur=1, ak_p; desc="1775872487192_399532111_2052555389_12_6012_263_573_-";dur=1
         #
         # (Unfortunately, can't find any examples of good cache hits.)
+        server_timing = parse_http_server_timing(headers.get('server-timing'))
         if (
             'ak_p' in server_timing
             and 'cdn-cache' in server_timing
-            # Expect no origin info (since WAF will have never hit the origin)
-            # and single-digit milliseconds at the edge.
-            and 'origin' not in server_timing
-            and re.search(r'(^|;)\s*dur=\d(\.|$)', server_timing.get('edge', ''))
+            # Expect missing or 0 origin timing (since WAF will never hit the
+            # origin), and some edge timing.
+            and re.search(r'(^|;)\s*dur=0(;|$)', server_timing.get('origin', 'dur=0'))
+            and 'edge' in server_timing
         ):
             return 0.25
     # TODO: see if we have any Azure CDN examples?
@@ -744,4 +789,5 @@ def estimate_version_quality(version: dict[str, Any]) -> float:
         content_length=version['content_length'],
         media_type=version['media_type'],
         redirects=version['source_metadata'].get('redirects'),
+        title=version.get('title', ''),
     )
