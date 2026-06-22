@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import pytest
@@ -6,7 +6,8 @@ import queue
 from support import get_fixture_bytes, get_fixture_paths
 import threading
 from web_monitoring.db import DbJsonDecoder
-from web_monitoring.utils import (estimate_version_quality,
+from web_monitoring.utils import (estimate_snapshot_quality,
+                                  estimate_version_quality,
                                   extract_html_title, extract_pdf_title,
                                   normalize_url, RateLimit, FiniteQueue)
 
@@ -210,19 +211,46 @@ XFAIL_SNAPSHOT_QUALITY = [
 ]
 
 
-# Test files are in `snapshot_quality/<server_type>-<expected>/*.json`. They
-# are version records from web-monitoring-db, as captured from the API.
-@pytest.mark.parametrize('file,expected', [
-    pytest.param(
-        f'{file.parent.name}/{file.name}',
-        float(file.parent.name.rsplit('-', 1)[1]),
-        marks=pytest.mark.xfail if file.name in XFAIL_SNAPSHOT_QUALITY else []
-    )
-    for file in get_fixture_paths('snapshot_quality/*/*.json')
-])
-def test_estimate_version_quality(file, expected):
-    version = json.loads(
-        get_fixture_bytes(Path('snapshot_quality') / file),
-        cls=DbJsonDecoder
-    )['data']
-    assert expected == estimate_version_quality(version)
+class TestEstimateSnapshotQuality:
+    # Test files are in `snapshot_quality/<server_type>-<expected>/*.json`. They
+    # are version records from web-monitoring-db, as captured from the API.
+    @pytest.mark.parametrize('file,expected', [
+        pytest.param(
+            f'{file.parent.name}/{file.name}',
+            float(file.parent.name.rsplit('-', 1)[1]),
+            marks=pytest.mark.xfail if file.name in XFAIL_SNAPSHOT_QUALITY else []
+        )
+        for file in get_fixture_paths('snapshot_quality/*/*.json')
+    ])
+    def test_estimate_version_quality(self, file, expected):
+        version = json.loads(
+            get_fixture_bytes(Path('snapshot_quality') / file),
+            cls=DbJsonDecoder
+        )['data']
+        assert expected == estimate_version_quality(version)
+
+    def test_estimate_snapshot_quality_accepts_integer_expires_header(self):
+        assert 1.0 == estimate_snapshot_quality(
+            url='https://websoilsurver.sc.egov.usda.gov/',
+            timestamp=datetime(2026, 3, 10, 1, 31, tzinfo=timezone.utc),
+            status=200,
+            headers={
+                'expires': '-1',
+                'date': 'Tue, 10 Mar 2026 01:31:00 GMT',
+                'content-type': 'text/html; charset=utf-8',
+                'content-length': '543681',
+            }
+        )
+
+    def test_estimate_snapshot_quality_accepts_invalid_date_header(self):
+        assert 1.0 == estimate_snapshot_quality(
+            url='https://websoilsurver.sc.egov.usda.gov/',
+            timestamp=datetime(2026, 3, 10, 1, 31, tzinfo=timezone.utc),
+            status=200,
+            headers={
+                'expires': 'Tue, 10 Mar 2026 01:31:00 GMT',
+                'date': 'Hey hello whats up this is wrong',
+                'content-type': 'text/html; charset=utf-8',
+                'content-length': '543681',
+            }
+        )

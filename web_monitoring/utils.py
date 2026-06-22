@@ -2,6 +2,7 @@ from cloudpathlib import S3Client, S3Path
 import codecs
 from datetime import datetime, timedelta, timezone
 import dateutil.parser
+import email.utils
 import gzip
 import hashlib
 import io
@@ -13,6 +14,7 @@ from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 import queue
 import re
+import sentry_sdk
 import signal
 import sys
 import threading
@@ -574,6 +576,32 @@ def cli_datetime(raw) -> datetime:
         return parsed.astimezone(timezone.utc)
 
 
+def parse_http_date(value: str | None, fallback: datetime | None) -> datetime:
+    """
+    Parse an HTTP Date string to a datetime object. If ``fallback`` is
+    provided, it will be returned instead of raising ``ValueError`` for invalid
+    date strings.
+    """
+    # This *could* be much simpler, but we want to track whether this parsing
+    # routine is too strict in cases where we have a value worth parsing.
+    # Empty strings and integers get a pass, since they are common exceptional
+    # cases that we know should fail.
+    # TODO: clean up or remove specialized logging after 2026-07-15, once we've
+    #  had a few weeks to experience any interesting results.
+    if value and not re.match(r'^\s*[+-]?[0-9]+\s*$', value):
+        try:
+            return email.utils.parsedate_to_datetime(value)
+        except ValueError as error:
+            if fallback:
+                logger.warning(f'Invalid HTTP date: "{value}"')
+                sentry_sdk.capture_exception(error, level='warning')
+
+    if fallback:
+        return fallback
+    else:
+        raise ValueError(f'Invalid HTTP date: "{value}"')
+
+
 def estimate_snapshot_quality(
     url: str,
     timestamp: datetime,
@@ -608,12 +636,8 @@ def estimate_snapshot_quality(
         cache_control = headers['cache-control'].lower()
         no_cache = 'no-cache' in cache_control or 'max-age=0' in cache_control
     if no_cache is False and 'expires' in headers:
-        expires = dateutil.parser.parse(headers['expires'])
-        request_time = (
-            dateutil.parser.parse(headers['date'])
-            if 'date' in headers
-            else timestamp
-        )
+        expires = parse_http_date(headers['expires'], fallback=timestamp)
+        request_time = parse_http_date(headers.get('date'), fallback=timestamp)
         no_cache = (expires - request_time).total_seconds() < 60
 
     x_cache = headers.get('x-cache', '').lower()
