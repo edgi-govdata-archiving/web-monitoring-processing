@@ -643,7 +643,7 @@ def estimate_snapshot_quality(
     x_cache = headers.get('x-cache', '').lower()
     cache_error = 'error' in x_cache or 'n/a' in x_cache
 
-    is_short_or_unknown = content_length < 1000
+    is_short_or_unknown = content_length < 1024
     content_type = media_type or headers.get('content-type', '')
     is_html = content_type.startswith('text/html')
 
@@ -723,9 +723,9 @@ def estimate_snapshot_quality(
             'ak_p' in server_timing
             and 'cdn-cache' in server_timing
             # Expect no origin info (since WAF will have never hit the origin)
-            # and single-digit milliseconds at the edge.
+            # and some time at the edge.
             and 'origin' not in server_timing
-            and re.search(r'(^|;)\s*dur=\d(\.|$)', server_timing.get('edge', ''))
+            and re.search(r'(^|;)\s*dur=\d+(\.|$)', server_timing.get('edge', ''))
         ):
             return 0.25
     # TODO: see if we have any Azure CDN examples?
