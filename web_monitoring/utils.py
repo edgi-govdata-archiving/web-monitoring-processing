@@ -690,7 +690,9 @@ def estimate_snapshot_quality(
                 '(expected "server: cloudflare")'
             )
 
-    if status >= 400 and server.startswith('awselb/'):
+    if headers.get('rimon', '').lower() == 'rwc_block':
+        return 0.0
+    elif status >= 400 and server.startswith('awselb/'):
         # We assume that blocking-related status code coming from directly from
         # an AWS ELB and not the origin server is really blocking.
         if status == 429:
