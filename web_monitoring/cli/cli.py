@@ -56,7 +56,6 @@ from pathlib import Path
 import re
 import requests
 import sentry_sdk
-from sentry_sdk.integrations.logging import ignore_logger as sentry_ignore_logger
 import sys
 import threading
 from typing import Generator, Iterable
@@ -326,7 +325,8 @@ class WaybackRecordsWorker(threading.Thread):
             except StopIteration:
                 break
 
-            self.handle_record(record)
+            with sentry_sdk.start_transaction(op='task.cdx_record', name='Handle CDX Record'):
+                self.handle_record(record)
 
         # Only close the client if it's using an adapter we created, instead of
         # one some other piece of code owns.
@@ -369,8 +369,9 @@ class WaybackRecordsWorker(threading.Thread):
         """
         memento = self.wayback.get_memento(record, exact_redirects=False)
         with memento:
-            version = self.format_memento(memento, record, self.maintainers,
-                                          self.tags)
+            with sentry_sdk.start_span(op='memento.format'):
+                version = self.format_memento(memento, record, self.maintainers,
+                                              self.tags)
 
             quality = utils.estimate_version_quality(version)
             if quality < MINIMUM_QUALITY:
@@ -827,6 +828,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
             if stop and stop.is_set():
                 break
 
+            logger.info('Loading CDX records for "%s"', url)
             ia_versions = client.search(url, from_date=from_date,
                                         to_date=to_date, limit=1000,
                                         resolve_revisits=False)
@@ -841,7 +843,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                         skipped += 1
                         logger.debug('Skipping URL "%s"', version.url)
             except BlockedByRobotsError as error:
-                logger.warn(f'CDX search error: {error!r}')
+                logger.warning(f'CDX search error: {error!r}')
             except WaybackException as error:
                 logger.error(f'Error getting CDX data for {url}: {error!r}')
                 sentry_sdk.capture_exception(error)
@@ -856,7 +858,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
                 # TODO: unify this with similar code in WaybackRecordsWorker or
                 # push it down into the `wayback` package.
                 if should_retry and ('failed to establish a new connection' in str(error).lower()):
-                    logger.warn('Resetting Wayback Session for CDX search.')
+                    logger.warning('Resetting Wayback Session for CDX search.')
                     client.session.reset()
                     should_retry = False
                 else:
@@ -942,8 +944,8 @@ def _get_db_page_url_info(client, url_pattern=None):
             url_keys.add(_rough_url_key(url_key))
         else:
             domains_without_url_keys.add(domain)
-            logger.warn('Found DB page with no url_key; *all* pages in '
-                        f'"{domain}" will be imported')
+            logger.warning('Found DB page with no url_key; *all* pages in '
+                           f'"{domain}" will be imported')
 
     def filterer(version: wayback.CdxRecord, domain=None):
         domain = domain or HOST_EXPRESSION.match(version.original).group(1)
@@ -1039,16 +1041,14 @@ def validate_db_credentials():
 
 def main():
     from argparse import ArgumentParser
-    from ..logging import configure_logging
+    from ..logging import configure_logging, configure_sentry
 
     configure_logging()
-
-    sentry_sdk.init()
     # This script does a lot of iterative, async processing across threads,
     # which means the logs aren't ordered or typically very traceable to the
     # processing that caused a specific error. They don't serve as good
     # breadcrumbs in Sentry (sometimes they add confusion).
-    sentry_ignore_logger(__name__)
+    configure_sentry(ignore_loggers=[__name__])
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
     subparsers = parser.add_subparsers()
