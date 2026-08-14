@@ -18,7 +18,7 @@ from warcio.recordloader import ArcWarcRecord, StatusAndHeadersParser, StatusAnd
 import yaml
 from .. import db
 from .. import utils
-from ..logging import configure_logging
+from ..logging import configure_logging, configure_sentry
 from ..media import HTML_MEDIA_TYPES, PDF_MEDIA_TYPES, find_media_type
 from ..utils import S3HashStore, detect_encoding, matchable_url, normalize_url
 
@@ -434,7 +434,7 @@ def preupload(storage: S3HashStore, version: dict, body: bytes) -> tuple[dict, b
 
 def main():
     configure_logging()
-    sentry_sdk.init()
+    configure_sentry()
 
     parser = ArgumentParser()
     parser.add_argument('warc_path', nargs='+', help='Path to WARC file to extract data from')

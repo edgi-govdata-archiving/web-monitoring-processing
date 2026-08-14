@@ -56,7 +56,6 @@ from pathlib import Path
 import re
 import requests
 import sentry_sdk
-from sentry_sdk.integrations.logging import ignore_logger as sentry_ignore_logger
 import sys
 import threading
 from typing import Generator, Iterable
@@ -1042,21 +1041,14 @@ def validate_db_credentials():
 
 def main():
     from argparse import ArgumentParser
-    from ..logging import configure_logging
+    from ..logging import configure_logging, configure_sentry
 
     configure_logging()
-
-    sentry_environment = os.getenv('SENTRY_ENVIRONMENT')
-    sentry_sdk.init(
-        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE') or (
-            '1.0' if sentry_environment == 'development' else '0.5'
-        ))
-    )
     # This script does a lot of iterative, async processing across threads,
     # which means the logs aren't ordered or typically very traceable to the
     # processing that caused a specific error. They don't serve as good
     # breadcrumbs in Sentry (sometimes they add confusion).
-    sentry_ignore_logger(__name__)
+    configure_sentry(ignore_loggers=[__name__])
 
     parser = ArgumentParser(description='Command Line Interface to the web_monitoring Python package')
     subparsers = parser.add_subparsers()
