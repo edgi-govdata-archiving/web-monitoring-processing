@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import dateutil.parser
@@ -18,7 +18,7 @@ from warcio.recordloader import ArcWarcRecord, StatusAndHeadersParser, StatusAnd
 import yaml
 from .. import db
 from .. import utils
-from ..logging import configure_logging
+from ..logging import configure_logging, configure_sentry
 from ..media import HTML_MEDIA_TYPES, PDF_MEDIA_TYPES, find_media_type
 from ..utils import S3HashStore, detect_encoding, matchable_url, normalize_url
 
@@ -143,10 +143,11 @@ def parse_warc_fields(record: ArcWarcRecord) -> StatusAndHeaders:
 
 @lru_cache(maxsize=256)
 def extract_record(warc: str, offset: int) -> tuple[ArcWarcRecord, bytes]:
-    with open(warc, 'rb') as file:
-        file.seek(offset)
-        record = next(iter(ArchiveIterator(file)))
-        return record, record.content_stream().read()
+    with sentry_sdk.start_span(op='warc.open_record'):
+        with open(warc, 'rb') as file:
+            file.seek(offset)
+            record = next(iter(ArchiveIterator(file)))
+            return record, record.content_stream().read()
 
 
 def extract_record_for(entry: 'RecordIndexEntry', responses_by_digest: dict[str, 'RecordIndexEntry']) -> tuple[ArcWarcRecord, bytes]:
@@ -202,6 +203,10 @@ class HttpExchangeIndexEntry:
             self.response = record
 
 
+# FIXME: This should really be broken up. There should probably be:
+#   - Function to index a list of WARCs.
+#   - Function to load a seed, given a URL and an index.
+#   - Generator (or maybe just a function at this point) to import seeds.
 def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[RedirectChain, None, None]:
     record_index: dict[str, RecordIndexEntry] = {}
     responses_by_digest: dict[str, RecordIndexEntry] = {}
@@ -210,156 +215,193 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
     # This only supports one warcinfo record per WARC; not technically correct.
     warc_infos: dict[str, dict[str, Any]] = {}
 
-    for warc in warcs:
-        warc_path = Path(warc).absolute()
-        warc_info: dict[str, Any] = {'warc_name': warc_path.name}
-        warc_infos[warc] = warc_info
-        if warc_path.parent.name == 'archive' and warc_path.parent.parent.parent.name == 'collections':
-            # Not sure if we want this.
-            # warc_info['warc_name'] = str(warc_path.relative_to(warc_path.parent.parent.parent))
-            warc_info['crawl'] = warc_path.parent.parent.name
+    with sentry_sdk.start_transaction(op='warc.index_all') as index_span:
+        index_bytes = 0
 
-        logger.info(f'Indexing {warc_path}...')
-        with warc_path.open('rb') as warc_file:
-            reader = ArchiveIterator(warc_file)
-            for record in reader:
-                if record.rec_type == 'warcinfo':
-                    # TODO: There might be other stuff we want to read in WARCs
-                    # generated from non-Browsertrix sources.
-                    info = parse_warc_fields(record)
-                    if 'software' in info:
-                        warc_info['crawler'] = info['software']
+        for warc in warcs:
+            with sentry_sdk.start_span(op='warc.index') as span:
+                warc_path = Path(warc).absolute()
+                warc_info: dict[str, Any] = {'warc_name': warc_path.name}
+                warc_infos[warc] = warc_info
+                if warc_path.parent.name == 'archive' and warc_path.parent.parent.parent.name == 'collections':
+                    # Not sure if we want this.
+                    # warc_info['warc_name'] = str(warc_path.relative_to(warc_path.parent.parent.parent))
+                    warc_info['crawl'] = warc_path.parent.parent.name
 
-                elif record.rec_type in indexable:
-                    entry_digest = record.rec_headers.get('WARC-Payload-Digest')
-                    entry_uri = record.rec_headers.get('WARC-Target-URI')
+                record_count = 0
+                index_count = 0
 
-                    if record.rec_type == 'revisit':
-                        content_type = record.rec_headers.get('Content-Type')
-                        content_type = content_type and content_type.strip().lower()
-                        if content_type != 'application/http; msgtype=response':
-                            logger.warning(
-                                'Can only handle revisit records for '
-                                f'responses, but got one for "{content_type}" '
-                                f'on URL "{entry_uri}"'
+                logger.info(f'Indexing {warc_path}...')
+                with warc_path.open('rb') as warc_file:
+                    reader = ArchiveIterator(warc_file)
+                    for record in reader:
+                        record_count += 1
+
+                        if record.rec_type == 'warcinfo':
+                            # TODO: There might be other stuff we want to read in WARCs
+                            # generated from non-Browsertrix sources.
+                            info = parse_warc_fields(record)
+                            if 'software' in info:
+                                warc_info['crawler'] = info['software']
+
+                        elif record.rec_type in indexable:
+                            index_count += 1
+                            entry_digest = record.rec_headers.get('WARC-Payload-Digest')
+                            entry_uri = record.rec_headers.get('WARC-Target-URI')
+
+                            if record.rec_type == 'revisit':
+                                content_type = record.rec_headers.get('Content-Type')
+                                content_type = content_type and content_type.strip().lower()
+                                if content_type != 'application/http; msgtype=response':
+                                    logger.warning(
+                                        'Can only handle revisit records for '
+                                        f'responses, but got one for "{content_type}" '
+                                        f'on URL "{entry_uri}"'
+                                    )
+                                    continue
+                                if not entry_digest:
+                                    # TODO: handle revisits with only
+                                    # WARC-Refers-To-Target-URI and WARC-Refers-To-Date
+                                    # and no digest for lookups.
+                                    logger.warning(
+                                        'Can only handle revisit records with payload '
+                                        'digests, but got one without on URL '
+                                        f'"{entry_uri}"'
+                                    )
+                                    continue
+
+                            entry = RecordIndexEntry(
+                                id=record.rec_headers.get('WARC-Record-ID'),
+                                timestamp=dateutil.parser.parse(record.rec_headers.get('WARC-Date')).astimezone(timezone.utc),
+                                uri=normalize_url(entry_uri),
+                                type=record.rec_type,
+                                file=warc,
+                                offset=reader.get_record_offset(),
+                                length=reader.get_record_length(),
+                                payload_digest=entry_digest,
                             )
-                            continue
-                        if not entry_digest:
-                            # TODO: handle revisits with only
-                            # WARC-Refers-To-Target-URI and WARC-Refers-To-Date
-                            # and no digest for lookups.
-                            logger.warning(
-                                'Can only handle revisit records with payload '
-                                'digests, but got one without on URL '
-                                f'"{entry_uri}"'
-                            )
-                            continue
+                            record_index[entry.id] = entry
+                            index_bytes += sys.getsizeof(entry)
+                            if entry.type == 'response' and entry.payload_digest:
+                                responses_by_digest[entry.payload_digest] = entry
 
-                    entry = RecordIndexEntry(
-                        id=record.rec_headers.get('WARC-Record-ID'),
-                        timestamp=dateutil.parser.parse(record.rec_headers.get('WARC-Date')).astimezone(timezone.utc),
-                        uri=normalize_url(entry_uri),
-                        type=record.rec_type,
-                        file=warc,
-                        offset=reader.get_record_offset(),
-                        length=reader.get_record_length(),
-                        payload_digest=entry_digest,
-                    )
-                    record_index[entry.id] = entry
-                    if entry.type == 'response' and entry.payload_digest:
-                        responses_by_digest[entry.payload_digest] = entry
+                            # This is a bit special to Browsertrix in that it gives the
+                            # same timestamp to all records associated with the same
+                            # HTTP exchange. Make it easy to join them together. This
+                            # is almost certainly not a safe, generic assumption about
+                            # WARCs from other crawlers!
+                            #
+                            # TODO: handle looking up related entries in record_index via
+                            # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
+                            # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
+                            exchanges = exchanges_by_url[matchable_url(entry.uri)]
+                            for existing in exchanges:
+                                if existing.timestamp == entry.timestamp:
+                                    existing.add(entry)
+                                    break
+                            else:
+                                exchanges.append(HttpExchangeIndexEntry([entry]))
 
-                    # This is a bit special to Browsertrix in that it gives the
-                    # same timestamp to all records associated with the same
-                    # HTTP exchange. Make it easy to join them together. This
-                    # is almost certainly not a safe, generic assumption about
-                    # WARCs from other crawlers!
-                    #
-                    # TODO: handle looking up related entries in record_index via
-                    # WARC-Concurrent-To, WARC-Refers-To, and in request_index via
-                    # WARC-Refers-To-Target-URI, WARC-Refers-To-Date
-                    exchanges = exchanges_by_url[matchable_url(entry.uri)]
-                    for existing in exchanges:
-                        if existing.timestamp == entry.timestamp:
-                            existing.add(entry)
-                            break
-                    else:
-                        exchanges.append(HttpExchangeIndexEntry([entry]))
+                        # TODO: optimize by tracking the last few records and yielding
+                        # immediately for any request/response pairs that do not redirect.
+                        # This won't work if we are expecting metadata records, but
+                        # Browsertrix (our only source right now) does not produce them.
+                        # (It does produce related resource records that are a bit more
+                        # complicated to match up, and they don't have anything we want
+                        # right now.)
 
-                # TODO: optimize by tracking the last few records and yielding
-                # immediately for any request/response pairs that do not redirect.
-                # This won't work if we are expecting metadata records, but
-                # Browsertrix (our only source right now) does not produce them.
-                # (It does produce related resource records that are a bit more
-                # complicated to match up, and they don't have anything we want
-                # right now.)
+                span.set_data('warc.records', record_count)
+                span.set_data('warc.indexed', index_count)
+
+        index_count = len(record_index)
+        index_bytes += sys.getsizeof(record_index)
+        index_span.set_data('warc_index.count', index_count)
+        index_span.set_data('warc_index.bytes', index_bytes)
+        logger.info(f'Indexed {index_count} records, used {index_bytes / 1024:.2f} kB')
 
     logger.info('Yielding matching records for seeds...')
+    seed_results = Counter()
     for seed in seeds:
-        # FIXME: This approach expects each seed will only be requested once in
-        # the collection of WARCs being examined, which is not necessarily
-        # accurate. It's good enough for WARCs we create with Browsertrix, but
-        # not other sources that may have been collected differently.
-        chain = RedirectChain()
-        next_url = seed
-        next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
-        seen_entries = []
-        while next_url:
-            match_url = matchable_url(next_url)
-            warc_exchanges = exchanges_by_url[match_url]
-            if not warc_exchanges and match_url.startswith('http://'):
-                warc_exchanges = exchanges_by_url['https' + match_url[4:]]
+        with sentry_sdk.start_transaction(op='task.warc_seed', name='Import seed from WARC'):
+            # FIXME: This approach expects each seed will only be requested once in
+            # the collection of WARCs being examined, which is not necessarily
+            # accurate. It's good enough for WARCs we create with Browsertrix, but
+            # not other sources that may have been collected differently.
+            chain = RedirectChain()
 
-            if not warc_exchanges:
-                if next_url == seed:
-                    logger.warning(f'No WARC records for seed: "{seed}"')
-                else:
-                    logger.error(f'Incomplete redirect chain for seed: "{seed}" (no records for "{next_url}")')
-                chain = None
-                next_url = None
-                break
+            with sentry_sdk.start_span(op='warc.load_seed'):
+                next_url = seed
+                next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
+                seen_entries = []
+                while next_url:
+                    match_url = matchable_url(next_url)
+                    warc_exchanges = exchanges_by_url[match_url]
+                    if not warc_exchanges and match_url.startswith('http://'):
+                        warc_exchanges = exchanges_by_url['https' + match_url[4:]]
 
-            warc_exchange = next(
-                (
-                    e for e in warc_exchanges
-                    if e.timestamp > next_timestamp and e not in seen_entries
-                ),
-                warc_exchanges[-1]
-            )
-            if warc_exchange in seen_entries:
-                raise RuntimeError(f'Circular redirect detected for "{warc_exchange.uri}" at {warc_exchange.timestamp}')
-            elif not warc_exchange.response:
-                raise RuntimeError(f'Request index entry missing response record for "{warc_exchange.uri}" at {warc_exchange.timestamp}')
-            seen_entries.append(warc_exchange)
+                    if not warc_exchanges:
+                        if next_url == seed:
+                            logger.warning(f'No WARC records for seed: "{seed}"')
+                            seed_results['missing'] += 1
+                        else:
+                            logger.error(f'Incomplete redirect chain for seed: "{seed}" (no records for "{next_url}")')
+                            seed_results['error'] += 1
+                        chain = None
+                        next_url = None
+                        break
 
-            warc_info = warc_infos[warc_exchange.response.file]
-            exchange = HttpExchange(warc_exchange.uri, warc_info=warc_info)
-            response_record, body = extract_record_for(warc_exchange.response, responses_by_digest)
-            exchange.add(
-                response_record,
-                index=0,
-                offset=warc_exchange.response.offset,
-                length=warc_exchange.response.length,
-                body=body
-            )
-            if warc_exchange.request:
-                request_record, _ = extract_record(warc_exchange.request.file, warc_exchange.request.offset)
-                exchange.add(
-                    request_record,
-                    index=0,
-                    offset=warc_exchange.request.offset,
-                    length=warc_exchange.request.length,
-                    body=None
-                )
-            chain.add(exchange)
-            next_url = exchange.redirect_target
-            next_timestamp = warc_exchange.timestamp
+                    warc_exchange = next(
+                        (
+                            e for e in warc_exchanges
+                            if e.timestamp > next_timestamp and e not in seen_entries
+                        ),
+                        warc_exchanges[-1]
+                    )
+                    if warc_exchange in seen_entries:
+                        raise RuntimeError(f'Circular redirect detected for "{warc_exchange.uri}" at {warc_exchange.timestamp}')
+                    elif not warc_exchange.response:
+                        raise RuntimeError(f'Request index entry missing response record for "{warc_exchange.uri}" at {warc_exchange.timestamp}')
+                    seen_entries.append(warc_exchange)
 
-        if chain:
-            yield chain
+                    warc_info = warc_infos[warc_exchange.response.file]
+                    exchange = HttpExchange(warc_exchange.uri, warc_info=warc_info)
+                    response_record, body = extract_record_for(warc_exchange.response, responses_by_digest)
+                    exchange.add(
+                        response_record,
+                        index=0,
+                        offset=warc_exchange.response.offset,
+                        length=warc_exchange.response.length,
+                        body=body
+                    )
+                    if warc_exchange.request:
+                        request_record, _ = extract_record(warc_exchange.request.file, warc_exchange.request.offset)
+                        exchange.add(
+                            request_record,
+                            index=0,
+                            offset=warc_exchange.request.offset,
+                            length=warc_exchange.request.length,
+                            body=None
+                        )
+                    chain.add(exchange)
+                    next_url = exchange.redirect_target
+                    next_timestamp = warc_exchange.timestamp
+
+            if chain:
+                seed_results['imported'] += 1
+                yield chain
+
+    for result, count in seed_results.items():
+        # sentry_sdk.metrics.count(f'warc_seeds.{result}', count)
+        sentry_sdk.metrics.count('warc.seeds', count, unit='count', attributes={'result': result})
+        logger.info(f'warc.seeds: {count}, result: {result}')
 
 
 def format_version(chain: RedirectChain) -> dict:
+    with sentry_sdk.start_span(op='warc.format'):
+        return format_version_impl(chain)
+
+
+def format_version_impl(chain: RedirectChain) -> dict:
     final = chain.requests[-1]
     final_response = final.response
     assert final_response
@@ -434,7 +476,7 @@ def preupload(storage: S3HashStore, version: dict, body: bytes) -> tuple[dict, b
 
 def main():
     configure_logging()
-    sentry_sdk.init()
+    configure_sentry(shutdown_timeout=30)
 
     parser = ArgumentParser()
     parser.add_argument('warc_path', nargs='+', help='Path to WARC file to extract data from')
