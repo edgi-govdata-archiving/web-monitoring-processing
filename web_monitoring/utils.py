@@ -82,13 +82,28 @@ def detect_encoding(content, headers, default='utf-8'):
 
     # Make an educated guess.
     if not encoding:
-        # Try to identify encoding. Use up to 18kb of the content, since it
-        # could be huge otherwise (this should be enough for accuracy).
-        detected = detect_charset(content[:18432])
-        if detected:
-            detected_encoding = detected.get('encoding')
-            if detected_encoding:
-                encoding = detected_encoding.lower()
+        with sentry_sdk.start_span(op='encoding.chardet', name='Chardet') as span:
+            # Try to identify encoding. Use up to 18kb of the content, since it
+            # could be huge otherwise (this should be enough for accuracy).
+            detected = detect_charset(content[:18432])
+            if detected:
+                detected_encoding = detected.get('encoding')
+                if detected_encoding:
+                    encoding = detected_encoding.lower()
+            logger.info(f'Sniffed character encoding w/ Chardet: "{encoding}"')
+            span.set_data('charset', encoding)
+            # TODO: This should *probably* not be here. This function should
+            # return info about whether we sniffed and that should be reported
+            # at the end of a job along with our other statistics about
+            # successes, skips, etc. Then all those can send to Sentry as one.
+            # But this is quick and easy to implement while we decide if these
+            # metrics are worth managing in Sentry.
+            sentry_sdk.metrics.count('encoding.chardet', 1, attributes={
+                'charset': encoding
+            })
+
+    if not encoding:
+        return default
 
     # Handle common mistakes and errors in encoding names
     if encoding == 'iso-8559-1':
@@ -102,6 +117,7 @@ def detect_encoding(content, headers, default='utf-8'):
     try:
         codecs.lookup(encoding)
     except (LookupError, ValueError, TypeError):
+        logger.warning('Found invalid character encoding: "%s"', encoding)
         encoding = default
     return encoding
 

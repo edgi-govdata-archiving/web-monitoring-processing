@@ -326,7 +326,8 @@ class WaybackRecordsWorker(threading.Thread):
             except StopIteration:
                 break
 
-            self.handle_record(record)
+            with sentry_sdk.start_transaction(op='task.cdx_record', name='Handle CDX Record'):
+                self.handle_record(record)
 
         # Only close the client if it's using an adapter we created, instead of
         # one some other piece of code owns.
@@ -369,8 +370,9 @@ class WaybackRecordsWorker(threading.Thread):
         """
         memento = self.wayback.get_memento(record, exact_redirects=False)
         with memento:
-            version = self.format_memento(memento, record, self.maintainers,
-                                          self.tags)
+            with sentry_sdk.start_span(op='memento.format'):
+                version = self.format_memento(memento, record, self.maintainers,
+                                              self.tags)
 
             quality = utils.estimate_version_quality(version)
             if quality < MINIMUM_QUALITY:
@@ -827,6 +829,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
             if stop and stop.is_set():
                 break
 
+            logger.info('Loading CDX records for "%s"', url)
             ia_versions = client.search(url, from_date=from_date,
                                         to_date=to_date, limit=1000,
                                         resolve_revisits=False)
@@ -1043,7 +1046,12 @@ def main():
 
     configure_logging()
 
-    sentry_sdk.init()
+    sentry_environment = os.getenv('SENTRY_ENVIRONMENT')
+    sentry_sdk.init(
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE') or (
+            '1.0' if sentry_environment == 'development' else '0.5'
+        ))
+    )
     # This script does a lot of iterative, async processing across threads,
     # which means the logs aren't ordered or typically very traceable to the
     # processing that caused a specific error. They don't serve as good
