@@ -215,11 +215,11 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
     # This only supports one warcinfo record per WARC; not technically correct.
     warc_infos: dict[str, dict[str, Any]] = {}
 
-    with sentry_sdk.start_transaction(op='warc.index_all') as index_span:
+    with sentry_sdk.start_transaction(op='warc.index_all', name='Index WARC files') as index_span:
         index_bytes = 0
 
         for warc in warcs:
-            with sentry_sdk.start_span(op='warc.index') as span:
+            with sentry_sdk.start_span(op='warc.index', name='Index single WARC file') as span:
                 warc_path = Path(warc).absolute()
                 warc_info: dict[str, Any] = {'warc_name': warc_path.name}
                 warc_infos[warc] = warc_info
@@ -329,7 +329,9 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
             # not other sources that may have been collected differently.
             chain = RedirectChain()
 
-            with sentry_sdk.start_span(op='warc.load_seed'):
+            with sentry_sdk.start_span(op='warc.load_seed') as span:
+                span.set_data('seed.url', seed)
+
                 next_url = seed
                 next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
                 seen_entries = []
@@ -391,13 +393,13 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                 yield chain
 
     for result, count in seed_results.items():
-        # sentry_sdk.metrics.count(f'warc_seeds.{result}', count)
         sentry_sdk.metrics.count('warc.seeds', count, unit='count', attributes={'result': result})
         logger.info(f'warc.seeds: {count}, result: {result}')
 
 
 def format_version(chain: RedirectChain) -> dict:
-    with sentry_sdk.start_span(op='warc.format'):
+    with sentry_sdk.start_span(op='warc.format') as span:
+        span.set_data('seed.url', chain.requests[0].url)
         return format_version_impl(chain)
 
 

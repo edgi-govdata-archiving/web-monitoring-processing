@@ -514,6 +514,10 @@ class S3HashStore:
         self.dry_run = dry_run
 
     def store(self, data: bytes, hash: str = '', content_type: str = '') -> str:
+        with sentry_sdk.start_span(op='hash_store.store', name='Store data in hash store'):
+            return self._store(data, hash, content_type)
+
+    def _store(self, data: bytes, hash: str = '', content_type: str = '') -> str:
         if not hash:
             hash = hash_content(data)
 

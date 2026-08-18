@@ -369,9 +369,10 @@ class WaybackRecordsWorker(threading.Thread):
         """
         memento = self.wayback.get_memento(record, exact_redirects=False)
         with memento:
-            with sentry_sdk.start_span(op='memento.format'):
+            with sentry_sdk.start_span(op='memento.format') as span:
                 version = self.format_memento(memento, record, self.maintainers,
                                               self.tags)
+                span.set_data('memento.url', version['url'])
 
             quality = utils.estimate_version_quality(version)
             if quality < MINIMUM_QUALITY:
