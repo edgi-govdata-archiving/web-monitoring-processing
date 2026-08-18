@@ -215,11 +215,11 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
     # This only supports one warcinfo record per WARC; not technically correct.
     warc_infos: dict[str, dict[str, Any]] = {}
 
-    with sentry_sdk.start_transaction(op='warc.index_all') as index_span:
+    with sentry_sdk.start_transaction(op='warc.index_all', name='Index WARC files') as index_span:
         index_bytes = 0
 
         for warc in warcs:
-            with sentry_sdk.start_span(op='warc.index') as span:
+            with sentry_sdk.start_span(op='warc.index', name='Index single WARC file') as span:
                 warc_path = Path(warc).absolute()
                 warc_info: dict[str, Any] = {'warc_name': warc_path.name}
                 warc_infos[warc] = warc_info
@@ -391,7 +391,6 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
                 yield chain
 
     for result, count in seed_results.items():
-        # sentry_sdk.metrics.count(f'warc_seeds.{result}', count)
         sentry_sdk.metrics.count('warc.seeds', count, unit='count', attributes={'result': result})
         logger.info(f'warc.seeds: {count}, result: {result}')
 
