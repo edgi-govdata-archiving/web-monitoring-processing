@@ -329,7 +329,9 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
             # not other sources that may have been collected differently.
             chain = RedirectChain()
 
-            with sentry_sdk.start_span(op='warc.load_seed'):
+            with sentry_sdk.start_span(op='warc.load_seed') as span:
+                span.set_data('seed.url', seed)
+
                 next_url = seed
                 next_timestamp = datetime(1, 1, 1, tzinfo=timezone.utc)
                 seen_entries = []
@@ -396,7 +398,8 @@ def each_redirect_chain(warcs: list[str], seeds: set[str]) -> Generator[Redirect
 
 
 def format_version(chain: RedirectChain) -> dict:
-    with sentry_sdk.start_span(op='warc.format'):
+    with sentry_sdk.start_span(op='warc.format') as span:
+        span.set_data('seed.url', chain.requests[0].url)
         return format_version_impl(chain)
 
 
