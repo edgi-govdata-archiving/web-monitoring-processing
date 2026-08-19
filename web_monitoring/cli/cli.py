@@ -374,7 +374,7 @@ class WaybackRecordsWorker(threading.Thread):
                                               self.tags)
                 span.set_data('memento.url', version['url'])
 
-            quality = utils.estimate_version_quality(version)
+            quality = utils.estimate_version_quality(version, body=memento.content)
             if quality < MINIMUM_QUALITY:
                 # This isn't really a playback error, but classifying it as
                 # one is convenient for now.

@@ -214,6 +214,10 @@ XFAIL_SNAPSHOT_QUALITY = [
 class TestEstimateSnapshotQuality:
     # Test files are in `snapshot_quality/<server_type>-<expected>/*.json`. They
     # are version records from web-monitoring-db, as captured from the API.
+    #
+    # If the test should be run with accompanying body content, the raw body
+    # will be in a file of the same basename at:
+    # `snapshot_quality/<server_type>-<expected>/*.body`
     @pytest.mark.parametrize('file,expected', [
         pytest.param(
             f'{file.parent.name}/{file.name}',
@@ -222,12 +226,16 @@ class TestEstimateSnapshotQuality:
         )
         for file in get_fixture_paths('snapshot_quality/*/*.json')
     ])
-    def test_estimate_version_quality(self, file, expected):
-        version = json.loads(
-            get_fixture_bytes(Path('snapshot_quality') / file),
-            cls=DbJsonDecoder
-        )['data']
-        assert expected == estimate_version_quality(version)
+    def test_estimate_version_quality(self, file: str, expected):
+        file_path = Path('snapshot_quality') / file
+        version = json.loads(get_fixture_bytes(file_path), cls=DbJsonDecoder)['data']
+
+        try:
+            body = get_fixture_bytes(file_path.with_suffix('.body'))
+        except FileNotFoundError:
+            body = None
+
+        assert expected == estimate_version_quality(version, body=body)
 
     def test_estimate_snapshot_quality_accepts_integer_expires_header(self):
         assert 1.0 == estimate_snapshot_quality(

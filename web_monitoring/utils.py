@@ -640,6 +640,9 @@ def parse_http_server_timing(value: str | None) -> dict[str, str]:
     }
 
 
+GENERIC_BLOCKED_BODY = re.compile(rb'\bip address|bl[oa]cklist', flags=re.I)
+
+
 def estimate_snapshot_quality(
     url: str,
     timestamp: datetime,
@@ -750,6 +753,14 @@ def estimate_snapshot_quality(
             and 'cfedge' in server_timing
         ):
             return 0.1
+    elif 'erddap-server' in headers and status == 403:
+        # In theory, ERDDAP only uses 403 for blocking, but I'm a little
+        # worried about how future-proof that is. So we look for a more clear
+        # signal in the body.
+        if body and GENERIC_BLOCKED_BODY.search(body, 0, 18 * 1024):
+            return 0.0
+        else:
+            return 0.25
     elif 400 <= status < 500 and not server and is_short_or_unknown:
         # Akamai Edgesuite doesn't explicitly identify itself, but it seems to
         # always include recognizable server-timing features and a 4xx status.
@@ -793,7 +804,7 @@ def estimate_snapshot_quality(
     return 1.0
 
 
-def estimate_version_quality(version: dict[str, Any]) -> float:
+def estimate_version_quality(version: dict[str, Any], body: bytes | None = None) -> float:
     """
     A shortcut to ``estimate_snapshot_quality`` for web-monitoring-db version
     records.
@@ -812,4 +823,5 @@ def estimate_version_quality(version: dict[str, Any]) -> float:
         media_type=version['media_type'],
         redirects=version['source_metadata'].get('redirects'),
         title=version.get('title', ''),
+        body=body,
     )
