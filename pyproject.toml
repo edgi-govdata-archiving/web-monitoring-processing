@@ -17,7 +17,7 @@ classifiers = [
 ]
 dependencies = [
     "brotli ~=1.2.0",
-    "charset_normalizer ~=3.4.1",
+    "charset_normalizer ~=3.5.1",
     "cloudpathlib[s3] ~=0.25",
     "python-dateutil ~=2.9.0",
     "lxml >=5.0.0,<7",
