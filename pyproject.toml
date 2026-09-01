@@ -17,13 +17,13 @@ classifiers = [
 ]
 dependencies = [
     "brotli ~=1.2.0",
-    "charset_normalizer ~=3.4.1",
-    "cloudpathlib[s3] >=0.23,<0.25",
+    "charset_normalizer ~=3.5.1",
+    "cloudpathlib[s3] ~=0.25",
     "python-dateutil ~=2.9.0",
     "lxml >=5.0.0,<7",
-    "pypdf[crypto] >=6.9.2,<6.15.0",
+    "pypdf[crypto] ~=6.16.2",
     "PyYAML ~=6.0.2",
-    "sentry-sdk >=2.53,<2.67",
+    "sentry-sdk >=2.53,<2.69",
     "requests >=2.33.1,<2.35.0",
     "urllib3 >=2.6.2,<2.8.0",
     "toolz ~=1.1.0",
@@ -54,7 +54,7 @@ docs = [
 ]
 # For running tests.
 test = [
-    "coverage >=7.13.1,<7.16.0",
+    "coverage ~=7.16.0",
     "pyflakes ~=3.4.0",
     "pytest >=9.0.1,<9.2.0",
     "vcrpy ~=8.3.0",
