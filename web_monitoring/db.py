@@ -378,7 +378,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         chunk_size : integer, optional
             Number of items per chunk. (Under the hood, results are retrieved
             in "chunks"; this specifies how big those chunks are.)
-        sort : list of string, optional
+        sort : str or list of str, optional
             Fields to sort by in `{field}:{order}` format, e.g. `title:asc`.
         tags : list of string, optional
         maintainers : list of string, optional
@@ -407,6 +407,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         page : dict
             Data about a page.
         """
+        if isinstance(sort, str):
+            sort = [sort]
+
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
                   'sort': sort and ','.join(sort) or None,
@@ -471,7 +474,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         chunk_size : integer, optional
             Number of items per chunk. (Under the hood, results are retrieved
             in "chunks"; this specifies how big those chunks are.)
-        sort : list of string, optional
+        sort : str  or list of str, optional
             Fields to sort by in `{field}:{order}` format,
             e.g. `capture_time:asc`
         start_date : datetime, optional
@@ -507,6 +510,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         version : dict
             Data about each found version.
         """
+        if isinstance(sort, str):
+            sort = [sort]
+
         params = {'chunk': chunk,
                   'chunk_size': chunk_size,
                   'sort': sort and ','.join(sort) or None,
