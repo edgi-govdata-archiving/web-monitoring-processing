@@ -89,7 +89,7 @@ def _time_range_string(start_date, end_date):
 
     Returns
     -------
-    capture_time_query : None or string
+    capture_time_query : str or None
         If None, do not query ``capture_time``.
     """
     if start_date is None and end_date is None:
@@ -248,9 +248,9 @@ class Client:
 
     Parameters
     ----------
-    email : string, optional
-    password : string, optional
-    url : string, optional
+    email : str, optional
+    password : str, optional
+    url : str, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout : float, optional
         A default connection timeout in seconds to be used for all requests.
@@ -380,17 +380,17 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
             in "chunks"; this specifies how big those chunks are.)
         sort : str or list of str, optional
             Fields to sort by in `{field}:{order}` format, e.g. `title:asc`.
-        tags : list of string, optional
-        maintainers : list of string, optional
-        url : string, optional
-        title : string, optional
+        tags : list of str, optional
+        maintainers : list of str, optional
+        url : str, optional
+        title : str, optional
         include_versions : boolean, optional
         include_earliest : boolean, optional
         include_latest : boolean, optional
-        source_type : string, optional
+        source_type : str, optional
             Only include pages that have versions from a given source, e.g.
             'versionista' or 'internet_archive'.
-        hash : string, optional
+        hash : str, optional
             Only include pages that have versions whose response body has a
             given SHA-256 hash.
         start_date : datetime, optional
@@ -433,7 +433,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        page_id : string
+        page_id : str
 
         Returns
         -------
@@ -464,7 +464,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        page_id : string, optional
+        page_id : str, optional
             Restricts serach to Versions of a specific Page
         chunk : integer, optional
             Pagination chunk to start iterating from. If unset, starts at the
@@ -479,9 +479,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
             e.g. `capture_time:asc`
         start_date : datetime, optional
         end_date : datetime, optional
-        source_type : string, optional
+        source_type : str, optional
             Such as 'versionista' or 'internetarchive'
-        hash : string, optional
+        hash : str, optional
             SHA-256 hash of Version content
         source_metadata : dict, optional
             Examples:
@@ -539,7 +539,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        version_id : string
+        version_id : str
         include_change_from_previous : boolean, optional
             If True, include a `change_from_previous` field in that represents
             a change object between this and the previous version of the same
@@ -568,17 +568,17 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        page_id : string
+        page_id : str
             Page to which the Version is associated
-        body_url : string
+        body_url : str
             URI of content (such as an S3 bucket or InternetArchive URL)
-        body_hash : string
+        body_hash : str
             SHA256 hash of Version content
-        source_type : string
+        source_type : str
             such as 'versionista' or 'internetarchive'
-        title : string
+        title : str
             content of ``<title>`` tag
-        uuid : string, optional
+        uuid : str, optional
             A new, unique Version ID (UUID4). If not specified, the server
             will generate one.
         source_metadata : dict, optional
@@ -732,7 +732,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        page_id : string
+        page_id : str
         include_total : boolean, optional
             Whether to include a `_list_meta.total_results` field in each
             change. (Default: False)
@@ -753,9 +753,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        page_id : str
+        to_version_id : str
+        from_version_id : str, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
 
@@ -775,9 +775,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        page_id : str
+        to_version_id : str
+        from_version_id : str, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
         include_total : boolean, optional
@@ -803,9 +803,9 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
         Parameters
         ----------
         annotation : dict
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        page_id : str
+        to_version_id : str
+        from_version_id : str, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
 
@@ -824,10 +824,10 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        annotation_id : string
-        page_id : string
-        to_version_id : string
-        from_version_id : string, optional
+        annotation_id : str
+        page_id : str
+        to_version_id : str
+        from_version_id : str, optional
             If from_version_id is not given, it will be treated as version
             immediately prior to ``to_version``.
 
@@ -862,7 +862,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        version_id : string
+        version_id : str
 
         Returns
         -------
@@ -888,7 +888,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
 
         Parameters
         ----------
-        versionista_id : string
+        versionista_id : str
 
         Returns
         -------
