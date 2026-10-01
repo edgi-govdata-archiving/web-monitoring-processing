@@ -55,7 +55,7 @@ docs = [
 # For running tests.
 test = [
     "coverage ~=7.16.0",
-    "pyflakes ~=3.4.0",
+    "pyflakes >=3.4,<4.1",
     "pytest >=9.0.1,<9.2.0",
     "vcrpy ~=8.3.0",
     "requests-mock ~=1.12.1",
