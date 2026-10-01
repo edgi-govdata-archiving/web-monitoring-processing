@@ -171,6 +171,18 @@ def test_get_pages_includes_relations():
     assert isinstance(pages[0]['latest']['updated_at'], datetime)
 
 
+def test_get_pages_handles_sort_string(requests_mock):
+    requests_mock.get('/api/v0/pages?sort=field%3Adesc', json={'data': []})
+    cli = Client(**AUTH)
+    list(cli.get_pages(sort='field:desc'))
+
+
+def test_get_pages_handles_sort_list(requests_mock):
+    requests_mock.get('/api/v0/pages?sort=field%3Adesc,field2%3Aasc', json={'data': []})
+    cli = Client(**AUTH)
+    list(cli.get_pages(sort=['field:desc', 'field2:asc']))
+
+
 @db_vcr.use_cassette()
 def test_get_page():
     cli = Client(**AUTH)
@@ -204,6 +216,18 @@ def test_get_versions_includes_changes():
     versions = cli.get_versions(include_change_from_earliest=True)
     first = next(versions)
     assert 'change_from_earliest' in first
+
+
+def test_get_versions_handles_sort_string(requests_mock):
+    requests_mock.get('/api/v0/versions?sort=field%3Adesc', json={'data': []})
+    cli = Client(**AUTH)
+    list(cli.get_versions(sort='field:desc'))
+
+
+def test_get_versions_handles_sort_list(requests_mock):
+    requests_mock.get('/api/v0/versions?sort=field%3Adesc,field2%3Aasc', json={'data': []})
+    cli = Client(**AUTH)
+    list(cli.get_versions(sort=['field:desc', 'field2:asc']))
 
 
 @db_vcr.use_cassette()
