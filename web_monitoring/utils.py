@@ -785,6 +785,14 @@ def estimate_snapshot_quality(
     # TODO: see if we have any Azure CDN examples?
     elif status == 429 and is_short_or_unknown:
         return 0.1
+    # Generalized gateway errors. These are iffy. We've seen a lot of cases
+    # where an underlying service gets removed, but with a third-party proxy
+    # (e.g. Cloudflare) left in place. We want to capture that because it is
+    # effectively a 404, not a bad snapshot. But just as often these are
+    # transient issues where a server is briefly down for maintenance.
+    elif status == 502 or status == 504:
+        return 0.5
+
     # TODO: More general heuristics?
     # else:
     #     content_type = media_type or headers.get('content-type', '')
