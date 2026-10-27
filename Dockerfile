@@ -1,7 +1,13 @@
 # Base Image  -----------------------------------------------------------------
 FROM python:3.15.1-slim-trixie AS base
-LABEL org.opencontainers.image.authors="enviroDGI@gmail.com"
-LABEL maintainer="enviroDGI@gmail.com"
+
+LABEL org.opencontainers.image.title="web-monitoring-processing" \
+      org.opencontainers.image.description="Python Tools for EDGI Web Monitoring" \
+      org.opencontainers.image.authors="Environmental Data & Governance Initiative (EDGI)" \
+      org.opencontainers.image.url="https://envirodatagov.org/" \
+      org.opencontainers.image.source="https://github.com/edgi-govdata-archiving/web-monitoring-processing" \
+      org.opencontainers.image.documentation="https://web-monitoring-processing.readthedocs.io/" \
+      org.opencontainers.image.licenses="GPL-3.0"
 
 
 # Building Deps & Native Code -------------------------------------------------
