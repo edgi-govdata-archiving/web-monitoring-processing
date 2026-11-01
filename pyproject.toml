@@ -19,7 +19,11 @@ dependencies = [
     "brotli ~=1.2.0",
     "charset_normalizer ~=3.5.1",
     "cloudpathlib[s3] ~=0.25",
-    "python-dateutil ~=2.9.0",
+    # Dateutil is *widely* depended on, and we need a relatively wide range to
+    # be compatible with other dependencies as they all slowly upgrade.
+    # We don't use any of the functionality that's changed in 3.0, and 4.0 is
+    # purely about Python compatibility, so we are safe at least until 5.0.
+    "python-dateutil >=2.9,<5.0",
     "lxml >=5.0.0,<7",
     "pypdf[crypto] >=6.16.2,<6.22.0",
     "PyYAML ~=6.0.2",
