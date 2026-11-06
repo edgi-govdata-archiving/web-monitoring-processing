@@ -139,7 +139,7 @@ jobs:
             docker push envirodgi/processing:latest
 
 workflows:
-  build:
+  ci:
     jobs:
       - test:
           matrix:
@@ -157,4 +157,4 @@ workflows:
           filters:
             branches:
               only:
-                - release
+                - main
