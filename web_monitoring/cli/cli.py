@@ -1106,7 +1106,6 @@ def main():
         archive_storage = None
         if args.archive_s3 and not args.dry_run:
             archive_storage = utils.S3HashStore(args.archive_s3, extra_args={
-                'ACL': 'public-read',
                 # Ideally, we'd gzip stuff, but the DB needs to learn to
                 # correctly read gzipped items first.
                 # 'ContentEncoding': 'gzip'
