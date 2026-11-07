@@ -505,8 +505,7 @@ def main():
     storage = S3HashStore(
         args.archive_s3,
         gzip=True,
-        dry_run=args.dry_run,
-        extra_args={'ACL': 'public-read'}
+        dry_run=args.dry_run
     )
 
     seeds = set(read_seeds_file(args.seeds))
