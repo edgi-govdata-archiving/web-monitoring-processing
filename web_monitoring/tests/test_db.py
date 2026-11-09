@@ -71,7 +71,7 @@ class TestFromEnv:
     def clear_env(self, monkeypatch):
         monkeypatch.delenv('WEB_MONITORING_DB_URL', raising=False)
         monkeypatch.delenv('WEB_MONITORING_DB_EMAIL', raising=False)
-        monkeypatch.delenv('WEB_MONITORING_DB_PASSOWRD', raising=False)
+        monkeypatch.delenv('WEB_MONITORING_DB_PASSWORD', raising=False)
 
     @pytest.fixture(autouse=True)
     def get_page_x(self, requests_mock):
