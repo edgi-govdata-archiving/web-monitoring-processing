@@ -71,7 +71,8 @@ class TestFromEnv:
     def clear_env(self, monkeypatch):
         monkeypatch.delenv('WEB_MONITORING_DB_URL', raising=False)
         monkeypatch.delenv('WEB_MONITORING_DB_EMAIL', raising=False)
-        monkeypatch.delenv('WEB_MONITORING_DB_PASSOWRD', raising=False)
+        monkeypatch.delenv('WEB_MONITORING_DB_PASSWORD', raising=False)
+        monkeypatch.delenv('WEB_MONITORING_DB_CLIENT_TOKEN', raising=False)
 
     @pytest.fixture(autouse=True)
     def get_page_x(self, requests_mock):
@@ -85,9 +86,11 @@ class TestFromEnv:
         monkeypatch.setenv('WEB_MONITORING_DB_URL', AUTH['url'])
         monkeypatch.setenv('WEB_MONITORING_DB_EMAIL', AUTH['email'])
         monkeypatch.setenv('WEB_MONITORING_DB_PASSWORD', AUTH['password'])
+        monkeypatch.setenv('WEB_MONITORING_DB_CLIENT_TOKEN', 'edgi-cf-abc123')
 
         requests_mock.get(
             f'{AUTH["url"]}/api/v0/pages/x',
+            headers={'x-edgi-client': 'edgi-cf-abc123'},
             additional_matcher=auth_matcher(AUTH['email'], AUTH['password']),
             json={'data': {'uuid': 'x'}}
         )

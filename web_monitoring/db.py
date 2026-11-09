@@ -250,6 +250,9 @@ class Client:
     ----------
     email : str, optional
     password : str, optional
+    client_token : str, optional
+        A client token that grants bypass privileges to some API server
+        restrictions (e.g. higher rate limits).
     url : str, optional
         Default is ``https://api.monitoring.envirodatagov.org``.
     timeout : float, optional
@@ -264,13 +267,15 @@ class Client:
         https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#urllib3.util.Retry
         Default: ``(2, 2)``
     """
-    def __init__(self, email=None, password=None, url=None, timeout=None,
-                 retries=None):
+    def __init__(self, *, email=None, password=None, client_token=None,
+                 url=None, timeout=None, retries=None):
         clean_url = (url or DEFAULT_URL).rstrip('/')
         self._api_url = f'{clean_url}/api/v0'
         self._base_url = clean_url
         self._session = DbSession(retries=retries, timeout=timeout)
         self._session.headers.update({'accept': 'application/json'})
+        if client_token:
+            self._session.headers.update({'x-edgi-client': client_token})
         if email and password:
             self._session.auth = (email, password)
         elif email or password:
@@ -287,6 +292,7 @@ class Client:
             * ``WEB_MONITORING_DB_URL``
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
+            * ``WEB_MONITORING_DB_CLIENT_TOKEN``
 
         Any extra parameters (e.g. ``timeout``) are passed to the ``Client``
         constructor.
@@ -294,18 +300,25 @@ class Client:
         url = os.environ.get('WEB_MONITORING_DB_URL', DEFAULT_URL)
         email = os.environ.get('WEB_MONITORING_DB_EMAIL')
         password = os.environ.get('WEB_MONITORING_DB_PASSWORD')
+        client_token = os.environ.get('WEB_MONITORING_DB_CLIENT_TOKEN')
         if email and not password:
             raise MissingCredentials("""
 The WEB_MONITORING_DB_EMAIL environment variable was set, but
-WEB_MONITORING_DB_PASSWORD was not. Make sure to neither or both!
+WEB_MONITORING_DB_PASSWORD was not. Make sure to set neither or both!
 """)
         elif password and not email:
             raise MissingCredentials("""
 The WEB_MONITORING_DB_PASSWORD environment variable was set, but
-WEB_MONITORING_DB_EMAIL was not. Make sure to neither or both!
+WEB_MONITORING_DB_EMAIL was not. Make sure to set neither or both!
 """)
         else:
-            return cls(email=email, password=password, url=url, **kwargs)
+            return cls(
+                email=email,
+                password=password,
+                client_token=client_token,
+                url=url,
+                **kwargs
+            )
 
     def request(self, method, url, data=None, timeout=None, **kwargs):
         if not url.startswith('http://') and not url.startswith('https://'):
