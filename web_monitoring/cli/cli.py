@@ -206,7 +206,7 @@ class BadMementoError(Exception):
 def _hacky_should_retry_error(self, error):
     if isinstance(error, wayback.WaybackSession.retryable_errors):
         return True
-    elif isinstance(error, ConnectionError):
+    elif isinstance(error, wayback.WaybackSession.handleable_errors):
         sentry_sdk.capture_exception(error, level='warning')
         causes = []
         current = error
