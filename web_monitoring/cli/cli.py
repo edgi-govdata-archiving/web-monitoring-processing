@@ -195,9 +195,31 @@ class BadMementoError(Exception):
     ...
 
 
+# TODO: Clean this up soon! This logging is mainly meant to characterize the
+# current things we are encountering and retrying in practice. We previously
+# just added ConnectionError to the list of retryables, but have no telemetry
+# on the specific error types that was working on. (The goal of all this is to
+# push the right stuff down into Wayback proper.)
 # HACK: Ensure WaybackSession retries all ConnectionErrors, since we are
 # clearly being too narrow about them right now.
-wayback.WaybackSession.retryable_errors = wayback.WaybackSession.handleable_errors
+# wayback.WaybackSession.retryable_errors = wayback.WaybackSession.handleable_errors
+def _hacky_should_retry_error(self, error):
+    if isinstance(error, wayback.WaybackSession.retryable_errors):
+        return True
+    elif isinstance(error, wayback.WaybackSession.handleable_errors):
+        sentry_sdk.capture_exception(error, level='warning')
+        causes = []
+        current = error
+        while current is not None:
+            causes.append(repr(current))
+            current = current.__cause__ or current.__context__
+        logger.warning(f'Retrying connection error! Causal stack: {", ".join(causes)}')
+        return True
+
+    return False
+
+
+wayback.WaybackSession.should_retry_error = _hacky_should_retry_error
 
 
 class RateLimitedAdapter(requests.adapters.HTTPAdapter):
