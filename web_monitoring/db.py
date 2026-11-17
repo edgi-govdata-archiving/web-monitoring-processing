@@ -333,7 +333,7 @@ class Client:
         client_token = os.environ.get('WEB_MONITORING_DB_CLIENT_TOKEN')
         rate_limit = None
         if raw := os.environ.get('WEB_MONITORING_MAX_REQUESTS_PER_SECOND'):
-            rate_limit = RateLimit(int(raw))
+            rate_limit = RateLimit(float(raw))
         if email and not password:
             raise MissingCredentials("""
 The WEB_MONITORING_DB_EMAIL environment variable was set, but
