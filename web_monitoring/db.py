@@ -320,6 +320,7 @@ class Client:
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
             * ``WEB_MONITORING_DB_CLIENT_TOKEN``
+            * ``WEB_MONITORING_MAX_REQUESTS_PER_SECOND``
 
         Any extra parameters (e.g. ``timeout``) are passed to the ``Client``
         constructor.
@@ -328,6 +329,9 @@ class Client:
         email = os.environ.get('WEB_MONITORING_DB_EMAIL')
         password = os.environ.get('WEB_MONITORING_DB_PASSWORD')
         client_token = os.environ.get('WEB_MONITORING_DB_CLIENT_TOKEN')
+        rate_limit = None
+        if raw := os.environ.get('WEB_MONITORING_MAX_REQUESTS_PER_SECOND'):
+            rate_limit = RateLimit(int(raw))
         if email and not password:
             raise MissingCredentials("""
 The WEB_MONITORING_DB_EMAIL environment variable was set, but
@@ -344,6 +348,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to set neither or both!
                 password=password,
                 client_token=client_token,
                 url=url,
+                rate_limit=rate_limit,
                 **kwargs
             )
 
