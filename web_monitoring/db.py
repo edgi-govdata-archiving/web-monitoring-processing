@@ -39,6 +39,8 @@ W3C_ISO_DATETIME = re.compile(r'''
     $
 ''', re.VERBOSE)
 
+# These are actual rate limit instances to make sure they are shared across all
+# client instances in a process.
 DEFAULT_RATE_LIMIT = RateLimit(per_second=3)
 AUTHORIZED_RATE_LIMIT = RateLimit(per_second=18)
 
