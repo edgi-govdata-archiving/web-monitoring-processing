@@ -11,6 +11,7 @@ from urllib3.util import Retry
 import time
 import toolz
 import warnings
+from .utils import RateLimit
 
 
 DEFAULT_URL = 'https://api.monitoring.envirodatagov.org'
@@ -37,6 +38,11 @@ W3C_ISO_DATETIME = re.compile(r'''
     )?
     $
 ''', re.VERBOSE)
+
+# These are actual rate limit instances to make sure they are shared across all
+# client instances in a process.
+DEFAULT_RATE_LIMIT = RateLimit(per_second=3)
+AUTHORIZED_RATE_LIMIT = RateLimit(per_second=18)
 
 
 def _tzaware_isoformat(dt):
@@ -192,9 +198,13 @@ class DbSession(requests.Session):
     retry_statuses = frozenset((408, 413, 429, 502, 503, 504, 599))
     timeout = DEFAULT_TIMEOUT
 
-    def __init__(self, *args, retries=None, timeout=None, **kwargs):
+    def __init__(self, *args, retries=None, timeout=None, rate_limit=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.timeout = self._validate_timeout(timeout)
+        rate_limit = rate_limit or RateLimit(0)
+        if not isinstance(rate_limit, RateLimit):
+            raise TypeError(f'rate_limit must be an instance of RateLimit, not {type(rate_limit)}')
+        self.rate_limit = rate_limit
         retry = self._retry_configuration(retries)
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
         self.mount('http://', adapter)
@@ -203,6 +213,21 @@ class DbSession(requests.Session):
     def request(self, *args, timeout=None, **kwargs):
         timeout = self._validate_timeout(timeout)
         return super().request(*args, timeout=timeout, **kwargs)
+
+    def send(self, *args, **kwargs) -> requests.Response:
+        # NOTE: this is not quite the right way to apply rate limits, since we
+        # use urllib3 retries, which happen lower down in the stack, and so can
+        # make additional requests without being time-gated by this limit. But
+        # this is probably good enough for most uses. (This DOES cover
+        # redirects, which happen on the `requests.Session` level instead of by
+        # leveraging urllib3's redirect functionality.)
+        # A fully correct approach would either handle retries at this level,
+        # or would need a custom PoolManager passed to the adapter that then
+        # manipulates the the pools so that they use the rate limit, or to have
+        # a special `Retry` sublass that obeys the limit when it runs (in
+        # addition to happening here), or some other clever solution.
+        with self.rate_limit:
+            return super().send(*args, **kwargs)
 
     def _retry_configuration(self, retries):
         if isinstance(retries, Retry):
@@ -268,11 +293,15 @@ class Client:
         Default: ``(2, 2)``
     """
     def __init__(self, *, email=None, password=None, client_token=None,
-                 url=None, timeout=None, retries=None):
+                 url=None, timeout=None, retries=None, rate_limit=None):
         clean_url = (url or DEFAULT_URL).rstrip('/')
         self._api_url = f'{clean_url}/api/v0'
         self._base_url = clean_url
-        self._session = DbSession(retries=retries, timeout=timeout)
+        self._session = DbSession(
+            retries=retries,
+            timeout=timeout,
+            rate_limit=rate_limit or (AUTHORIZED_RATE_LIMIT if client_token else DEFAULT_RATE_LIMIT)
+        )
         self._session.headers.update({'accept': 'application/json'})
         if client_token:
             self._session.headers.update({'x-edgi-client': client_token})
@@ -293,6 +322,7 @@ class Client:
             * ``WEB_MONITORING_DB_EMAIL``
             * ``WEB_MONITORING_DB_PASSWORD``
             * ``WEB_MONITORING_DB_CLIENT_TOKEN``
+            * ``WEB_MONITORING_MAX_REQUESTS_PER_SECOND``
 
         Any extra parameters (e.g. ``timeout``) are passed to the ``Client``
         constructor.
@@ -301,6 +331,9 @@ class Client:
         email = os.environ.get('WEB_MONITORING_DB_EMAIL')
         password = os.environ.get('WEB_MONITORING_DB_PASSWORD')
         client_token = os.environ.get('WEB_MONITORING_DB_CLIENT_TOKEN')
+        rate_limit = None
+        if raw := os.environ.get('WEB_MONITORING_MAX_REQUESTS_PER_SECOND'):
+            rate_limit = RateLimit(float(raw))
         if email and not password:
             raise MissingCredentials("""
 The WEB_MONITORING_DB_EMAIL environment variable was set, but
@@ -317,6 +350,7 @@ WEB_MONITORING_DB_EMAIL was not. Make sure to set neither or both!
                 password=password,
                 client_token=client_token,
                 url=url,
+                rate_limit=rate_limit,
                 **kwargs
             )
 
