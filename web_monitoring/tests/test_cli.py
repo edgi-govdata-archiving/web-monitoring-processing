@@ -1,14 +1,16 @@
 from datetime import datetime, timezone
+from dateutil.parser import parse as parse_datetime
 import os
 from pathlib import Path
 from unittest.mock import patch
 from vcr import VCR
 from vcr.record_mode import RecordMode
-from wayback import WaybackClient
+from wayback import CdxRecord, WaybackClient
 from web_monitoring.cli.cli import (_filter_unchanged_versions,
                                     WaybackRecordsWorker, import_ia_urls,
                                     import_ia_db_urls,
-                                    _is_valid, validate_db_credentials)
+                                    _is_valid, validate_db_credentials,
+                                    _sample_daily_cdx)
 
 
 # The only matters when re-recording the tests for vcr.
@@ -215,3 +217,113 @@ def test_import_skips_bad_mementos(capsys):
 @patch.dict(os.environ, AUTH_ENVIRON)
 def test_validate_db_credentials():
     validate_db_credentials()
+
+
+class TestSampleDailyCdx:
+    def cdx(
+        self,
+        original: str = 'https://www.epa.gov',
+        timestamp: datetime | str = '',
+        mimetype: str = 'text/html',
+        statuscode: int | None = 200,
+        **kwargs
+    ) -> CdxRecord:
+        if isinstance(timestamp, str):
+            timestamp = parse_datetime(timestamp)
+        return CdxRecord(
+            urlkey=kwargs.pop('urlkey', original),
+            original=original,
+            timestamp=timestamp,
+            mimetype=mimetype,
+            statuscode=statuscode,
+            digest='xyz',
+            length=10000
+        )
+
+    def test_it_uses_the_best_when_1_sample(self):
+        records = [
+            self.cdx(timestamp='2026-01-01T00:00:00Z', statuscode=None),
+            self.cdx(timestamp='2026-01-01T01:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T02:00:00Z', statuscode=403),
+        ]
+
+        assert list(_sample_daily_cdx(1)(records)) == [records[1]]
+
+    def test_it_includes_the_best_when_many_samples(self):
+        records = [
+            self.cdx(timestamp='2026-01-01T00:00:00Z', statuscode=404),
+            self.cdx(timestamp='2026-01-01T01:00:00Z', statuscode=400),
+            self.cdx(timestamp='2026-01-01T02:00:00Z', statuscode=500),
+            self.cdx(timestamp='2026-01-01T03:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T04:00:00Z', statuscode=418),
+        ]
+
+        assert list(_sample_daily_cdx(2)(records)) == [records[3], records[4]]
+
+    def test_it_samples_exact_if_input_only_has_valid_records(self):
+        records = [
+            self.cdx(timestamp='2026-01-01T00:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T01:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T02:00:00Z', statuscode=404),
+            self.cdx(timestamp='2026-01-01T03:00:00Z', statuscode=500),
+            self.cdx(timestamp='2026-01-01T04:00:00Z', statuscode=201),
+        ]
+
+        assert list(_sample_daily_cdx(2, maximum=4)(records)) == [
+            records[0],
+            records[4],
+        ]
+
+    def test_it_samples_maximum_if_input_has_unknown_records(self):
+        records = [
+            self.cdx(timestamp='2026-01-01T00:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T01:00:00Z', statuscode=None),
+            self.cdx(timestamp='2026-01-01T02:00:00Z', statuscode=404),
+            self.cdx(timestamp='2026-01-01T03:00:00Z', statuscode=403),
+            self.cdx(timestamp='2026-01-01T04:00:00Z', statuscode=404),
+        ]
+
+        assert list(_sample_daily_cdx(2, maximum=4)(records)) == [
+            records[0],
+            records[1],
+            records[3],
+            records[4],
+        ]
+
+    def test_it_drops_invalid_if_not_needed(self):
+        """
+        Given input with enough valid or unknown records to meet sample size
+        (not maximum), it should never sample invalid records.
+        """
+        records = [
+            self.cdx(timestamp='2026-01-01T00:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T01:00:00Z', statuscode=429),
+            self.cdx(timestamp='2026-01-01T02:00:00Z', statuscode=403),
+            self.cdx(timestamp='2026-01-01T03:00:00Z', statuscode=404),
+        ]
+
+        assert list(_sample_daily_cdx(2, maximum=4)(records)) == [
+            records[0],
+            records[2],
+            records[3],
+        ]
+
+    def test_it_includes_invalid_if_needed(self):
+        """
+        Given input without enough valid or unknown records to meet the sample
+        size, it should include only enough invalid records to meet the sample
+        size (not the maximum size).
+        """
+        records = [
+            self.cdx(timestamp='2026-01-01T00:00:00Z', statuscode=200),
+            self.cdx(timestamp='2026-01-01T01:00:00Z', statuscode=429),
+            self.cdx(timestamp='2026-01-01T02:00:00Z', statuscode=403),
+            self.cdx(timestamp='2026-01-01T03:00:00Z', statuscode=429),
+            self.cdx(timestamp='2026-01-01T04:00:00Z', statuscode=401),
+        ]
+
+        assert list(_sample_daily_cdx(3, maximum=5)(records)) == [
+            records[0],
+            records[2],
+            records[1],
+        ]

@@ -42,7 +42,7 @@ and results between them.
 """
 
 from cloudpathlib import CloudPath
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, timezone
 from web_monitoring.utils import cli_datetime, detect_encoding
 import dateutil.parser
@@ -58,7 +58,7 @@ import requests
 import sentry_sdk
 import sys
 import threading
-from typing import Generator, Iterable
+from typing import Callable, Generator, Iterable
 import time
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -656,7 +656,9 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
     with utils.QuitSignal() as stop_event:
         cdx_filter = _identity_iterator
         if skip_unchanged == 'day':
-            cdx_filter = _filter_daily_cdx
+            cdx_filter = _sample_daily_cdx(1, maximum=8)
+        elif skip_unchanged == 'subday':
+            cdx_filter = _sample_daily_cdx(4, maximum=10)
 
         cdx_records = utils.FiniteQueue()
         cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
@@ -769,7 +771,7 @@ def _filter_unchanged_versions(versions):
             yield version
 
 
-def _filter_daily_versions(versions):
+def _filter_daily_versions(versions: Iterable[dict], count: int = 1):
     """
     Take an iteratable of importable version dicts and yield only versions that
     come from a different day or differ from the previous version of the same
@@ -779,60 +781,173 @@ def _filter_daily_versions(versions):
     point, versions are unordered and there's no way to know when we've seen
     all the versions for a given day.
     """
-    daily_info = {}
+    cache: dict[str, OrderedDict[str, dict]] = defaultdict(OrderedDict)
     for version in versions:
-        info = daily_info.get(version['url'], {
-            'date': '1900-01-01',
-            'status': 900
-        })
-        if (
-            info['date'] != version['capture_time'][:10]
-            or version['status'] < info['status']
-        ):
-            daily_info[version['url']] = {
-                'date': version['capture_time'][:10],
-                'status': version['status'],
+        url_info = cache[version['url']]
+        day = version['capture_time'][:10]
+        day_info = url_info.get(day)
+        if not day_info:
+            day_info = {
+                'count': 0,
+                'status': 900,
             }
+            url_info[day] = day_info
+            if len(url_info) > 10:
+                url_info.popitem(last=False)
+
+        action = 'dropping'
+        if count > day_info['count'] or version['status'] < day_info['status']:
+            day_info['count'] += 1
+            day_info['status'] = version['status']
             yield version
+            action = 'keeping'
+
+        logger.debug(f'Post-filter (version) {action} {version["capture_time"]} {version["url"]}')
 
 
-def _filter_daily_cdx(records: Iterable[wayback.CdxRecord]) -> Generator[wayback.CdxRecord, None, None]:
+def _sample_evenly(samples: int, candidates: list, include_end: bool = False) -> list:
     """
-    Filter CDX records to one per day per URL when possible. If all CDX
-    records for a given day have missing or 3xx status codes, we can't
-    meaningfully filter, so in that case this will let all CDX records through
-    for that day. When choosing the best record for the day, this will
-    prioritize the earliest, lowest status code (e.g. 200 instead of 400).
+    Given a list of candidates, sample N items, spaced as evenly along the list
+    as possible. If ``include_end`` is true, samples will include the last
+    item. If false, the final sample will be evenly(ish) spaced between the
+    previous sample and the end of the list.
+
+    Examples
+    --------
+    >>> _sample_evenly(4, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], include_end=False)
+    [1, 3, 6, 9]
+    >>> _sample_evenly(4, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], include_end=True)
+    [1, 4, 7, 10]
     """
-    url = ''
-    day = None
-    day_records: list[wayback.CdxRecord] = []
+    if samples >= len(candidates):
+        return candidates
 
-    def best_of_batch(batch: list[wayback.CdxRecord]):
-        # We want to prefer OK over error responses, but we can't know which
-        # they are for records with missing or 3xx status codes.
-        viable = [r for r in batch
-                  if (r.statuscode
-                      and (r.statuscode < 300 or r.statuscode >= 400))]
-        best = min(viable, key=lambda r: r.statuscode) if viable else None
-        if best:
-            yield best
+    if include_end:
+        if samples == 1:
+            return candidates[-1:]
+
+        interval = (len(candidates) - 1) / (samples - 1)
+    else:
+        interval = len(candidates) / samples
+
+    return [candidates[round(i * interval)] for i in range(samples)]
+
+
+def _sample_cdx_batch(samples: int, batch: list[wayback.CdxRecord], *, maximum: int = 0) -> Generator[wayback.CdxRecord, None, None]:
+    """
+    Select N CDX records from a list. This tries to prefer records most likely
+    to be good mementos and to produce a deterministic, repeatable result.
+
+    This will attempt sample only ``samples`` records. However, we can't always
+    tell if a CDX record represents a good snapshot of a URL at a given point
+    in time, or if it is more likely to be a crawler getting blocked. When this
+    function winds up sampling these records of unknown status, it will instead
+    return ``maximum`` samples. This allows us to sample more records, load the
+    memento they represent, and then filter those results down later. If
+    ``maximum`` is less than ``samples`` or is unset, it will be treated as if
+    it is equal to ``samples``.
+    """
+    if samples <= 0:
+        raise ValueError(f'`samples` must be > 0, not {samples!r}')
+
+    if not batch:
+        return
+
+    if maximum < samples:
+        maximum = samples
+
+    total = 0
+
+    valid = []
+    unknown = []
+    invalid = []
+    for record in batch:
+        # We've never seen a case where these represent a "good" memento.
+        if record.statuscode in (401, 429):
+            invalid.append(record)
+        elif not record.statuscode or 300 <= record.statuscode < 400 or record.statuscode in (403, 502, 503, 504):
+            unknown.append(record)
         else:
-            yield from viable or batch
+            valid.append(record)
 
-    for record in records:
-        if url != record.urlkey or day != record.timestamp.date():
-            yield from best_of_batch(day_records)
+    # If we can identify a "best" record from batch, make sure we surface it.
+    best = None
+    if valid:
+        best = min(valid, key=lambda r: r.statuscode)
+        valid.remove(best)
+        yield best
+        if samples == 1:
+            logger.debug(f'Sampled CDX: 1/{len(batch)} (best)')
+            return
 
-            url = record.urlkey
-            day = record.timestamp.date()
-            day_records.clear()
-            day_records.append(record)
-        else:
-            day_records.append(record)
+        total += 1
 
-    if len(day_records):
-        yield from best_of_batch(day_records)
+    if len(unknown):
+        candidates = sorted((*valid, *unknown), key=lambda r: r.timestamp)
+        results = _sample_evenly(maximum - total, candidates, include_end=True)
+    else:
+        results = _sample_evenly(samples - total, valid, include_end=True)
+    yield from results
+    total += len(results)
+
+    # Only sample from the invalids if we really have to.
+    if total < samples:
+        yield from _sample_evenly(samples - total, invalid)
+
+    logger.debug(f'Sampled CDX: {total}/{len(batch)}')
+
+
+def _sample_daily_cdx(samples: int, maximum: int = 0) -> Callable[[Iterable[wayback.CdxRecord]], Generator[wayback.CdxRecord, None, None]]:
+    """
+    Create a filter function that takes an iterable of CDX records and yields
+    only N records for each day.
+
+    This will attempt to ensure the best possible record of a day is sampled by
+    prioritizing the earliest, lowest status code (e.g. 200 instead of 400).
+    Subsequent samples will be chosen evenly and deterministically across the
+    day (filtering the same sample size across the same batch of records should
+    always yield the same results).
+
+    We can't always determine if a CDX record represents a good memento of a
+    URL at a given point in time, or if it is more likely to represent a
+    crawler getting blocked. When the filter function encounters those records,
+    it will yield up to ``maximum`` records instead of ``samples`` records. You
+    can then filter down the number of results after loading mementos for the
+    records and determining whether they are good. (Ideally we'd have sampling
+    and memento loading more connected, so we could just keep sampling until we
+    have as many good mementos as we need, but these functions are currently
+    totally disconnected and so need this "maximum" concept and post-memento
+    filtering.)
+
+    Avoid setting ``maximum`` to an extremely high number. Doing so can help
+    ensure you load all records, but sometimes Wayback has a ridiculous number
+    of mementos on a given day, and in those cases the later mementos are often
+    just a crawler getting blocked. It's rarely worth the time and bandwidth
+    cost of loading them all.
+    """
+    if samples <= 0:
+        raise ValueError('Sample size must be > 0')
+
+    def filterer(records: Iterable[wayback.CdxRecord]) -> Generator[wayback.CdxRecord, None, None]:
+        url = ''
+        day = None
+        day_records: list[wayback.CdxRecord] = []
+
+        for record in records:
+            if url != record.urlkey or day != record.timestamp.date():
+                yield from _sample_cdx_batch(samples, day_records, maximum=maximum)
+
+                url = record.urlkey
+                day = record.timestamp.date()
+                day_records.clear()
+                day_records.append(record)
+            else:
+                day_records.append(record)
+
+        if len(day_records):
+            yield from _sample_cdx_batch(samples, day_records, maximum=maximum)
+
+    return filterer
 
 
 def _identity_iterator(inputs):
@@ -1087,11 +1202,22 @@ def main():
         'Name of entity that maintains the imported pages. '
         'Repeat to add multiple maintainers.'
     ))
-    import_ia.add_argument('--skip-unchanged', choices=['none', 'resolved-response', 'day'], help=(
+    # FIXME: This option is terribly named and structured for how we currently
+    # use it. In practice, we never want to skip importing a version that
+    # doesn't represent a change because it still, crucially, represents that a
+    # URL looked was as-yet *unchanged* at a given point in time. That's
+    # important for narrowing down when something happened, which is pretty
+    # important for all our use cases.
+    # However, we do make heavy use of `day` and `subday` for sampling purposes
+    # when importing historical data, ad-hoc examining a page over long time
+    # periods, or just for performance and bandwidth reasons. But those are
+    # really about sample rates, not about changed-ness.
+    import_ia.add_argument('--skip-unchanged', choices=['none', 'resolved-response', 'day', 'subday'], help=(
         'Skip consecutive captures of the same content. Options: '
         '`none` (no skipping), `resolved-response` (skip if the final '
         'response after redirects is unchanged), `day` (only import up to one '
-        'version per day [sometimes will import more]).'
+        'version per day [sometimes will import more]), `subday` (only import '
+        'a few versions per day).'
     ))
     import_ia.add_argument('--parallel', type=int, default=PARALLEL_REQUESTS, help=(
         'Number of parallel network requests to support.'
