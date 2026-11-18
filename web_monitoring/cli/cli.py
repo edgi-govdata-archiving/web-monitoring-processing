@@ -43,7 +43,7 @@ and results between them.
 
 from cloudpathlib import CloudPath
 from collections import defaultdict, OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from web_monitoring.utils import cli_datetime, detect_encoding
 import dateutil.parser
 from itertools import islice
@@ -376,7 +376,7 @@ class WaybackRecordsWorker(threading.Thread):
             # cover bad mementos as a separate concept. But for now we get the
             # job done by mixing them together.
             if self.unplaybackable is not None:
-                self.unplaybackable[record.raw_url] = datetime.utcnow()
+                self.unplaybackable[record.raw_url] = datetime.now(UTC)
             self.results_queue.put([record, None, error])
         except Exception as error:
             self.results_queue.put([record, None, error])
@@ -1010,7 +1010,7 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
 
     print_info('Saving list of non-playbackable URLs...')
 
-    threshold = datetime.utcnow() - timedelta(seconds=expiration)
+    threshold = datetime.now(UTC) - timedelta(seconds=expiration)
     urls = list(mementos.keys())
     for url in urls:
         date = mementos[url]
