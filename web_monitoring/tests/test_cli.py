@@ -6,8 +6,7 @@ from unittest.mock import patch
 from vcr import VCR
 from vcr.record_mode import RecordMode
 from wayback import CdxRecord, WaybackClient
-from web_monitoring.cli.cli import (_filter_unchanged_versions,
-                                    WaybackRecordsWorker, import_ia_urls,
+from web_monitoring.cli.cli import (WaybackRecordsWorker, import_ia_urls,
                                     import_ia_db_urls,
                                     _is_valid, validate_db_credentials,
                                     _sample_daily_cdx)
@@ -30,28 +29,6 @@ ia_vcr = VCR(
          match_on=['uri', 'method'],
          filter_headers=['authorization'],
 )
-
-
-def test_filter_unchanged_versions():
-    versions = (
-        {'url': 'http://example.com', 'body_hash': 'a'},
-        {'url': 'http://example.com', 'body_hash': 'b'},
-        {'url': 'http://example.com', 'body_hash': 'b'},
-        {'url': 'http://other.com',   'body_hash': 'b'},
-        {'url': 'http://example.com', 'body_hash': 'b'},
-        {'url': 'http://example.com', 'body_hash': 'c'},
-        {'url': 'http://other.com',   'body_hash': 'd'},
-        {'url': 'http://other.com',   'body_hash': 'b'},
-    )
-
-    assert list(_filter_unchanged_versions(versions)) == [
-        {'url': 'http://example.com', 'body_hash': 'a'},
-        {'url': 'http://example.com', 'body_hash': 'b'},
-        {'url': 'http://other.com',   'body_hash': 'b'},
-        {'url': 'http://example.com', 'body_hash': 'c'},
-        {'url': 'http://other.com',   'body_hash': 'd'},
-        {'url': 'http://other.com',   'body_hash': 'b'},
-    ]
 
 
 def test_is_valid():
@@ -192,7 +169,7 @@ def test_complete_import_ia_db_urls():
     # The only real goal in this test is to make sure it doesn't raise.
     import_ia_db_urls(from_date=datetime(2019, 1, 1, 3, 0, tzinfo=timezone.utc),
                       to_date=datetime(2019, 1, 2, 3, 0, tzinfo=timezone.utc),
-                      skip_unchanged='resolved-response',
+                      sample_rate=4,
                       url_pattern='*epa.gov/hfstudy/epa*')
 
 
@@ -202,7 +179,7 @@ def test_import_skips_bad_mementos(capsys):
         urls=['https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms'],
         from_date=datetime(2026, 4, 16, 0, tzinfo=timezone.utc),
         to_date=datetime(2026, 4, 16, 4, tzinfo=timezone.utc),
-        skip_unchanged='none',
+        sample_rate=0,
         dry_run=True,
     )
 

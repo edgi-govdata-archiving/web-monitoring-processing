@@ -43,7 +43,7 @@ and results between them.
 
 from cloudpathlib import CloudPath
 from collections import defaultdict, OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from web_monitoring.utils import cli_datetime, detect_encoding
 import dateutil.parser
 from itertools import islice
@@ -156,10 +156,9 @@ def print_info(message: str) -> None:
 # CLI. They also print. To access this functionality programmatically, it is
 # better to use the underlying library code.
 
-def _add_and_monitor(versions, create_pages=True, skip_unchanged_versions=True, stop_event=None, db_client=None):
+def _add_and_monitor(versions, create_pages=True, stop_event=None, db_client=None):
     cli = db_client or db.Client.from_env()  # will raise if env vars not set
-    import_ids = cli.add_versions(versions, create_pages=create_pages,
-                                  skip_unchanged_versions=skip_unchanged_versions)
+    import_ids = cli.add_versions(versions, create_pages=create_pages)
     if len(import_ids) == 0:
         return
 
@@ -377,7 +376,7 @@ class WaybackRecordsWorker(threading.Thread):
             # cover bad mementos as a separate concept. But for now we get the
             # job done by mixing them together.
             if self.unplaybackable is not None:
-                self.unplaybackable[record.raw_url] = datetime.utcnow()
+                self.unplaybackable[record.raw_url] = datetime.now(UTC)
             self.results_queue.put([record, None, error])
         except Exception as error:
             self.results_queue.put([record, None, error])
@@ -599,7 +598,7 @@ def _load_known_versions(client, start_date, end_date):
 
 
 def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
-                      tags=None, skip_unchanged='resolved-response',
+                      tags=None, sample_rate=0,
                       url_pattern=None, worker_count=0,
                       unplaybackable_path=None, dry_run=False,
                       precheck_versions=False, archive_storage=None):
@@ -626,7 +625,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
         to_date=to_date,
         maintainers=maintainers,
         tags=tags,
-        skip_unchanged=skip_unchanged,
+        sample_rate=sample_rate,
         version_filter=version_filter,
         worker_count=worker_count,
         create_pages=False,
@@ -641,7 +640,7 @@ def import_ia_db_urls(*, from_date=None, to_date=None, maintainers=None,
 # exist as an argument.
 def import_ia_urls(urls, *, from_date=None, to_date=None,
                    maintainers=None, tags=None,
-                   skip_unchanged='resolved-response',
+                   sample_rate=0,
                    version_filter=None, worker_count=0,
                    create_pages=True, unplaybackable_path=None,
                    db_client=None, dry_run=False, version_cache=None,
@@ -655,10 +654,8 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
 
     with utils.QuitSignal() as stop_event:
         cdx_filter = _identity_iterator
-        if skip_unchanged == 'day':
-            cdx_filter = _sample_daily_cdx(1, maximum=8)
-        elif skip_unchanged == 'subday':
-            cdx_filter = _sample_daily_cdx(4, maximum=10)
+        if sample_rate:
+            cdx_filter = _sample_daily_cdx(sample_rate, maximum=min(6, int(2.5 * sample_rate)))
 
         cdx_records = utils.FiniteQueue()
         cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
@@ -710,14 +707,12 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         filter_importable_thread.start()
 
         uploadable_versions = importable_queue
-        if skip_unchanged == 'resolved-response':
-            uploadable_versions = _filter_unchanged_versions(importable_queue)
-        elif skip_unchanged == 'day':
-            uploadable_versions = _filter_daily_versions(importable_queue)
+        if sample_rate == 1:
+            uploadable_versions = _filter_daily_versions(importable_queue, sample_rate)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
-            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, False, stop_event))
+            uploader = threading.Thread(target=lambda: _add_and_monitor(uploadable_versions, create_pages, stop_event))
         uploader.start()
 
         cdx_thread.join()
@@ -757,18 +752,6 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
         if summary['success'] == 0:
             print_info('------------------------------')
             print_info('No new versions were imported!')
-
-
-def _filter_unchanged_versions(versions):
-    """
-    Take an iteratable of importable version dicts and yield only versions that
-    differ from the previous version of the same page.
-    """
-    last_hashes = {}
-    for version in versions:
-        if last_hashes.get(version['url']) != version['body_hash']:
-            last_hashes[version['url']] = version['body_hash']
-            yield version
 
 
 def _filter_daily_versions(versions: Iterable[dict], count: int = 1):
@@ -1027,7 +1010,7 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
 
     print_info('Saving list of non-playbackable URLs...')
 
-    threshold = datetime.utcnow() - timedelta(seconds=expiration)
+    threshold = datetime.now(UTC) - timedelta(seconds=expiration)
     urls = list(mementos.keys())
     for url in urls:
         date = mementos[url]
@@ -1202,22 +1185,12 @@ def main():
         'Name of entity that maintains the imported pages. '
         'Repeat to add multiple maintainers.'
     ))
-    # FIXME: This option is terribly named and structured for how we currently
-    # use it. In practice, we never want to skip importing a version that
-    # doesn't represent a change because it still, crucially, represents that a
-    # URL looked was as-yet *unchanged* at a given point in time. That's
-    # important for narrowing down when something happened, which is pretty
-    # important for all our use cases.
-    # However, we do make heavy use of `day` and `subday` for sampling purposes
-    # when importing historical data, ad-hoc examining a page over long time
-    # periods, or just for performance and bandwidth reasons. But those are
-    # really about sample rates, not about changed-ness.
-    import_ia.add_argument('--skip-unchanged', choices=['none', 'resolved-response', 'day', 'subday'], help=(
-        'Skip consecutive captures of the same content. Options: '
-        '`none` (no skipping), `resolved-response` (skip if the final '
-        'response after redirects is unchanged), `day` (only import up to one '
-        'version per day [sometimes will import more]), `subday` (only import '
-        'a few versions per day).'
+    import_ia.add_argument('--sample-rate', type=int, default=4, help=(
+        'Load only this many mementos per day. If the index does not have '
+        'enough information to determine memento quality before loading, more '
+        'mementos than this rate may be loaded. Samples are biased toward '
+        'mementos with OK status codes or that are unlikely to be a crawler '
+        'getting rate limited.'
     ))
     import_ia.add_argument('--parallel', type=int, default=PARALLEL_REQUESTS, help=(
         'Number of parallel network requests to support.'
@@ -1267,7 +1240,7 @@ def main():
                     to_date=args.to,
                     maintainers=args.maintainer,
                     tags=args.tag,
-                    skip_unchanged=args.skip_unchanged,
+                    sample_rate=args.sample_rate,
                     url_pattern=args.pattern,
                     worker_count=args.parallel,
                     unplaybackable_path=unplaybackable_path,
@@ -1281,7 +1254,7 @@ def main():
                     tags=args.tag,
                     from_date=args._from,
                     to_date=args.to,
-                    skip_unchanged=args.skip_unchanged,
+                    sample_rate=args.sample_rate,
                     unplaybackable_path=unplaybackable_path,
                     dry_run=args.dry_run,
                     archive_storage=archive_storage)

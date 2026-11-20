@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 import json
 from pathlib import Path
 import pytest
@@ -132,15 +132,15 @@ class TestNormalizeUrl:
 class TestRateLimit:
     def test_rate_limit(self):
         limiter = RateLimit(per_second=2)
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         for i in range(2):
             with limiter:
                 1 + 1
-        duration = datetime.utcnow() - start_time
+        duration = datetime.now(UTC) - start_time
         assert duration.total_seconds() > 0.5
 
     def test_separate_rate_limits_do_not_affect_each_other(self):
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         limit_a = RateLimit(2)
         limit_b = RateLimit(2)
@@ -153,7 +153,7 @@ class TestRateLimit:
         with limit_b:
             1 + 1
 
-        duration = datetime.utcnow() - start_time
+        duration = datetime.now(UTC) - start_time
         assert duration.total_seconds() > 0.5
         assert duration.total_seconds() < 0.55
 
