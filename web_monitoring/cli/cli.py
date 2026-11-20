@@ -655,7 +655,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
     with utils.QuitSignal() as stop_event:
         cdx_filter = _identity_iterator
         if sample_rate:
-            cdx_filter = _sample_daily_cdx(sample_rate, maximum=min(6, int(2.5 * sample_rate)))
+            cdx_filter = _sample_daily_cdx(sample_rate, maximum=max(4, int(1.5 * sample_rate)))
 
         cdx_records = utils.FiniteQueue()
         cdx_thread = threading.Thread(target=lambda: utils.iterate_into_queue(
@@ -708,7 +708,7 @@ def import_ia_urls(urls, *, from_date=None, to_date=None,
 
         uploadable_versions = importable_queue
         if sample_rate == 1:
-            uploadable_versions = _filter_daily_versions(importable_queue, sample_rate)
+            uploadable_versions = _filter_daily_versions(importable_queue, count=sample_rate)
         if dry_run:
             uploader = threading.Thread(target=lambda: _log_adds(uploadable_versions))
         else:
