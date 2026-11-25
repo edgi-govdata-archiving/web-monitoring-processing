@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from dateutil.parser import parse as parse_datetime
 import json
 import os
@@ -11,7 +11,8 @@ from web_monitoring.cli.cli import (WaybackRecordsWorker, import_ia_urls,
                                     import_ia_db_urls,
                                     _is_valid, validate_db_credentials,
                                     _sample_daily_cdx,
-                                    save_unplaybackable_mementos)
+                                    save_unplaybackable_mementos,
+                                    timestamp)
 
 
 # The only matters when re-recording the tests for vcr.
@@ -308,13 +309,21 @@ class TestSampleDailyCdx:
         ]
 
 
+class TestTimestamp:
+    def test_it_leaves_strings_alone(self):
+        assert 'hello' == timestamp('hello')
+
+    def test_it_has_second_precision(self):
+        assert '2026-01-01T01:01:01+01:00' == timestamp(datetime(2026, 1, 1, 1, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))))
+
+    def test_it_uses_z_for_utc(self):
+        assert '2026-01-01T01:01:01Z' == timestamp(datetime(2026, 1, 1, 1, 1, 1, 1, tzinfo=UTC))
+
+    def test_it_treats_naive_datetimes_as_utc(self):
+        assert '2026-01-01T01:01:01Z' == timestamp(datetime(2026, 1, 1, 1, 1, 1, 1))
+
+
 class TestSaveUnplaybackableMementos:
-    def timestamp(self, value: str | datetime) -> str:
-        if isinstance(value, str):
-            return value
-
-        return value.isoformat(timespec='seconds').replace('+00:00', 'Z')
-
     def test_it_drops_expired_entries(self, tmp_path: Path):
         path = tmp_path / 'unplaybackable.json'
         unexpired = {
@@ -342,7 +351,7 @@ class TestSaveUnplaybackableMementos:
         }
         save_unplaybackable_mementos(path, input, expiration=8)
         assert json.loads(path.read_text()) == {
-            k: self.timestamp(v)
+            k: timestamp(v)
             for k, v in unexpired.items()
         }
 
@@ -357,6 +366,6 @@ class TestSaveUnplaybackableMementos:
         }
         save_unplaybackable_mementos(path, input, expiration=8)
         assert json.loads(path.read_text()) == {
-            k: self.timestamp(v)
+            k: timestamp(v)
             for k, v in unexpired.items()
         }
