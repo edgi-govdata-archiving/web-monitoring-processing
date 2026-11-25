@@ -993,7 +993,7 @@ def _list_ia_versions_for_urls(url_patterns, from_date, to_date,
     logger.info('Skipped %s CDX records that did not match filters', skipped)
 
 
-def load_unplaybackable_mementos(path):
+def load_unplaybackable_mementos(path) -> dict[str, str]:
     unplaybackable = {}
     if path:
         try:
@@ -1004,7 +1004,7 @@ def load_unplaybackable_mementos(path):
     return unplaybackable
 
 
-def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
+def save_unplaybackable_mementos(path: Path, mementos: dict[str, str | datetime], expiration: int = 7 * 24 * 60 * 60):
     if path is None:
         return
 
@@ -1016,14 +1016,18 @@ def save_unplaybackable_mementos(path, mementos, expiration=7 * 24 * 60 * 60):
         date = mementos[url]
         needs_format = False
         if isinstance(date, str):
-            date = dateutil.parser.parse(date, ignoretz=True)
+            date = dateutil.parser.isoparse(date)
         else:
             needs_format = True
+
+        # Assume naive datetimes represent UTC.
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=UTC)
 
         if date < threshold:
             del mementos[url]
         elif needs_format:
-            mementos[url] = date.isoformat(timespec='seconds') + 'Z'
+            mementos[url] = date.isoformat(timespec='seconds').replace('+00:00', 'Z')
 
     if not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1109,7 +1113,7 @@ def _is_page(version: wayback.CdxRecord):
             splitext(urlsplit(version.original).path)[1] not in SUBRESOURCE_EXTENSIONS)
 
 
-def _parse_path(path_string):
+def _parse_path(path_string) -> None | Path:
     if path_string is None:
         return None
 

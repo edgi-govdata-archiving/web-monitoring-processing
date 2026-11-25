@@ -1,5 +1,6 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from dateutil.parser import parse as parse_datetime
+import json
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -9,7 +10,8 @@ from wayback import CdxRecord, WaybackClient
 from web_monitoring.cli.cli import (WaybackRecordsWorker, import_ia_urls,
                                     import_ia_db_urls,
                                     _is_valid, validate_db_credentials,
-                                    _sample_daily_cdx)
+                                    _sample_daily_cdx,
+                                    save_unplaybackable_mementos)
 
 
 # The only matters when re-recording the tests for vcr.
@@ -167,8 +169,8 @@ def test_html_title_parsing():
 @patch.dict(os.environ, AUTH_ENVIRON)
 def test_complete_import_ia_db_urls():
     # The only real goal in this test is to make sure it doesn't raise.
-    import_ia_db_urls(from_date=datetime(2019, 1, 1, 3, 0, tzinfo=timezone.utc),
-                      to_date=datetime(2019, 1, 2, 3, 0, tzinfo=timezone.utc),
+    import_ia_db_urls(from_date=datetime(2019, 1, 1, 3, 0, tzinfo=UTC),
+                      to_date=datetime(2019, 1, 2, 3, 0, tzinfo=UTC),
                       sample_rate=4,
                       url_pattern='*epa.gov/hfstudy/epa*')
 
@@ -177,8 +179,8 @@ def test_complete_import_ia_db_urls():
 def test_import_skips_bad_mementos(capsys):
     import_ia_urls(
         urls=['https://highways.dot.gov/safety/data-analysis-tools/rsdp/rsdp-tools/highway-performance-monitoring-system-hpms'],
-        from_date=datetime(2026, 4, 16, 0, tzinfo=timezone.utc),
-        to_date=datetime(2026, 4, 16, 4, tzinfo=timezone.utc),
+        from_date=datetime(2026, 4, 16, 0, tzinfo=UTC),
+        to_date=datetime(2026, 4, 16, 4, tzinfo=UTC),
         sample_rate=0,
         dry_run=True,
     )
@@ -304,3 +306,57 @@ class TestSampleDailyCdx:
             records[2],
             records[1],
         ]
+
+
+class TestSaveUnplaybackableMementos:
+    def timestamp(self, value: str | datetime) -> str:
+        if isinstance(value, str):
+            return value
+
+        return value.isoformat(timespec='seconds').replace('+00:00', 'Z')
+
+    def test_it_drops_expired_entries(self, tmp_path: Path):
+        path = tmp_path / 'unplaybackable.json'
+        unexpired = {
+            'a': (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+            'b': (datetime.now(UTC) - timedelta(seconds=2)).isoformat(),
+        }
+        input = {
+            'c': (datetime.now(UTC) - timedelta(seconds=10)).isoformat(),
+            'd': (datetime.now(UTC) - timedelta(seconds=11)).isoformat(),
+            **unexpired,
+        }
+        save_unplaybackable_mementos(path, input, expiration=8)
+        assert json.loads(path.read_text()) == unexpired
+
+    def test_it_handles_datetimes(self, tmp_path: Path):
+        path = tmp_path / 'unplaybackable.json'
+        unexpired = {
+            'a': (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+            'b': datetime.now(UTC) - timedelta(seconds=2),
+        }
+        input = {
+            'c': (datetime.now(UTC) - timedelta(seconds=10)).isoformat(),
+            'd': datetime.now(UTC) - timedelta(seconds=11),
+            **unexpired,
+        }
+        save_unplaybackable_mementos(path, input, expiration=8)
+        assert json.loads(path.read_text()) == {
+            k: self.timestamp(v)
+            for k, v in unexpired.items()
+        }
+
+    def test_it_treats_naive_datetimes_as_utc(self, tmp_path: Path):
+        path = tmp_path / 'unplaybackable.json'
+        unexpired = {
+            'a': datetime.now(UTC) - timedelta(seconds=2),
+        }
+        input = {
+            'a': unexpired['a'].replace(tzinfo=None),
+            'b': datetime.now() - timedelta(hours=24),
+        }
+        save_unplaybackable_mementos(path, input, expiration=8)
+        assert json.loads(path.read_text()) == {
+            k: self.timestamp(v)
+            for k, v in unexpired.items()
+        }
