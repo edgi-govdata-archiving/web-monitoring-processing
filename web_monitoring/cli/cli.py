@@ -152,6 +152,22 @@ def print_info(message: str) -> None:
     tqdm.write(message, file=sys.stderr)
 
 
+def timestamp(value: str | datetime) -> str:
+    """
+    Format a datetime as a W3C-style ISO 8601 string with second-level
+    precision. Naive datetimes will be treated as UTC and strings will be
+    returned untouched.
+    """
+    if isinstance(value, str):
+        return value
+
+    result = value.isoformat(timespec='seconds')
+    if value.tzinfo:
+        return result.replace('+00:00', 'Z')
+    else:
+        return result + 'Z'
+
+
 # These functions lump together library code into monolithic operations for the
 # CLI. They also print. To access this functionality programmatically, it is
 # better to use the underlying library code.
@@ -417,11 +433,7 @@ class WaybackRecordsWorker(threading.Thread):
         """
         Format a Wayback Memento response as a dict with import-ready info.
         """
-        iso_date = cdx_record.timestamp.isoformat()
-        # Use compact representation for UTC
-        if iso_date.endswith('+00:00'):
-            no_tz_date = iso_date.split("+", 1)[0]
-            iso_date = f'{no_tz_date}Z'
+        iso_date = timestamp(cdx_record.timestamp)
 
         metadata = {
             'view_url': cdx_record.view_url
@@ -1027,7 +1039,7 @@ def save_unplaybackable_mementos(path: Path, mementos: dict[str, str | datetime]
         if date < threshold:
             del mementos[url]
         elif needs_format:
-            mementos[url] = date.isoformat(timespec='seconds').replace('+00:00', 'Z')
+            mementos[url] = timestamp(date)
 
     if not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
