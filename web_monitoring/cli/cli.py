@@ -71,6 +71,7 @@ from wayback.exceptions import (WaybackException, WaybackRetryError,
 from web_monitoring.media import (HTML_MEDIA_TYPES, PDF_MEDIA_TYPES,
                                   find_media_type)
 from web_monitoring import utils, __version__
+import urllib3.exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -220,6 +221,13 @@ class BadMementoError(Exception):
 # wayback.WaybackSession.retryable_errors = wayback.WaybackSession.handleable_errors
 def _hacky_should_retry_error(self, error):
     if isinstance(error, wayback.WaybackSession.retryable_errors):
+        if isinstance(error, urllib3.exceptions.HTTPError):
+            # In theory we should never get here, so this is mainly telemetry
+            # to help understand if it's even actually happening.
+            sentry_wrapper = WaybackException(f'Unexpected top-level urllib3 error: {error}')
+            sentry_wrapper.__cause__ = error
+            sentry_sdk.capture_exception(sentry_wrapper, level='warning')
+
         return True
     elif isinstance(error, wayback.WaybackSession.handleable_errors):
         sentry_sdk.capture_exception(error, level='warning')
@@ -234,6 +242,25 @@ def _hacky_should_retry_error(self, error):
     return False
 
 
+# Testing new approach to capturing in Wayback.
+# - Move requests RetryError to handleable_errors (it's only ever a wrapper, so
+#   we should be digging deeper anyway, and it is only used to wrap a urllib3
+#   MaxRetryError if a more appropriate wrapper couldn't be found)
+# - Add telemetry for the remaining urllib3 exceptions; they should never be
+#   the error class we see and *should* always be wrapped by a requests error
+#   at this point.
+wayback.WaybackSession.retryable_errors = (
+    urllib3.exceptions.ConnectTimeoutError,
+    urllib3.exceptions.ReadTimeoutError,
+    urllib3.exceptions.MaxRetryError,
+    requests.exceptions.ProxyError,
+    requests.exceptions.Timeout,
+)
+wayback.WaybackSession.handleable_errors = (
+    requests.exceptions.ConnectionError,
+    requests.exceptions.RetryError,
+    *wayback.WaybackSession.retryable_errors,
+)
 wayback.WaybackSession.should_retry_error = _hacky_should_retry_error
 
 
